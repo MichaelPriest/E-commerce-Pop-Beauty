@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Trash2, Minus, Plus, ArrowLeft } from 'lucide-react';
-import { formatBRL } from '@/lib/catalog';
+import { formatBRL } from '@/lib/products';
 type CartItem = {id:string;slug:string;name:string;price_cents:number;qty:number;emoji?:string};
 export default function CartPage() {
  const [cart,setCart]=useState<CartItem[]>([]),[loaded,setLoaded]=useState(false);

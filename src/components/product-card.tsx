@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
-import type { Product } from '@/lib/catalog';
-import { formatBRL } from '@/lib/catalog';
+import type { Product } from '@/lib/products';
+import { formatBRL } from '@/lib/products';
 
 export function ProductCard({product,demo}:{product:Product;demo:boolean}) {
  const [favorite,setFavorite]=useState(false),[added,setAdded]=useState(false);

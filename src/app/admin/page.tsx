@@ -8,7 +8,8 @@ export const dynamic='force-dynamic';
 export default async function AdminPage() {
  if(!isSupabaseConfigured())return <div className="container account-page"><h1>Painel Popê Beauty</h1><p className="demo-alert">A administração estará disponível depois da criação do projeto Supabase e aplicação do esquema SQL.</p><Link href="/">Voltar à vitrine</Link></div>;
  const supabase=await createClient();
- const {data:{claims}}=await supabase.auth.getClaims();
+ const {data:claimData}=await supabase.auth.getClaims();
+ const claims=claimData?.claims;
  if(!claims?.sub)redirect('/entrar');
  const {data:profile}=await supabase.from('profiles').select('role,display_name').eq('id',claims.sub).maybeSingle();
  if(!profile||!['admin','staff'].includes(profile.role))return <div className="container account-page"><ShieldAlert size={42}/><h1>Acesso restrito</h1><p>Esta área é exclusiva da equipe autorizada.</p><Link href="/conta">Voltar à minha conta</Link></div>;

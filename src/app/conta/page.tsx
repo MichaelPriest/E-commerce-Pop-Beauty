@@ -7,7 +7,8 @@ import { signOutAction } from '@/app/actions';
 export default async function AccountPage(){
  if(!isSupabaseConfigured()) return <div className="container account-page"><h1>Minha conta</h1><p>O cadastro estará disponível assim que o Supabase for conectado.</p><Link href="/entrar">Voltar</Link></div>;
  const supabase=await createClient();
- const {data:{claims}}=await supabase.auth.getClaims();
+ const {data:claimData}=await supabase.auth.getClaims();
+ const claims=claimData?.claims;
  if(!claims?.sub) redirect('/entrar');
  const {data:profile}=await supabase.from('profiles').select('display_name,role').eq('id',claims.sub).maybeSingle();
  const role=profile?.role;

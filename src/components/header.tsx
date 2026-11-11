@@ -1,10 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import {usePathname} from 'next/navigation';
 import { Heart, Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react';
 import { Brand } from './brand';
 export function Header({adultAccess=false}:{adultAccess?:boolean}) {
  const [open,setOpen]=useState(false),[search,setSearch]=useState('');
+ const pathname=usePathname();
+ if(pathname.startsWith('/admin'))return null;
  return <><div className="topbar">✨ Beleza acessível, sempre com alto astral! 💖 <span>• Frete e promoções serão anunciados em breve</span></div>
  <header className="site-header"><div className="header-inner container">
  <Brand/>

@@ -275,3 +275,8 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .settings-card>p{font-size:13px;color:#79687b;line-height:1.7}
 .settings-card>a.admin-outline{margin-top:15px}
 @media(max-width:760px){.adult-banner{padding:22px}.adult-banner svg{display:none}.settings-card{padding:17px}.settings-switch-row{flex-direction:column;align-items:stretch}.settings-switch{align-self:flex-start}.settings-request-heading{flex-direction:column}}
+
+.settings-self-review{margin-top:14px;padding:15px;border:1px solid #f6d59a;border-radius:13px;background:#fff8e5;display:flex;gap:11px;align-items:start;color:#8a5d18}
+.settings-self-review svg{flex-shrink:0}
+.settings-self-review strong{font-size:13px;color:#85551a}
+.settings-self-review p{font-size:12px;line-height:1.65;margin:7px 0 0}

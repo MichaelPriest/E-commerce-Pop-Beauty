@@ -3,6 +3,8 @@ import {SettingsManager} from './settings-manager';
 export const dynamic='force-dynamic';
 export default async function AdminSettingsPage(){
  const sb=await requireAdmin();
+ const {data:claimData}=await sb.auth.getClaims();
+ const currentUserId=claimData?.claims?.sub??'';
  const [setting,requests,profiles,verified]=await Promise.all([
   sb.from('store_settings').select('adult_enabled').eq('id',1).maybeSingle(),
   sb.from('age_verification_requests').select('user_id,status,requested_at,reviewed_at').order('requested_at',{ascending:false}).limit(150),
@@ -18,5 +20,5 @@ export default async function AdminSettingsPage(){
   verified_at:verificationById.get(x.user_id)?.verified_at??null,
   expires_at:verificationById.get(x.user_id)?.expires_at??null
  }));
- return <SettingsManager enabled={!!setting.data?.adult_enabled} requests={rows}/>;
+ return <SettingsManager enabled={!!setting.data?.adult_enabled} requests={rows} currentUserId={currentUserId}/>;
 }

@@ -7,8 +7,13 @@ type RequestItem={
  user_id:string;status:string;requested_at:string;reviewed_at:string|null;
  display_name:string;verified_at:string|null;expires_at:string|null;
 };
-type Props={enabled:boolean;requests:RequestItem[]};
-export function SettingsManager({enabled,requests}:Props){
+type Props={enabled:boolean;requests:RequestItem[];currentUserId:string};
+const explainError=(error:unknown,fallback:string)=>{
+ if(error&&typeof error==='object'&&'message' in error
+    &&typeof error.message==='string'&&error.message.trim())return error.message;
+ return error instanceof Error?error.message:fallback;
+};
+export function SettingsManager({enabled,requests,currentUserId}:Props){
  const router=useRouter(),[current,setCurrent]=useState(enabled);
  const [saving,setSaving]=useState(false),[busy,setBusy]=useState<string|null>(null);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
@@ -23,11 +28,12 @@ export function SettingsManager({enabled,requests}:Props){
    setCurrent(!current);
    setNotice(!current?'Módulo habilitado. A visualização continua bloqueada para quem não possui maioridade verificada.':'Módulo desativado: catálogo e imagens adultos bloqueados para clientes.');
    router.refresh();
-  }catch(e){setError(e instanceof Error?e.message:'Falha ao alterar configuração.');}
+  }catch(e){setError(explainError(e,'Falha ao alterar configuração.'));}
   finally{setSaving(false);}
  }
  async function review(userId:string,approved:boolean){
   if(busy)return;
+  if(userId===currentUserId){setError('Sua própria solicitação não pode ser revisada por esta conta. Um segundo administrador deve conferir sua maioridade.');return;}
   if(approved&&!checked[userId]){setError('Antes de aprovar, confirme que conferiu uma prova confiável de maioridade fora da aplicação.');return;}
   setBusy(userId);setError('');setNotice('');
   try{
@@ -35,17 +41,18 @@ export function SettingsManager({enabled,requests}:Props){
    if(error)throw error;
    setNotice(approved?'Maioridade registrada após conferência manual.':'Solicitação rejeitada e acesso negado.');
    setChecked(v=>({...v,[userId]:false}));router.refresh();
-  }catch(e){setError(e instanceof Error?e.message:'Erro ao revisar solicitação.');}
+  }catch(e){setError(explainError(e,'Não foi possível revisar a solicitação.'));}
   finally{setBusy(null);}
  }
  async function reopen(userId:string){
-  if(busy)return;setBusy(userId);setError('');setNotice('');
+  if(busy)return;
+  if(userId===currentUserId){setError('Sua própria solicitação não pode ser reaberta por esta conta.');return;}setBusy(userId);setError('');setNotice('');
   try{
    const {error}=await createClient().from('age_verification_requests')
     .update({status:'pending',reviewed_at:null,reviewed_by:null}).eq('user_id',userId);
    if(error)throw error;
    setNotice('Solicitação reaberta para nova revisão.');router.refresh();
-  }catch(e){setError(e instanceof Error?e.message:'Falha ao reabrir.');}
+  }catch(e){setError(explainError(e,'Falha ao reabrir.'));}
   finally{setBusy(null);}
  }
  const time=(raw:string|null)=>raw?new Date(raw).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}):'—';
@@ -68,7 +75,9 @@ export function SettingsManager({enabled,requests}:Props){
    <div className="settings-request-list">{requests.length?requests.map(r=><article className="settings-request" key={r.user_id}>
     <div className="settings-request-heading"><div><strong>{r.display_name}</strong><small>Identificador: <code>{r.user_id}</code></small><small>Solicitação: {time(r.requested_at)}</small></div><span className={'admin-status '+(r.status==='approved'?'live':r.status==='pending'?'warning':'draft')}>{r.status==='approved'?'Aprovada':r.status==='rejected'?'Rejeitada':'Pendente'}</span></div>
     {r.expires_at?<p className="settings-expiry">Maioridade verificada até {time(r.expires_at)}.</p>:null}
-    {r.status==='pending'?<div className="settings-review"><label className="settings-check"><input type="checkbox" checked={!!checked[r.user_id]} onChange={e=>setChecked(v=>({...v,[r.user_id]:e.target.checked}))}/><span>Confirmei pessoalmente uma prova confiável de maioridade e a correspondência com esta conta.</span></label>
+    {r.user_id===currentUserId?
+      <div className="settings-self-review"><ShieldAlert size={20}/><div><strong>Esta solicitação pertence à sua própria conta.</strong><p>Por segurança, não é possível aprovar, rejeitar ou renovar sua própria maioridade usando a conta que fez o pedido. A confirmação precisa ser realizada por outro administrador autorizado, após conferência real de documentação, ou por um serviço independente de verificação de idade. Seu acesso +18 permanece bloqueado até lá.</p></div></div>
+      :r.status==='pending'?<div className="settings-review"><label className="settings-check"><input type="checkbox" checked={!!checked[r.user_id]} onChange={e=>setChecked(v=>({...v,[r.user_id]:e.target.checked}))}/><span>Confirmei pessoalmente uma prova confiável de maioridade e a correspondência com esta conta.</span></label>
       <div className="settings-actions"><button className="admin-primary" disabled={busy!==null||!checked[r.user_id]} onClick={()=>review(r.user_id,true)}><CheckCircle2 size={17}/> Aprovar +18</button><button className="admin-outline" disabled={busy!==null} onClick={()=>review(r.user_id,false)}><XCircle size={17}/> Rejeitar</button></div></div>:
       <button type="button" className="admin-outline" disabled={busy!==null} onClick={()=>reopen(r.user_id)}><RefreshCcw size={15}/> Reabrir solicitação</button>}
    </article>):<div className="admin-empty"><ShieldAlert size={33}/><h3>Nenhuma solicitação</h3><p>Os clientes poderão solicitar verificação quando o módulo estiver habilitado.</p></div>}</div>

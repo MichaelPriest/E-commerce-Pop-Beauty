@@ -787,3 +787,7 @@ O destinatário pode conter CPF/CNPJ e o endereço do pedido; portanto o JSON ex
 ### 22.2. Reconciliação dos valores exportados
 
 A exportação JSON de preparação fiscal informa `amount_reconciliation`, com `items_total_cents`, `difference_cents`, `issues` e `requires_manual_allocation`. Os valores são calculados em centavos inteiros seguros. Quando o total do pedido difere da soma dos itens, o sistema exige **conferência e discriminação de frete, descontos ou ajustes**, sem atribuir automaticamente uma natureza tributária. Quantidades, preços e totais inválidos/fora do intervalo seguro também geram alertas. Esses alertas se somam a `missing_basic_fields`, sem alterar o estado `not_submitted` e sem habilitar emissão. Testes: `tests/fiscal-amount-reconciliation.test.mjs`.
+
+### 22.3. Romaneio interno por seleção de pedidos
+
+Em `/admin/logistica`, o administrador pode selecionar até **30 pedidos administrativos** no filtro atual e gerar `/admin/logistica/romaneio?pedidos=<ids>`. O romaneio apresenta pedidos, status, quantidades de SKUs, volumes previstos, transportadora e rastreio já cadastrados, além de campos manuais de conferência. A rota valida UUIDs, duplicatas, total máximo, autenticação admin e a correspondência exata de todos os pedidos consultados. A consulta é exclusivamente de leitura e não movimenta estoque, não registra envio, não contrata frete, não emite PLP e não constitui documento fiscal. Volumes são estimativas administrativas (padrão 1 se não houver preparação). Testes: `tests/logistics-internal-manifest.test.mjs`.

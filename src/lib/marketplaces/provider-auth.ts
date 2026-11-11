@@ -1,6 +1,7 @@
 import 'server-only';
 import {createHash,randomBytes} from 'node:crypto';
 import {shopeeSignature} from './shopee-signature-core';
+import {signedShopeeAuthorizeUrl} from './shopee-authorize-core';
 
 export type MarketplaceChannel='shopee'|'mercadolivre';
 export type MarketplaceTokens={access:string;refresh:string;expiresIn:number};
@@ -69,14 +70,17 @@ export function marketplaceAuthorizeURL(channel:MarketplaceChannel,state:string,
   url.searchParams.set('code_challenge_method','S256');
   return url.toString();
  }
- const {id}=shopeeCredentials();
- const url=new URL('https://open.shopee.com.br/auth');
- url.searchParams.set('partner_id',id);
- url.searchParams.set('auth_type','seller');
- url.searchParams.set('redirect_uri',marketplaceCallback(channel));
- url.searchParams.set('response_type','code');
- url.searchParams.set('state',state);
- return url.toString();
+ const {id,key}=shopeeCredentials();
+ // Shopee v2 exige auth_partner ASSINADO. O callback preserva state no redirect
+ // porque a API retorna apenas code e shop_id (não ecoa o parâmetro state).
+ const redirect=new URL(marketplaceCallback(channel));
+ redirect.searchParams.set('state',state);
+ const timestamp=Math.floor(Date.now()/1000);
+ const path='/api/v2/shop/auth_partner';
+ return signedShopeeAuthorizeUrl({
+  partnerId:id,redirect:redirect.toString(),timestamp,
+  sign:shopeeSignature(id,key,path,timestamp)
+ });
 }
 export function generateOAuthNonce(){return randomBytes(32).toString('base64url');}
 export async function exchangeMarketplaceCode(
@@ -106,8 +110,10 @@ export async function exchangeMarketplaceCode(
  });
  const tokens=checkTokens(data);
  const info=await shopeeShopGET('/api/v2/shop/get_shop_info',tokens.access,opts.shopId);
+ const shop=(info.response&&typeof info.response==='object'&&!Array.isArray(info.response))?
+  info.response as Record<string,unknown>:info;
  return {tokens,accountId:opts.shopId,
-  name:typeof info.shop_name==='string'?info.shop_name.slice(0,160):'Shopee '+opts.shopId};
+  name:typeof shop.shop_name==='string'?shop.shop_name.slice(0,160):'Shopee '+opts.shopId};
 }
 export async function refreshMarketplaceToken(
  channel:MarketplaceChannel,refresh:string,accountId:string

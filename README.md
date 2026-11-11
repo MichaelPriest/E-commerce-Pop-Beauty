@@ -134,3 +134,14 @@ Para garantir segurança de transporte, as Functions fazem STARTTLS em 587 (ou T
 - **Equipe (staff)**: papel cadastral reservado para permissões futuras; atualmente os módulos `/admin/*` são exclusivos de administrador. Não há convites e nem criação automática de contas pela administração.
 - `/admin/relatorios`: série histórica de 12 meses, métricas por mês de criação de pedidos, exportação CSV, alertas de estoque mínimo, vencidos e vencendo em 30 dias. Agregações SQL com privilégios do invocador `supabase/admin_operational_reports.sql`.
 - Valores confirmados em relatórios correspondem ao estado **administrativamente registrado** do pedido, não a conciliação bancária. Não devem ser tratados como receita recebida efetivamente.
+
+## Central de gateways para escolha futura
+Acesse `/admin/gateways`. Dez opções para avaliação: Mercado Pago, PagBank, Pagar.me, Asaas, Stripe, Efí, PayPal, Cielo, Iugu e InfinitePay. Nenhuma opção foi ativada para cobranças reais.
+
+- O esquema `supabase/payment_gateway_evaluation.sql` permite incluir/excluir da comparação, escolher um único **candidato de homologação**, registrar observações e guardar auditoria; não armazena segredos.
+- As credenciais devem ficar exclusivamente nas variáveis de ambiente Vercel. Os nomes são exibidos por provedor; os valores nunca são expostos ao browser.
+- Existe checagem de autenticação sem cobrança para Mercado Pago, Pagar.me, Asaas, Stripe e PayPal (somente chaves de teste e consulta/leitura; PayPal obtém token OAuth sandbox).
+- PagBank, Efí, Cielo e Iugu aguardam configuração e validação específica do fluxo de testes. InfinitePay não possui sandbox e não será contatada nesta fase.
+- **Não há checkout público, webhooks financeiros, aprovação de pagamento automática nem seleção de produção.** Para finalizar a escolha, será necessário integrar cobrança, conciliação, estornos e verificar encargos e condições contratuais.
+
+Variáveis opcionais de sandbox: `MP_TEST_ACCESS_TOKEN`, `PAGBANK_SANDBOX_TOKEN`, `PAGARME_TEST_SECRET_KEY`, `ASAAS_SANDBOX_API_KEY`, `STRIPE_TEST_SECRET_KEY`, `EFI_SANDBOX_CLIENT_ID`, `EFI_SANDBOX_CLIENT_SECRET`, `EFI_SANDBOX_CERT_BASE64`, `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`, `CIELO_SANDBOX_MERCHANT_ID`, `CIELO_SANDBOX_MERCHANT_KEY`, `IUGU_TEST_API_TOKEN`. Nunca use `NEXT_PUBLIC_` com chaves secretas.

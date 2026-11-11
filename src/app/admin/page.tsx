@@ -13,7 +13,7 @@ export default async function AdminPage(){
  const [profile,products,orders,stock,activity,notifications]=await Promise.all([
   supabase.from('profiles').select('display_name').eq('id',userId).maybeSingle(),
   supabase.from('products').select('id,name,price_cents,active',{count:'exact'})
-   .order('created_at',{ascending:false}).limit(6),
+   .neq('origin','store_api').order('created_at',{ascending:false}).limit(6),
   supabase.from('orders').select('id,status,channel,total_cents,created_at',{count:'exact'})
    .order('created_at',{ascending:false}).limit(6),
   supabase.from('inventory').select('variant_id',{count:'exact',head:true}),

@@ -8,7 +8,7 @@ export default async function CustomersPage(){
  const sb=await requireAdmin();
  const [profiles,orders]=await Promise.all([
   sb.from('profiles').select('id,display_name,role,created_at').order('created_at',{ascending:false}).limit(1000),
-  sb.from('orders').select('customer_id,total_cents,status').not('customer_id','is',null).limit(3000)
+  sb.from('orders').select('customer_id,total_cents,status').not('customer_id','is',null).neq('origin','store_api').limit(3000)
  ]);
  if(profiles.error||orders.error)return <div className="container admin-workspace"><h1>Clientes</h1><p role="alert" className="form-error">{profiles.error?.message||orders.error?.message}</p></div>;
  const customerStats=new Map<string,{count:number;total:number}>();

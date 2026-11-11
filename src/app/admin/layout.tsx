@@ -15,7 +15,7 @@ export default async function AdminLayout({children}:{children:ReactNode}){
   supabase.from('profiles').select('display_name,role').eq('id',id).maybeSingle(),
   supabase.from('user_session_presence').select('user_id')
    .is('signed_out_at',null).gte('last_seen_at',cutoff).limit(1000),
-  supabase.from('orders').select('id',{count:'exact',head:true}).eq('status','pending'),
+  supabase.from('orders').select('id',{count:'exact',head:true}).eq('status','pending').neq('origin','store_api'),
   supabase.from('order_notifications').select('id',{count:'exact',head:true}).in('status',['pending','failed'])
  ]);
  const name=profile.data?.display_name?.trim()||email.split('@')[0]||'Administrador';

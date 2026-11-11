@@ -8,7 +8,7 @@ export default async function FinancePage(){
  const sb=await requireAdmin();
  const {data,error}=await sb.from('orders')
  .select('id,origin,channel,status,total_cents,created_at,payment_reference')
- .order('created_at',{ascending:false}).limit(500);
+ .neq('origin','store_api').order('created_at',{ascending:false}).limit(500);
  if(error)return <div className="container admin-workspace"><h1>Financeiro</h1><p role="alert" className="form-error">{error.message}</p></div>;
  const orders=data??[];
  const awaiting=orders.filter(o=>o.status==='pending');

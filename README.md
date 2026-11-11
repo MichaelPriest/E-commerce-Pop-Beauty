@@ -167,3 +167,6 @@ A loja possui `/checkout`, uma **prévia de conferência**, vinculada à página
 - O pedido de homologação tem `origin='store_api'` e status `pending`. Nunca é marcado pago automaticamente, nenhum e-mail de pedido é enviado, nem frete é cotado; o cliente pode cancelar a reserva em `/conta`. Administradores visualizam as reservas em `/admin/reservas`.
 - **Checkout público permanece bloqueado** com `store_settings.checkout_reservations_enabled=false`; a função só permite teste com sessão de administrador. Não altere a flag para true até concluir processamento de pagamentos, webhooks seguros, frete, antifraude e termos de venda.
 - Nenhuma chave de gateway, cartão, Pix ou endereço é transmitido para provedor de pagamento. Não há cobrança em qualquer etapa deste fluxo.
+
+### Separação das reservas de teste e financeiro
+Reservas de homologação com `origin='store_api'` são listadas somente em `/admin/reservas` e `/conta` do titular. Pedidos comerciais manuais são exibidos em `/admin/pedidos`, `/admin/logistica`, relatórios e financeiro. A migração `supabase/exclude_checkout_test_from_financial_metrics.sql` exclui `store_api` das agregações mensais. A sidebar também exclui essas reservas do contador de pedidos pendentes. Assim, reservas de teste não distorcem receita prevista nem quantidade de pedidos de clientes.

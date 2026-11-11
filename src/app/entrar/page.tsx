@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LockKeyhole, Mail, UserRound, Heart } from 'lucide-react';
+import {passwordIssue} from '@/lib/password-policy';
 import { createClient } from '@/lib/supabase/browser';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 export default function AuthPage() {
@@ -14,8 +15,9 @@ export default function AuthPage() {
   e.preventDefault();setNotice('');setError('');
   if(!configured) {setError('Autenticação ainda não configurada.');return;}
   if(password.length<8){setError('A senha deve ter pelo menos 8 caracteres.');return;}
-  if(mode==='signup' && (password.length<12 || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password))){
-   setError('Para novas contas, use pelo menos 12 caracteres, com maiúscula, minúscula, número e símbolo.');return;
+  if(mode==='signup'){
+   const issue=passwordIssue(password);
+   if(issue){setError(issue);return;}
   }
   setWorking(true);
   try {
@@ -41,6 +43,7 @@ export default function AuthPage() {
  <form onSubmit={submit}>{mode==='signup'?<label><span>Nome completo</span><span className="input-wrap"><UserRound size={19}/><input required minLength={2} value={name} onChange={e=>setName(e.target.value)} placeholder="Seu nome"/></span></label>:null}
  <label><span>E-mail</span><span className="input-wrap"><Mail size={19}/><input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com"/></span></label>
  <label><span>Senha</span><span className="input-wrap"><LockKeyhole size={19}/><input type="password" required minLength={mode==='login'?8:12} autoComplete={mode==='login'?'current-password':'new-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder={mode==='login'?'Sua senha':'12+ caracteres, letras, número e símbolo'}/></span></label>
+ {mode==='login'?<Link href="/esqueci-senha" className="recovery-forgot-link">Esqueceu sua senha?</Link>:null}
  {error?<p role="alert" className="form-error">{error}</p>:null}{notice?<p role="status" className="form-success">{notice}</p>:null}
  <button type="submit" className="add-button auth-submit" disabled={working||!configured}>{working?'Processando...':mode==='login'?'Entrar na minha conta':'Cadastrar'}</button></form>
  <Link href="/" className="auth-return">← Voltar para a loja</Link></div></section>;

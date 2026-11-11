@@ -73,3 +73,18 @@ Acesse `/admin/adulto` com a conta que possua `role='admin'`. O painel mostra os
 - `/admin/financeiro`: acompanhamento de confirmações administrativas, sem conciliação automática, checkout, taxas ou transferências.
 
 A criação de pedido manual não chama provedor de pagamento e não permite produto adulto. Ela reserva estoque até cancelamento ou expedição. Pagamento só pode ser marcado com anotação de referência pelo administrador. O fluxo atual não substitui um gateway, OMS completo ou ERP. Não acione ações de pagamento e expedição sem as respectivas operações terem ocorrido.
+
+## Recuperação de acesso e troca de senha por e-mail (Supabase Auth)
+
+- `/entrar`: inclui **Esqueceu sua senha?**.
+- `/esqueci-senha`: solicita `auth.resetPasswordForEmail` por e-mail, com mensagem genérica para não revelar se o usuário existe.
+- `/auth/callback?next=/redefinir-senha`: faz troca de código PKCE por sessão no servidor e encaminha para nova senha. O callback também aceita OTP `token_hash` com tipo `recovery` caso um template próprio seja configurado.
+- `/redefinir-senha`: confirma sessão com `auth.getUser`, valida 12–72 caracteres (maiúscula, minúscula, número e símbolo), compara confirmação, atualiza via `auth.updateUser`, encerra sessão de recuperação e envia para o login. Não salva nem transmite senhas em tabelas de aplicação.
+
+**Configuração obrigatória no Supabase Dashboard:** Authentication → URL Configuration, com Site URL `https://e-commerce-pope-beauty.vercel.app` e Redirect URLs adicionais, *exatamente*:
+`https://e-commerce-pope-beauty.vercel.app/auth/callback?next=/redefinir-senha`
+e `https://e-commerce-pope-beauty.vercel.app/auth/callback` (já usada na confirmação de cadastro).
+
+Se executar localmente, também permita `http://localhost:3000/auth/callback?next=/redefinir-senha` e `http://localhost:3000/auth/callback` conforme necessário. O e-mail padrão do Supabase normalmente contém `{{ .ConfirmationURL }}`, que incorpora o redirectTo. Se usar template próprio, ajuste-o para respeitar `{{ .RedirectTo }}` e o fluxo de verificação. Teste links no **mesmo navegador** que fez a solicitação (PKCE).
+
+**Operação:** sem provedor SMTP próprio, o Supabase pode impor limitações ao envio de e-mails e destinatários. Verificar em Authentication → SMTP Settings quando houver bloqueio no envio. O recurso nativo de detecção de senhas vazadas requer plano Pro; configure também a política mínima diretamente em Authentication → Providers → Email, pois a validação da tela não substitui a regra do servidor.

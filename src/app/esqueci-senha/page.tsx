@@ -1,5 +1,5 @@
 'use client';
-import {useState,type FormEvent} from 'react';
+import {useEffect,useState,type FormEvent} from 'react';
 import Link from 'next/link';
 import {ArrowLeft,CheckCircle2,Heart,Mail,ShieldCheck} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
@@ -9,6 +9,10 @@ export default function ForgotPasswordPage(){
  const [email,setEmail]=useState('');
  const [sending,setSending]=useState(false),[sent,setSent]=useState(false),[error,setError]=useState('');
  const configured=isSupabaseConfigured();
+ useEffect(()=>{
+  if(new URLSearchParams(window.location.search).get('erro')==='link')
+   setError('O link de recuperação é inválido, expirou ou já foi utilizado. Solicite outro.');
+ },[]);
  async function send(e:FormEvent<HTMLFormElement>){
   e.preventDefault();
   if(sending||sent)return;

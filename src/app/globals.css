@@ -352,3 +352,21 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .admin-workspace .admin-top h1 svg{vertical-align:middle}
 @media(max-width:980px){.ops-link-form{grid-template-columns:repeat(2,minmax(0,1fr))}.ops-integration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.ops-link-form{grid-template-columns:1fr}.ops-integration-grid{grid-template-columns:1fr}.ops-form-card{padding:15px}.ops-order-line{grid-template-columns:minmax(120px,1fr) 65px 27px;gap:6px}.ops-order-total{flex-direction:column;align-items:start}}
+
+/* Popê Auth — recuperação e redefinição de acesso */
+.recovery-panel{width:min(490px,100%)}
+.recovery-panel .auth-return{display:flex;align-items:center;justify-content:center;gap:8px}
+.recovery-panel h1>svg{color:var(--pink);flex-shrink:0}
+.recovery-forgot-link{display:block;margin:-4px 0 2px auto;align-self:flex-end;font-size:12px;font-weight:800;color:var(--pink)}
+.recovery-forgot-link:hover{text-decoration:underline}
+.recovery-panel .recovery-success-icon{color:#13a16e;margin-top:14px}
+.recovery-panel .recovery-error-icon{color:#bd4874;margin-top:12px}
+.recovery-panel .recovery-tips{display:flex;align-items:flex-start;gap:11px;color:#685680;background:#f6f0ff;border:1px solid #e7d7f6;border-radius:12px;padding:14px;font-size:12px;line-height:1.6;margin-top:15px}
+.recovery-panel .recovery-tips>svg{flex-shrink:0;color:#7859a0}
+.recovery-panel .recovery-footnote{font-size:12px;color:#927a8a;line-height:1.65;margin-top:18px}
+.recovery-panel .recovery-full-button{width:100%;margin-top:20px}
+.recovery-panel .recovery-action-link{display:flex;justify-content:center;align-items:center;color:white;margin-top:17px}
+.recovery-panel .recovery-password-rule{font-size:11px;color:#816b80;line-height:1.65;margin:0 0 4px}
+.recovery-panel .recovery-visibility{border:0;background:transparent;color:var(--pink);padding:0;display:grid;place-items:center;flex-shrink:0}
+.recovery-panel .recovery-visibility:hover{color:var(--purple)}
+@media(max-width:530px){.auth-background .auth-panel{padding:30px 22px}.recovery-panel h1{font-size:24px}}

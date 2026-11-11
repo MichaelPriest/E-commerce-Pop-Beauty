@@ -17,10 +17,13 @@ test('frete ou descontos não discriminados exigem conferência',()=>{
 test('quantidades e totais inválidos são sinalizados',()=>{
  const result=fiscalAmountReconciliation([{quantity:0,priceCents:100}],-5);
  assert.equal(result.issues.length,2);
+ assert.equal(result.difference_cents,null);
+ assert.equal(result.items_total_cents,null);
 });
 test('overflow aritmético não passa despercebido',()=>{
  const result=fiscalAmountReconciliation([{quantity:2,priceCents:Number.MAX_SAFE_INTEGER}],10);
  assert.match(result.issues.join(' '),/intervalo seguro/);
+ assert.equal(result.difference_cents,null);
 });
 test('exportação mantém total e diferença sem declarar emissão',()=>{
  const route=readFileSync(new URL('../src/app/api/admin/fiscal/export/[id]/route.ts',import.meta.url),'utf8');

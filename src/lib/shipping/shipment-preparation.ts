@@ -1,7 +1,7 @@
 /** Conferência documental de remessa interna. Não compra frete nem autoriza etiqueta postal. */
 export type PreparedVolume={
  volume_number:number;weight_g:number;height_cm:number;width_cm:number;
- length_cm:number;contents_note?:string|null
+ length_cm:number;contents_note:string|null
 };
 export type ShippingDestination={
  recipient?:string|null;phone?:string|null;postal_code?:string|null;

@@ -711,3 +711,60 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-checkout-trust span{display:flex;align-items:center;gap:8px;color:#886a83;font-size:11px}
 @media(max-width:860px){.pope-checkout-body{grid-template-columns:1fr}.pope-checkout-summary{order:2}}
 @media(max-width:480px){.pope-checkout-page{padding-top:22px}.pope-checkout-page>h1{font-size:26px}.pope-checkout-items,.pope-checkout-summary{padding:16px}.pope-checkout-steps{gap:6px}.pope-checkout-steps>span{font-size:9px;padding:7px}.pope-checkout-steps>svg{width:12px}.pope-checkout-item{gap:9px}.pope-checkout-item-icon{width:36px;height:36px}}
+
+/* Cadastro de endereços e teste administrativo de reserva */
+.pope-address-page{padding-top:38px;padding-bottom:65px}
+.pope-address-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;flex-wrap:wrap;margin-bottom:24px}
+.pope-address-heading h1{display:flex;align-items:center;gap:10px;font:900 31px Nunito,sans-serif;color:#6d286e;margin:7px 0}
+.pope-address-heading h1 svg{color:#ed2795}
+.pope-address-heading p{font-size:13px;color:#92778c;line-height:1.6}
+.pope-address-toolbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:16px 0}
+.pope-address-toolbar strong{color:#805379;font-size:12px}
+.pope-address-toolbar button,.pope-address-buttons button{display:inline-flex;align-items:center;gap:8px}
+.pope-address-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0 22px}
+.pope-address-card{border:1px solid #f0d9e7;border-radius:15px;padding:18px;background:#fff;box-shadow:0 5px 16px #8b2d760b}
+.pope-address-card-top{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+.pope-address-card-top>span{display:flex;align-items:center;gap:8px;color:#722f78;font-weight:900;font-size:14px}
+.pope-address-default{display:flex;align-items:center;gap:5px;font-size:10px;color:#277c56;background:#e6faee;padding:5px 9px;border-radius:99px}
+.pope-address-card p{font-size:12px;color:#896e85;line-height:1.6;margin:10px 0}
+.pope-address-card .pope-address-phone{display:flex;align-items:center;gap:7px}
+.pope-address-card-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.pope-address-card-actions button{display:flex;align-items:center;gap:7px;font-size:11px}
+.pope-address-empty{background:#fff8fc;border:1px dashed #e7b8d9;border-radius:15px;padding:24px;color:#986f91;display:flex;flex-direction:column;gap:8px}
+.pope-address-empty h3{font-size:16px;color:#77367b;margin:0}
+.pope-address-empty p{font-size:12px;margin:0;line-height:1.5}
+.pope-address-form{border:1px solid #f0d1e4;border-radius:18px;padding:22px;background:#fff8fc}
+.pope-address-form-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.pope-address-form-top h2{font:900 20px Nunito,sans-serif;color:#74277a;margin:0}
+.pope-address-form-top button{background:transparent;border:0;color:#955482}
+.pope-address-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pope-address-form-grid label:not(.pope-address-check){display:flex;flex-direction:column;gap:7px;color:#765571;font-size:12px;font-weight:800}
+.pope-address-form-grid label.wide{grid-column:1/-1}
+.pope-address-form-grid input:not([type=checkbox]),.pope-address-form-grid select{
+ width:100%;border:1px solid #e8cfdf;border-radius:9px;padding:11px 12px;background:#fff;color:#623e61;outline-color:#ed51ad;min-width:0}
+.pope-address-check{display:flex;align-items:center;gap:9px;color:#775779;font-size:12px;font-weight:800}
+.pope-address-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:17px}
+.pope-address-privacy{display:flex;align-items:flex-start;gap:9px;color:#8a7587;font-size:11px;line-height:1.6;margin:15px 0}
+.pope-address-privacy svg{flex-shrink:0}
+.pope-checkout-test{border-top:1px solid #f1e0e9;margin-top:21px;padding-top:20px}
+.pope-checkout-test-heading{display:flex;align-items:flex-start;gap:10px;color:#ac2b88;margin-bottom:13px}
+.pope-checkout-test-heading h3{font-size:15px;color:#712774;margin:0 0 5px}
+.pope-checkout-test-heading p{font-size:11px;color:#967a90;margin:0}
+.pope-checkout-test>p,.pope-checkout-test-notice{font-size:12px;line-height:1.6;color:#886c80}
+.pope-checkout-link,.pope-checkout-delivery-header>a{color:#c1238a;font-size:12px;font-weight:800;text-decoration:underline}
+.pope-checkout-delivery-header{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;margin:13px 0}
+.pope-checkout-delivery-header strong{display:flex;align-items:center;gap:7px;color:#803979;font-size:12px}
+.pope-checkout-test select{width:100%;border:1px solid #eed3e4;background:#fff;border-radius:10px;padding:10px;color:#774772;font-size:12px}
+.pope-checkout-admin-test{background:#fbf5fe;border:1px solid #ede0f5;border-radius:11px;padding:13px;margin-top:14px}
+.pope-checkout-admin-test>p{display:flex;align-items:flex-start;gap:8px;color:#7a6282;font-size:11px;line-height:1.65}
+.pope-checkout-admin-test>p svg{flex-shrink:0}
+.pope-checkout-admin-test button{margin-top:12px;display:flex;align-items:center;gap:8px}
+.pope-checkout-test-success{display:flex;align-items:flex-start;gap:10px;color:#217b50;background:#e9f9f0;padding:13px;border-radius:10px;margin-top:12px}
+.pope-checkout-test-success div{display:flex;flex-direction:column;gap:5px}
+.pope-checkout-test-success small{font-size:11px;color:#488665}
+.pope-checkout-test-success a{font-size:12px;text-decoration:underline;font-weight:800}
+.pope-account-order{padding:12px 0;border-bottom:1px solid #f0e0eb}
+.pope-account-order>small{display:block;color:#92778d;font-size:11px;margin:5px 0}
+.pope-reserve-cancel{display:inline-flex;flex-direction:column;gap:5px;margin-top:9px}
+.pope-reserve-cancel button{font-size:11px;display:inline-flex;align-items:center;gap:6px}
+@media(max-width:670px){.pope-address-grid,.pope-address-form-grid{grid-template-columns:1fr}.pope-address-form-grid label.wide{grid-column:1}.pope-address-form{padding:15px}}

@@ -1,19 +1,45 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {
  ArrowLeft,ArrowRight,LockKeyhole,RefreshCw,ShieldCheck,
- Truck,CreditCard,ClipboardList,CheckCircle2,AlertTriangle,ShoppingBag
+ Truck,CreditCard,ClipboardList,CheckCircle2,AlertTriangle,ShoppingBag,Clock3,MapPin
 } from 'lucide-react';
 import {formatBRL} from '@/lib/products';
 import {checkoutStatusLabel,type CheckoutPreview} from '@/lib/checkout-preview';
+import type {CustomerAddress} from '@/types/customer-address';
 
 type CartRow={id:string;slug:string;name:string;price_cents:number;qty:number;emoji?:string};
 type Stage='loading'|'empty'|'failed'|'loaded';
-export function CheckoutPreviewPage(){
+export function CheckoutPreviewPage({signedIn,isAdmin,addresses}:{
+ signedIn:boolean;isAdmin:boolean;addresses:CustomerAddress[];
+}){
  const [stage,setStage]=useState<Stage>('loading'),[quote,setQuote]=useState<CheckoutPreview|null>(null);
  const [error,setError]=useState(''),[cartRows,setCartRows]=useState<CartRow[]>([]);
  const [trigger,setTrigger]=useState(0);
+ const [addressId,setAddressId]=useState(addresses.find(a=>a.is_default)?.id||addresses[0]?.id||'');
+ const [saving,setSaving]=useState(false),[reservationError,setReservationError]=useState('');
+ const [testOrder,setTestOrder]=useState<{order_id:string;expires_at?:string;total_cents?:number}|null>(null);
+ const idempotencyKey=useRef<string|null>(null);
+ async function createTestReservation(){
+  if(!isAdmin||!quote?.ready_for_future_checkout||!addressId||saving||testOrder)return;
+  setSaving(true);setReservationError('');
+  try{
+   if(!idempotencyKey.current)idempotencyKey.current=crypto.randomUUID();
+   const response=await fetch('/api/checkout/test-reservation',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+     address_id:addressId,request_key:idempotencyKey.current,
+     items:cartRows.map(r=>({product_id:r.id,quantity:r.qty}))
+    }),cache:'no-store'
+   });
+   const body=await response.json();
+   if(!response.ok)throw new Error(body.error||'Não foi possível preparar a reserva.');
+   setTestOrder(body as {order_id:string;expires_at?:string;total_cents?:number});
+  }catch(e){
+   setReservationError(e instanceof Error?e.message:'Falha no teste.');
+  }finally{setSaving(false);}
+ }
  useEffect(()=>{
   let live=true;
   const load=async()=>{
@@ -102,6 +128,42 @@ export function CheckoutPreviewPage(){
      {!allReady?<p className="pope-checkout-warning"><AlertTriangle size={18}/>
       Um ou mais itens exigem ajustes. Volte ao carrinho ou escolha outros produtos para continuar.</p>:null}
     </>:null}
+    {stage==='loaded'&&quote&&allReady?<section className="pope-checkout-test">
+     <div className="pope-checkout-test-heading"><Clock3 size={20}/>
+      <div><h3>Preparação para pedidos</h3>
+       <p>Cadastro de entrega e reserva temporária apenas para homologação.</p></div></div>
+     {!signedIn?<p>Entre na sua conta para salvar seus endereços.
+      <Link href="/entrar" className="pope-checkout-link"> Entrar na Popê Beauty</Link></p>:
+      <>
+       <div className="pope-checkout-delivery-header">
+        <strong><MapPin size={17}/> Endereço de entrega</strong>
+        <Link href="/conta/enderecos">Gerenciar endereços</Link>
+       </div>
+       {addresses.length?<select value={addressId} onChange={e=>setAddressId(e.target.value)}
+        aria-label="Selecionar endereço de entrega" disabled={!!testOrder}>
+        {addresses.map(a=><option key={a.id} value={a.id}>
+         {a.recipient} · {a.street}, {a.house_number} · {a.city}/{a.state_code}
+        </option>)}
+       </select>:<p>Você ainda não possui endereço cadastrado.
+        <Link href="/conta/enderecos" className="pope-checkout-link"> Cadastrar endereço</Link></p>}
+       {isAdmin?<div className="pope-checkout-admin-test">
+        <p><ShieldCheck size={17}/> Teste administrativo: esta ação reserva estoque real por 15 minutos,
+         sem cobrança, frete ou confirmação de venda. Uma única reserva ativa por conta.</p>
+        {reservationError?<p className="form-error" role="alert">{reservationError}</p>:null}
+        {testOrder?<div className="pope-checkout-test-success" role="status">
+         <CheckCircle2 size={22}/><div><strong>Reserva de homologação criada</strong>
+          <small>#{testOrder.order_id.slice(0,8).toUpperCase()}
+           {testOrder.expires_at?' · até '+new Date(testOrder.expires_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''}
+          </small>
+          <Link href="/conta">Acompanhar ou cancelar na minha conta</Link>
+         </div></div>:
+         <button type="button" className="admin-primary" onClick={createTestReservation}
+          disabled={!addressId||saving}>{saving?'Reservando...':'Simular reserva por 15 minutos'}</button>}
+       </div>:<p className="pope-checkout-test-notice">
+        A etapa de reserva ainda está disponível apenas para administradores durante a homologação.
+        Você pode salvar o endereço, mas a loja não recebe pedidos públicos nesta fase.</p>}
+      </>}
+    </section>:null}
    </section>
    <aside className="pope-checkout-summary">
     <h2>Resumo da conferência</h2>
@@ -109,8 +171,8 @@ export function CheckoutPreviewPage(){
     <div><span>Frete</span><strong>A calcular</strong></div>
     <div><span>Pagamento</span><strong>Indisponível</strong></div>
     <p className="pope-checkout-caution"><LockKeyhole size={18}/>
-     Esta página não reserva estoque, não cria pedidos e não gera cobranças.
-     O valor final dependerá do frete, das condições comerciais e de uma nova validação no checkout definitivo.</p>
+     Para clientes, esta página é apenas uma conferência, sem reserva de estoque ou cobrança.
+     Administradores podem criar reservas temporárias de homologação. O preço final depende do frete e do gateway escolhido.</p>
     <button type="button" className="add-button" disabled>
      <LockKeyhole size={17}/> Pagamento ainda não liberado
     </button>

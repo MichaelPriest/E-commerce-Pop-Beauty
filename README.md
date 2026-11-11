@@ -156,3 +156,14 @@ A loja possui `/checkout`, uma **prévia de conferência**, vinculada à página
 - A conferência **não reserva estoque, não cria pedidos, não consulta bancos nem aciona um gateway**. O botão de pagamento permanece desativado.
 - Frete e condições finais ainda não são calculados. Uma prévia não garante disponibilidade futura; a futura criação de pedidos precisará repetir validação e reservar estoque atomicamente.
 - A revisão do checkout foi testada com transação revertida: preço do banco, quantidade, estoque insuficiente, produto demonstrativo, duplicidade, bloqueio +18 e ausência de mutações.
+
+## Endereços de entrega e reservas de checkout em HOMOLOGAÇÃO
+
+- Em `/conta/enderecos`, usuários autenticados podem cadastrar, alterar, excluir logicamente e definir um endereço principal. Números de telefone e CEP são normalizados; dados completos são protegidos por RLS, visíveis somente ao titular, e alteráveis apenas via RPC com `auth.uid()`.
+- Em `/checkout`, o administrador (e somente ele, neste estágio) pode **simular reserva temporária de estoque real** para um carrinho de produtos publicados, não adultos, com uma única variação. A ação pede endereço previamente cadastrado; não aceita endereço arbitrário de outro titular.
+- A migração `supabase/checkout_addresses_reservations.sql` adiciona `customer_addresses`, `orders.checkout_key`, `reservation_expires_at`, `shipping_address_snapshot`, RPCs `save_customer_address`, `archive_customer_address`, `create_checkout_order`, `cancel_checkout_order` e expirador privado.
+- O estoque é reservado por 15 minutos e liberado automaticamente por um **Supabase Cron**, agendado de minuto em minuto. O processo é idempotente; por usuário há no máximo uma reserva pendente e cinco reservas iniciadas a cada 24h. O limite por pedido de teste é de 10 produtos e 30 unidades.
+- Os preços e saldos são revalidados dentro da transação de criação de reserva; alterações parciais são revertidas em caso de erro. Nunca é possível reservar produtos adultos, inativos, demonstrativos ou sem saldo válido.
+- O pedido de homologação tem `origin='store_api'` e status `pending`. Nunca é marcado pago automaticamente, nenhum e-mail de pedido é enviado, nem frete é cotado; o cliente pode cancelar a reserva em `/conta`. Administradores visualizam as reservas em `/admin/reservas`.
+- **Checkout público permanece bloqueado** com `store_settings.checkout_reservations_enabled=false`; a função só permite teste com sessão de administrador. Não altere a flag para true até concluir processamento de pagamentos, webhooks seguros, frete, antifraude e termos de venda.
+- Nenhuma chave de gateway, cartão, Pix ou endereço é transmitido para provedor de pagamento. Não há cobrança em qualquer etapa deste fluxo.

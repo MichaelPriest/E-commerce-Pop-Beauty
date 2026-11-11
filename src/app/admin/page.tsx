@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {Activity,Boxes,ArrowUpRight,ShoppingBag,Truck,Users,PackagePlus,
- PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards} from 'lucide-react';
+ PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards,Timer} from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {formatBRL} from '@/lib/products';
 
@@ -80,6 +80,7 @@ export default async function AdminPage(){
      <Link href="/admin/marketplaces"><Store size={16}/> Marketplaces</Link>
      <Link href="/admin/clientes"><Users size={16}/> Clientes</Link>
      <Link href="/admin/relatorios"><BarChart3 size={16}/> Relatórios</Link><Link href="/admin/gateways"><WalletCards size={16}/> Gateways</Link>
+     <Link href="/admin/reservas"><Timer size={16}/> Reservas teste</Link>
      <Link href="/admin/usuarios"><UserCog size={16}/> Permissões</Link>
     </div>
    </section>

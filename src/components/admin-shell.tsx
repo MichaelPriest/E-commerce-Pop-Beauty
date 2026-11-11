@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -51,6 +51,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/logistica',label:'Logística',icon:Truck},
    {href:'/admin/financeiro',label:'Financeiro',icon:CreditCard},
    {href:'/admin/gateways',label:'Gateways de pagamento',icon:WalletCards},
+   {href:'/admin/reservas',label:'Reservas de teste',icon:Timer},
    {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},
    {href:'/admin/marketplaces',label:'Marketplaces',icon:Store}
   ]},
@@ -71,7 +72,8 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity},
   {href:'/admin/usuarios',label:'Permissões',icon:UserCog},
   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},
-  {href:'/admin/gateways',label:'Comparar gateways',icon:WalletCards}
+  {href:'/admin/gateways',label:'Comparar gateways',icon:WalletCards},
+  {href:'/admin/reservas',label:'Ver reservas de teste',icon:Timer}
  ];
  const quickResults=shortcuts.filter(item=>item.label.toLocaleLowerCase('pt-BR')
   .includes(quickFilter.toLocaleLowerCase('pt-BR')));

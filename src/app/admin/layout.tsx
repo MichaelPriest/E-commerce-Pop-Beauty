@@ -8,6 +8,8 @@ export default async function AdminLayout({children}:{children:ReactNode}){
  const {data:claims}=await supabase.auth.getClaims();
  const id=claims?.claims?.sub??'';
  const email=typeof claims?.claims?.email==='string'?claims.claims.email:'';
+ // Registra a atividade do administrador antes de calcular o indicador.
+ await supabase.rpc('touch_user_session_presence');
  const cutoff=new Date(Date.now()-3*60*1000).toISOString();
  const [profile,activity,orders,notifications]=await Promise.all([
   supabase.from('profiles').select('display_name,role').eq('id',id).maybeSingle(),

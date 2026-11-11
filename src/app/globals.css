@@ -551,3 +551,15 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-admin-bottomline{padding:12px 16px}
 }
 @media(prefers-reduced-motion:reduce){.pope-admin-sidebar,.pope-admin-nav-link,.pope-admin-dashboard-shortcuts>a{transition:none!important}}
+
+/* Ajustes de alinhamento na versão móvel quando o menu desktop foi recolhido. */
+@media(max-width:1050px){
+ .pope-admin-shell.is-collapsed .pope-admin-merchant-text,
+ .pope-admin-shell.is-collapsed .pope-admin-sidebar-user{display:flex}
+ .pope-admin-shell.is-collapsed .pope-admin-brand-words{display:flex}
+ .pope-admin-shell.is-collapsed .pope-admin-nav-caption{display:block}
+ .pope-admin-shell.is-collapsed .pope-admin-nav-label,
+ .pope-admin-shell.is-collapsed .pope-admin-nav-count,
+ .pope-admin-shell.is-collapsed .pope-admin-merchant-check,
+ .pope-admin-shell.is-collapsed .pope-admin-footer-link span{display:initial}
+}

@@ -2,7 +2,7 @@
 import {useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {PackageCheck,Truck,Search,Clock,CheckCircle2,PackageOpen,X,Send,FileText,ClipboardList} from 'lucide-react';
+import {PackageCheck,Truck,Search,Clock,CheckCircle2,PackageOpen,X,Send,FileText,ClipboardList,Boxes} from 'lucide-react';
 import {MailCheck} from 'lucide-react';
 import {ORDER_LABELS,dateTimeBR,type OrderRow,type OrderStatus} from '@/types/operations';
 import {formatBRL} from '@/lib/products';
@@ -58,11 +58,11 @@ export function LogisticsManager({orders}:Props){
     <td>{formatBRL(o.total_cents)}</td>
     <td>{o.tracking_code?<><strong>{o.carrier}</strong><small>{o.tracking_code}</small></>:'Não despachado'}</td>
     <td><span className={'ops-tag status-'+o.status}>{ORDER_LABELS[o.status]??o.status}</span></td>
-    <td>{o.origin!=='admin_manual'?<span className="ops-muted">Somente consulta</span>:
+    <td>{o.origin!=='admin_manual'?<span className="ops-muted">Somente consulta</span>:<div style={{display:'flex',gap:6,flexWrap:'wrap'}}><Link className="ops-small" href={'/admin/logistica/volumes/'+o.id}><Boxes size={15}/> Volumes</Link>
      o.status==='paid'?<button className="ops-small primary" onClick={()=>open(o,'packing')}><PackageOpen size={15}/> Iniciar separação</button>:
      o.status==='packing'?<button className="ops-small primary" onClick={()=>open(o,'shipped')}><Send size={15}/> Registrar envio</button>:
      o.status==='shipped'?<button className="ops-small primary" onClick={()=>open(o,'delivered')}><CheckCircle2 size={15}/> Marcar entregue</button>:
-     <span className="ops-muted">Finalizado</span>}</td></tr>)}</tbody></table>
+     <span className="ops-muted">Finalizado</span>}</div>}</td></tr>)}</tbody></table>
    {shown.length===0?<div className="admin-empty"><Truck size={35}/><h3>Nenhuma entrega neste filtro</h3><p>Pedidos pagos internamente aparecerão aqui para separação e despacho.</p></div>:null}
   </div>
   {editing?<div className="admin-modal-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)setEditing(null);}}>

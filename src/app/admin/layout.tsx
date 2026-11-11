@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type {ReactNode} from 'react';
-import { LayoutDashboard, PackageSearch, Boxes, ArrowLeft, Truck, Settings, Eye } from 'lucide-react';
+import { LayoutDashboard, PackageSearch, Boxes, ArrowLeft, Truck, Settings, Eye, ShoppingBag, Users, CreditCard, Store } from 'lucide-react';
 import { requireAdmin } from '@/lib/admin';
 export const dynamic='force-dynamic';
 export default async function AdminLayout({children}:{children:ReactNode}) {
@@ -10,10 +10,14 @@ export default async function AdminLayout({children}:{children:ReactNode}) {
  <nav aria-label="Administração Popê" className="admin-master-links">
  <Link href="/admin"><LayoutDashboard size={18}/> Visão geral</Link>
  <Link href="/admin/produtos"><PackageSearch size={18}/> Produtos</Link>
+ <Link href="/admin/pedidos"><ShoppingBag size={18}/> Pedidos</Link>
+ <Link href="/admin/clientes"><Users size={18}/> Clientes</Link>
  <Link href="/admin/estoque"><Boxes size={18}/> Estoque</Link>
  <Link href="/admin/adulto"><Eye size={18}/> Prévia +18</Link>
  <Link href="/admin/configuracoes"><Settings size={18}/> Configurações</Link>
- <span className="admin-soon"><Truck size={18}/> Logística em breve</span>
+ <Link href="/admin/logistica"><Truck size={18}/> Logística</Link>
+ <Link href="/admin/marketplaces"><Store size={18}/> Marketplaces</Link>
+ <Link href="/admin/financeiro"><CreditCard size={18}/> Financeiro</Link>
  </nav>
  <Link href="/" className="admin-back"><ArrowLeft size={15}/> Loja</Link></div></div>{children}</>;
 }

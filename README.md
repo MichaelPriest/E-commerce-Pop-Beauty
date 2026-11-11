@@ -64,3 +64,12 @@ O cadastro de produtos escolhe a categoria `Sex Shop +18` para identificar autom
 Acesse `/admin/adulto` com a conta que possua `role='admin'`. O painel mostra os produtos +18 (publicados ou em rascunho), imagens do bucket privado, preço e saldo do estoque. A funcionalidade de gestão funciona mesmo com a seção pública desativada.
 
 **Atenção:** é uma autorização administrativa, não uma comprovação de idade. A loja pública `/adulto` ainda exige prova independente de maioridade. A solicitação de maioridade do administrador permanece pendente até revisão independente; autoaprovação continua proibida. A regra RLS impede contas `staff` não verificadas de consultar itens adultos, mesmo que possam ler o catálogo não adulto.
+
+## Operações administrativas da loja (sem gateway)
+- `/admin/pedidos`: pedidos internos com até 30 SKUs, preço do catálogo, reserva atômica, confirmação manual de recebimento com referência e transições auditadas.
+- `/admin/clientes`: listagem dos perfis e pedidos relacionados, sem expor tabelas de autenticação.
+- `/admin/logistica`: separação, expedição com transportadora/código de rastreio e baixa de lote por validade mais próxima (FEFO).
+- `/admin/marketplaces`: associação manual de SKUs a anúncios de Shopee e Mercado Livre. O vínculo é apenas cadastral: sem tokens, sem importação, sem sincronismo.
+- `/admin/financeiro`: acompanhamento de confirmações administrativas, sem conciliação automática, checkout, taxas ou transferências.
+
+A criação de pedido manual não chama provedor de pagamento e não permite produto adulto. Ela reserva estoque até cancelamento ou expedição. Pagamento só pode ser marcado com anotação de referência pelo administrador. O fluxo atual não substitui um gateway, OMS completo ou ERP. Não acione ações de pagamento e expedição sem as respectivas operações terem ocorrido.

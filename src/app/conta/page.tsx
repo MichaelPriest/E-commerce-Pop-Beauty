@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { UserRound, LogOut, Heart, ShieldCheck, LockKeyhole, Eye } from 'lucide-react';
+import { UserRound, LogOut, Heart, ShieldCheck, LockKeyhole, Eye, ShoppingBag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { signOutAction } from '@/app/actions';
@@ -14,9 +14,13 @@ export default async function AccountPage(){
  const {data:profile}=await supabase.from('profiles').select('display_name,role').eq('id',claims.sub).maybeSingle();
  const role=profile?.role;
  const adult=await getAdultStatus();
+ const {data:myOrders}=await supabase.from('orders').select('id,status,total_cents,created_at,order_items(title_snapshot,quantity,unit_price_cents)').eq('customer_id',claims.sub).order('created_at',{ascending:false}).limit(20);
  return <div className="container account-page"><div className="section-kicker">MINHA POPÊ</div><h1>Olá, {profile?.display_name||claims.email||'beleza'}! 💖</h1>
  <div className="account-card"><UserRound size={44}/><div><strong>Minha conta</strong><p>{claims.email||''}</p><small>Perfil: {role==='admin'?'Administrador':role==='staff'?'Equipe':'Cliente'}</small></div></div>
- <div className="account-card"><Heart/><div><strong>Meus pedidos</strong><p>Disponível quando a loja iniciar as vendas.</p></div></div>
+ <div className="account-card"><ShoppingBag/><div><strong>Meus pedidos</strong>
+ {myOrders?.length?myOrders.map(o=><p key={o.id}><b>#{o.id.slice(0,8).toUpperCase()}</b> · {o.status} · {(o.total_cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} <small>Pedido registrado na loja</small></p>):
+ <p>Você ainda não tem pedidos vinculados à sua conta. Checkout online em preparação.</p>}
+ </div></div>
  {adult.enabled?<div className="account-card"><LockKeyhole/><div><strong>Acesso à seção restrita +18</strong><p>{adult.verified?'Sua maioridade está verificada.':'O conteúdo permanece bloqueado até a confirmação da maioridade por procedimento confiável.'}</p><Link href="/adulto" className="text-link">{adult.verified?'Abrir área restrita':'Solicitar ou acompanhar verificação'}</Link></div></div>:null}
  {(role==='admin'||role==='staff')?<Link className="hero-button" href="/admin"><ShieldCheck size={17}/> Abrir administração</Link>:null}
  {role==='admin'?<div className="account-card"><Eye size={28}/><div><strong>Prévia interna do catálogo +18</strong><p>Disponível como administrador para gerenciar produtos. Não substitui a comprovação independente de maioridade.</p><Link href="/admin/adulto" className="text-link">Abrir prévia administrativa</Link></div></div>:null}

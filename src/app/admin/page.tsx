@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Boxes, LayoutDashboard, PackageOpen, ShoppingBasket, Truck, Users, Settings, ShieldAlert, ArrowLeft, RefreshCw, Eye } from 'lucide-react';
+import { Boxes, LayoutDashboard, PackageOpen, ShoppingBasket, Truck, Users, Settings, ShieldAlert, ArrowLeft, RefreshCw, Eye, CreditCard, Store } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { formatBRL } from '@/lib/catalog';
@@ -19,10 +19,11 @@ export default async function AdminPage() {
    supabase.from('inventory').select('variant_id,on_hand,reserved',{count:'exact'}).limit(8)
  ]);
  return <div className="dashboard container"><div className="admin-top"><div><div className="section-kicker">CENTRAL DE GESTÃO</div><h1>Olá, equipe Popê! 👋</h1><p>Gerencie sua operação de beleza em um só lugar.</p></div><Link href="/" className="outline-link"><ArrowLeft size={16}/> Ver loja</Link></div>
- <div className="admin-nav"><Link href="/admin"><LayoutDashboard/> Visão geral</Link><Link href="/admin/produtos"><PackageOpen/> Produtos</Link><Link href="/admin/estoque"><Boxes/> Estoque</Link><span><Truck/> Logística em breve</span><span><Users/> Clientes em breve</span><Link href="/admin/configuracoes"><Settings/> Configurações</Link><Link href="/admin/adulto"><Eye/> Prévia +18</Link></div>
+ <div className="admin-nav"><Link href="/admin"><LayoutDashboard/> Visão geral</Link><Link href="/admin/pedidos"><ShoppingBasket/> Pedidos</Link><Link href="/admin/produtos"><PackageOpen/> Produtos</Link><Link href="/admin/estoque"><Boxes/> Estoque</Link><Link href="/admin/logistica"><Truck/> Logística</Link><Link href="/admin/clientes"><Users/> Clientes</Link>
+ <Link href="/admin/marketplaces"><Store/> Marketplaces</Link><Link href="/admin/financeiro"><CreditCard/> Financeiro</Link><Link href="/admin/configuracoes"><Settings/> Configurações</Link><Link href="/admin/adulto"><Eye/> Prévia +18</Link></div>
  <div className="stats-grid"><div><ShoppingBasket/><small>Pedidos registrados</small><strong>{orders.count??0}</strong></div><div><PackageOpen/><small>Produtos cadastrados</small><strong>{products.count??0}</strong></div><div><Boxes/><small>SKUs cadastrados</small><strong>{stock.count??0}</strong></div><div><RefreshCw/><small>Marketplaces</small><strong>Não conectados</strong></div></div>
  <div className="admin-panels"><section className="admin-panel"><h2>Produtos recentes</h2>{products.error?<p>Não foi possível carregar os produtos. Confirme as tabelas e permissões.</p>:products.data?.length?<div className="admin-table"><div className="admin-table-row heading"><span>Produto</span><span>Preço</span><span>Status</span></div>{products.data.map(p=><div className="admin-table-row" key={p.id}><span>{p.name}</span><span>{formatBRL(p.price_cents)}</span><span className={p.active?'active-text':'muted'}>{p.active?'Ativo':'Rascunho'}</span></div>)}</div>:<p>Sem produtos cadastrados.</p>}</section>
  <section className="admin-panel"><h2>Pedidos recentes</h2>{orders.error?<p>Não foi possível consultar os pedidos.</p>:orders.data?.length?<div className="admin-table">{orders.data.map(o=><div className="admin-table-row" key={o.id}><span>{o.channel}</span><span>{formatBRL(o.total_cents)}</span><span>{o.status}</span></div>)}</div>:<p>Nenhum pedido registrado.</p>}<div className="marketplaces"><p>🛍️ Loja própria <b>Preparação</b></p><p>🟠 Shopee <b>Aguardando credenciais</b></p><p>🟡 Mercado Livre <b>Aguardando credenciais</b></p></div></section></div>
- <p className="demo-alert">Produtos e estoque já podem ser administrados pelo painel. Checkout e sincronização com Shopee, Mercado Livre, pagamentos e etiquetas ainda não estão ativos.</p>
+ <p className="demo-alert">Pedidos manuais, cadastro, expedição e controles financeiros administrativos estão disponíveis. Checkout público, integrações automáticas, etiquetas e gateways ainda não estão habilitados.</p>
  </div>;
 }

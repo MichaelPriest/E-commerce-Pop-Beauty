@@ -370,3 +370,8 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .recovery-panel .recovery-visibility{border:0;background:transparent;color:var(--pink);padding:0;display:grid;place-items:center;flex-shrink:0}
 .recovery-panel .recovery-visibility:hover{color:var(--purple)}
 @media(max-width:530px){.auth-background .auth-panel{padding:30px 22px}.recovery-panel h1{font-size:24px}}
+
+/* Popê Beauty — histórico de mensagens transacionais */
+.notification-error{color:#b3355c!important;max-width:260px;line-height:1.5;overflow-wrap:anywhere}
+.notification-footer{display:flex;gap:8px;align-items:flex-start;margin:17px 0}
+.notification-footer svg{flex-shrink:0;color:#a2617b}

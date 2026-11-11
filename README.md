@@ -88,3 +88,32 @@ e `https://e-commerce-pope-beauty.vercel.app/auth/callback` (já usada na confir
 Se executar localmente, também permita `http://localhost:3000/auth/callback?next=/redefinir-senha` e `http://localhost:3000/auth/callback` conforme necessário. O e-mail padrão do Supabase normalmente contém `{{ .ConfirmationURL }}`, que incorpora o redirectTo. Se usar template próprio, ajuste-o para respeitar `{{ .RedirectTo }}` e o fluxo de verificação. Teste links no **mesmo navegador** que fez a solicitação (PKCE).
 
 **Operação:** sem provedor SMTP próprio, o Supabase pode impor limitações ao envio de e-mails e destinatários. Verificar em Authentication → SMTP Settings quando houver bloqueio no envio. O recurso nativo de detecção de senhas vazadas requer plano Pro; configure também a política mínima diretamente em Authentication → Providers → Email, pois a validação da tela não substitui a regra do servidor.
+
+## E-mails automáticos dos pedidos (SMTP no servidor)
+A partir da migração `supabase/order_notifications.sql`:
+- Criação ou alteração de status de pedidos com **cliente vinculado** gera uma notificação transacional na tabela `order_notifications` (criação, pagamento confirmado manualmente, enviado, entregue e cancelado).
+- A tabela é protegida por RLS. Uma notificação por evento, com fila `pending → sending → sent/failed`, 5 tentativas máximas por processamento e backoff progressivo. Sem destinatário (balcão), não há e-mail. Produtos adultos são excluídos.
+- Os módulos `/admin/pedidos` e `/admin/logistica` enviam ações a `/api/admin/order-operations`. O backend confirma autenticação e perfil de administrador, executa a operação via RPC e tenta enviar a notificação recém-gerada. Mensagens não enviadas permanecem na fila sem invalidar pedidos.
+- Em `/admin/notificacoes`, visualizar filas, histórico, status, e-mail de destino e usar **Processar fila**, **Enviar** ou **Reenviar** para itens com falha.
+- O remetente de contato é `popebeauty.e@gmail.com`; os HTMLs vêm de `emails/pedidos/*.html` e são incluídos no build pelo `outputFileTracingIncludes` do Next.js.
+
+### Configuração SMTP da Vercel (não confundir com o SMTP do Supabase Auth)
+No painel do projeto Vercel, em **Settings → Environment Variables**, configure exclusivamente em **Production**:
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=popebeauty.e@gmail.com
+SMTP_FROM_EMAIL=popebeauty.e@gmail.com
+SMTP_PASSWORD=<senha-de-aplicativo-Google-colada-apenas-no-painel-Vercel>
+```
+A senha `SMTP_PASSWORD` deve ser uma **secret/sensitive variable**, e nunca enviada no chat, enviada a GitHub ou colocada em `NEXT_PUBLIC_`. Após configurar, **publique novamente** para as Functions enxergarem a variável.
+
+O e-mail de confirmação e recuperação continua sendo enviado pelo SMTP do **Supabase Auth**; os pedidos são enviados pelo backend **Vercel**, que necessita das próprias credenciais (a senha não é compartilhada automaticamente).
+
+Para garantir segurança de transporte, as Functions fazem STARTTLS em 587 (ou TLS em 465) e não permitem alteração de host/destinatários via request. A tabela de destinatários é preenchida apenas pelo gatilho do banco a partir de clientes cadastrados.
+
+### Limitações operacionais
+- O envio é acionado **imediatamente após ações no painel**, com fila persistente. Operações por API externa/SQL geram fila, mas exigem o botão **Processar fila**; não há agendamento em segundo plano nesta fase.
+- Uma falha ou timeout na resposta do SMTP após aceitar uma mensagem pode exigir conciliação e causar reenvio. Não há garantia absoluta de entrega exatamente uma vez em e-mails SMTP; conferir o status antes de reenviar.
+- O campo `sent` registra aceitação pelo servidor SMTP, não leitura/entrega final ao destinatário.
+- Ainda não há email para compras públicas porque o checkout está desabilitado.

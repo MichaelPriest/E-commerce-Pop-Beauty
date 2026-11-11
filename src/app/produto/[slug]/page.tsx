@@ -8,7 +8,7 @@ export default async function ProductPage({params}:{params:Promise<{slug:string}
  const product=products.find(p=>p.slug===slug); if(!product) notFound();
  return <div className="container product-page">
  <div className="breadcrumbs"><Link href="/">Início</Link> / <Link href="/#destaques">Produtos</Link> / {product.name}</div>
- {demo?<p className="demo-alert">Demonstração: este item não está disponível para compra real.</p>:null}
+ <p className="demo-alert">{demo?'Demonstração: este item não está disponível para compra real.':'A Popê Beauty ainda não está recebendo pedidos ou pagamentos.'}</p>
  <div className="product-layout">
  <div className={'detail-visual tone-'+(product.tone||'pink')}>{product.image_url?<img src={product.image_url} alt={product.name}/>:<span>{product.emoji||'💖'}</span>}</div>
  <div className="detail-content"><span className="section-kicker">{product.category} • {product.brand}</span><h1>{product.name}</h1><p>{product.description}</p>

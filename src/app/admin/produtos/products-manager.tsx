@@ -39,7 +39,7 @@ export function ProductsManager({initialProducts,categories}:Props){
  const router=useRouter(),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos');
  const [open,setOpen]=useState(false),[editing,setEditing]=useState<string|null>(null),[form,setForm]=useState<ProductForm>(()=>emptyForm(categories));
  const [file,setFile]=useState<File|null>(null),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
- const [variantFor,setVariantFor]=useState<AdminProduct|null>(null);
+ const [variantFor,setVariantFor]=useState<AdminProduct|null>(null),[variantEditingId,setVariantEditingId]=useState<string|null>(null);
  const [vSku,setVSku]=useState(''),[vName,setVName]=useState(''),[vShade,setVShade]=useState(''),[vEan,setVEan]=useState(''),[vSafety,setVSafety]=useState('0');
  const filtered=useMemo(()=>initialProducts.filter(p=>{
   const q=query.toLocaleLowerCase('pt-BR');
@@ -115,17 +115,32 @@ export function ProductsManager({initialProducts,categories}:Props){
   finally{setSaving(false);}
  }
  function openVariant(p:AdminProduct){
-  setVariantFor(p);setVSku('');setVName('Padrão');setVShade('');setVEan('');setVSafety('0');clearMessages();
+  setVariantEditingId(null);setVariantFor(p);setVSku('');setVName('Padrão');setVShade('');setVEan('');setVSafety('0');clearMessages();
+ }
+ function editVariant(p:AdminProduct,v:AdminProduct['variants'][number]){
+  setVariantEditingId(v.id);setVariantFor(p);setVSku(v.sku);setVName(v.name);
+  setVShade(v.shade??'');setVEan(v.ean??'');setVSafety(String(v.inventory?.safety_stock??0));clearMessages();
  }
  async function saveVariant(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(!variantFor||saving)return;setSaving(true);clearMessages();
   try{
    const sb=createClient();
-   const {error:rpcError}=await sb.rpc('add_product_variant',{p_product_id:variantFor.id,p_sku:vSku.trim(),
+   const safety=integer(vSafety,'Estoque de segurança');
+   if(variantEditingId){
+    const {error:editError}=await sb.from('variants').update({sku:vSku.trim(),name:vName.trim()||'Padrão',
+     shade:vShade.trim()||null,ean:vEan.trim()||null}).eq('id',variantEditingId).eq('product_id',variantFor.id);
+    if(editError)throw editError;
+    const {error:minimumError}=await sb.from('inventory').update({safety_stock:safety}).eq('variant_id',variantEditingId);
+    if(minimumError)throw minimumError;
+    setNotice('Variação atualizada. O saldo físico não foi alterado.');
+   }else{
+    const {error:rpcError}=await sb.rpc('add_product_variant',{p_product_id:variantFor.id,p_sku:vSku.trim(),
      p_name:vName.trim()||'Padrão',p_shade:vShade.trim()||null,p_ean:vEan.trim()||null,
-     p_safety_stock:integer(vSafety,'Estoque de segurança')});
-   if(rpcError)throw rpcError;
-   setVariantFor(null);setNotice('Variação criada. Acesse Estoque para registrar a entrada.');router.refresh();
+     p_safety_stock:safety});
+    if(rpcError)throw rpcError;
+    setNotice('Variação criada. Acesse Estoque para registrar a entrada.');
+   }
+   setVariantFor(null);setVariantEditingId(null);router.refresh();
   }catch(err){setError(err instanceof Error?err.message:'Falha ao criar variação.');}
   finally{setSaving(false);}
  }
@@ -155,7 +170,7 @@ export function ProductsManager({initialProducts,categories}:Props){
      <span className={p.active?'admin-status live':'admin-status draft'}>{p.active?'Ativo':'Rascunho'}</span>
      <div className="admin-row-actions"><button aria-label={'Editar '+p.name} onClick={()=>startEdit(p)} title="Editar produto"><Edit3 size={17}/></button><button aria-label={'Adicionar variação a '+p.name} onClick={()=>openVariant(p)} title="Adicionar cor ou variação"><Plus size={18}/></button></div>
      <details className="admin-row-variants"><summary>Ver variações <ChevronDown size={15}/></summary>
-      <div className="admin-variant-chips">{(p.variants??[]).map(v=><span key={v.id}>{v.sku} · {v.shade||v.name} · {v.inventory?.on_hand??0} un.</span>)}</div>
+      <div className="admin-variant-chips">{(p.variants??[]).map(v=><span key={v.id}>{v.sku} · {v.shade||v.name} · {v.inventory?.on_hand??0} un. <button className="variant-edit" title="Editar variação" onClick={()=>editVariant(p,v)}><Edit3 size={13}/> Editar</button></span>)}</div>
      </details>
     </div>;
    })}
@@ -194,16 +209,16 @@ export function ProductsManager({initialProducts,categories}:Props){
      </form>
     </section></div>:null}
   {variantFor?<div className="admin-modal-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setVariantFor(null);}}>
-    <section className="admin-modal smaller" role="dialog" aria-modal="true" aria-label="Adicionar variação"><div className="admin-modal-header"><div><span className="section-kicker">{variantFor.name}</span><h2>Nova cor ou variação 🎨</h2></div><button aria-label="Fechar" onClick={()=>setVariantFor(null)}><X/></button></div>
+    <section className="admin-modal smaller" role="dialog" aria-modal="true" aria-label="Adicionar variação"><div className="admin-modal-header"><div><span className="section-kicker">{variantFor.name}</span><h2>{variantEditingId?'Editar variação':'Nova cor ou variação'} 🎨</h2></div><button aria-label="Fechar" onClick={()=>setVariantFor(null)}><X/></button></div>
      <form className="admin-form" onSubmit={saveVariant}><div className="admin-form-grid">
       <label>SKU *<input required value={vSku} onChange={e=>setVSku(e.target.value)} placeholder="BATOM-ROSA-02"/></label>
       <label>Nome da variação<input value={vName} onChange={e=>setVName(e.target.value)}/></label>
       <label>Tonalidade<input value={vShade} onChange={e=>setVShade(e.target.value)} placeholder="Rosa médio"/></label>
       <label>EAN<input value={vEan} onChange={e=>setVEan(e.target.value)}/></label>
       <label>Estoque de segurança<input type="number" min={0} max={100000} value={vSafety} onChange={e=>setVSafety(e.target.value)}/></label>
-     </div><p className="admin-help">Esta nova variação será criada com saldo zero. Faça a primeira entrada pela tela de estoque.</p>
+     </div><p className="admin-help">{variantEditingId?'A edição não modifica a quantidade em estoque. Para alterar o saldo, utilize Estoque.':'Esta nova variação será criada com saldo zero. Faça a primeira entrada pela tela de estoque.'}</p>
      {error?<p className="form-error" role="alert">{error}</p>:null}
-     <div className="admin-form-footer"><button type="button" className="admin-outline" onClick={()=>setVariantFor(null)}>Cancelar</button><button type="submit" className="admin-primary" disabled={saving}>{saving?'Salvando...':'Adicionar variação'}</button></div>
+     <div className="admin-form-footer"><button type="button" className="admin-outline" onClick={()=>setVariantFor(null)}>Cancelar</button><button type="submit" className="admin-primary" disabled={saving}>{saving?'Salvando...':variantEditingId?'Salvar variação':'Adicionar variação'}</button></div>
      </form>
     </section></div>:null}
  </div>;

@@ -8,6 +8,8 @@ E-commerce de maquiagem e beleza, desenvolvido com **Next.js 16**, **TypeScript*
 - Cadastro e login preparados com Supabase Auth (e-mail/senha).
 - Área de cliente e painel administrativo com autorização por banco de dados.
 - SQL inicial de catálogo, variações, estoque, pedidos, movimentações e listagens de marketplaces.
+- Painel **/admin/produtos**: cadastro, edição, fotos, preços, custo, variações, SKU/EAN e ativação do catálogo.
+- Painel **/admin/estoque**: saldo por SKU, lotes, validade, estoque mínimo e entrada/saída auditada pelo banco.
 - Shopee, Mercado Livre, frete, etiquetas e pagamentos **não estão conectados**.
 
 **Os produtos e preços exibidos sem Supabase são ilustrativos, não ofertas comerciais.**
@@ -21,7 +23,7 @@ npm run dev
 
 ## Configuração Supabase
 1. Crie **um projeto dedicado** à Popê Beauty, para não compartilhar dados com outros sistemas.
-2. Execute `supabase/schema.sql` no SQL Editor do projeto dedicado.
+2. Execute `supabase/schema.sql` e depois `supabase/catalog_admin.sql` no SQL Editor do projeto dedicado. Na organização Popê Beauty, as duas etapas já foram aplicadas.
 3. No painel Supabase, configure **Authentication > URL Configuration** com o endereço definitivo da Vercel e o callback `https://SEU-DOMINIO/auth/callback`. Use o callback local `http://localhost:3000/auth/callback` para desenvolvimento.
 4. Configure as variáveis `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` localmente e na Vercel (Development/Preview/Production conforme necessário).
 5. Crie seu usuário pela interface `/entrar`; em seguida, no SQL Editor do **mesmo** projeto, atribua manualmente `role='admin'` ao seu registro em `public.profiles`, usando o ID/ e-mail do usuário recém-cadastrado.
@@ -40,3 +42,9 @@ Importe ou conecte o repositório `MichaelPriest/E-commerce-Pop-Beauty` na Verce
 - Endereços, pedidos reais, LGPD, política comercial e testes de segurança.
 
 Este projeto foi inicialmente preparado para implantação, sem habilitar compras reais.
+
+## Operação administrativa atual
+
+Após entrar com sua conta administradora, acesse `/admin/produtos` para cadastrar o catálogo. Ao criar um produto, informe pelo menos um SKU e o saldo inicial (opcional); as alterações de estoque utilizam a função SQL transacional `adjust_stock` com lote e justificativa. Variações adicionais começam com saldo zero e podem ser abastecidas em `/admin/estoque`.
+
+A loja é **uma vitrine em implantação**: mesmo um produto publicado ainda não pode ser comprado, e o estoque **não sincroniza** com os marketplaces. Não cadastre informações financeiras sensíveis em campos públicos.

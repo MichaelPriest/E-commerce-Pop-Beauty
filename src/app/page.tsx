@@ -9,7 +9,7 @@ export default async function Home({searchParams}:{searchParams:Promise<{q?:stri
  const q=(filters.q||'').trim().toLocaleLowerCase('pt-BR'); const cat=filters.categoria||'';
  const visible=products.filter(p=>(!cat||p.category===cat)&&(!q||[p.name,p.brand,p.category].join(' ').toLocaleLowerCase('pt-BR').includes(q)));
  return <>
-  {demo?<div className="demo-banner">🚧 Vitrine de demonstração: produtos, preços e condições são ilustrativos. Pedidos e pagamentos não estão habilitados.</div>:null}
+  <div className="demo-banner">{demo?'🚧 Vitrine de demonstração: produtos, preços e condições são ilustrativos.':'🚧 Vitrine em implantação: catálogo ativo, mas pagamentos e checkout ainda estão indisponíveis.'} Pedidos não estão habilitados.</div>
   <section className="hero"><div className="container hero-inner">
    <div className="hero-copy"><div className="eyebrow"><Sparkles size={19}/> BEM-VINDA À POPÊ BEAUTY</div>
    <h1>Beleza acessível,<br/><em>sempre com alto astral!</em> <span>💖</span></h1>

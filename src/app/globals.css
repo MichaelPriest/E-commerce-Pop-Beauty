@@ -842,3 +842,9 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-mp-test-warning svg{flex-shrink:0}
 .pope-mp-test-link{display:flex;align-items:center;gap:9px;border:1px solid #b9e4c9;background:#f0fbf3;border-radius:10px;padding:12px;font-size:12px;margin:12px 0}
 .pope-mp-test-link a{color:#167d51;text-decoration:underline;font-weight:900}
+
+
+/* Auditoria do webhook TEST — sem controle de aprovação */
+.pope-mp-webhook-status{display:inline-flex;align-items:center;gap:8px;border-radius:99px;background:#fff3df;color:#90642b;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap}
+.pope-mp-webhook-status.enabled{background:#e7f8ed;color:#23774d}
+.pope-mp-webhook-route{display:inline-block;font-size:11px;font-weight:800;color:#7b3b76;margin:0 5px}

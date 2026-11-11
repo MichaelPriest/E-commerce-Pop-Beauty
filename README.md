@@ -200,3 +200,27 @@ Antes de POST ao Mercado Pago, o servidor valida via `GET /users/me` que `id` co
 **Para testar na página externa:** entre SOMENTE com usuário de teste **comprador**. A API de produção do Mercado Pago é compartilhada com contas de teste; não existe domínio sandbox separado para Checkout Pro. A interface não redireciona automaticamente.
 
 Ainda pendentes: webhook assinado, consulta autoritativa dos pagamentos no provedor, conciliação dos valores finais com frete, pagamentos reais e estorno. Sem esses componentes, pedidos de teste serão encerrados após 15 minutos independentemente do que ocorrer externamente.
+
+
+## Webhook Mercado Pago — testes, assinatura e trilha de auditoria
+
+A rota `POST /api/webhooks/mercadopago/test` foi implementada para **eventos de teste somente** e fica totalmente desativada por padrão. A URL deve ser usada apenas na configuração de Webhooks da aplicação de TESTE do Mercado Pago.
+
+Variáveis secretas no **servidor da Vercel** (nunca `NEXT_PUBLIC_`, nunca em GitHub ou conversas):
+- `MP_TEST_WEBHOOK_SECRET`: chave de assinatura do webhook da aplicação de testes.
+- `MP_TEST_ACCESS_TOKEN` e `MP_TEST_SELLER_ID`: credencial TEST e ID numérico do vendedor de testes, verificados por `GET /users/me`.
+- `SUPABASE_SERVICE_ROLE_KEY`: chave de serviço mantida exclusivamente no servidor, para gravar a auditoria depois de validar assinatura e recurso; NÃO deve ser exposta no cliente.
+- `MP_TEST_WEBHOOK_ENABLED=verified-test-account-only`: habilitação manual, após verificar as chaves e separar o ambiente de testes.
+
+A requisição é rejeitada se faltar qualquer variável acima. Depois de habilitada, a rota:
+1. Limita o corpo a 16 KiB, exige JSON, os identificadores em query e body equivalentes, o tópico `payment`, evento em modo TEST.
+2. Valida `x-signature` HMAC-SHA256 em comparação de tempo constante sobre `id:<data.id>;request-id:<x-request-id>;ts:<ts>;` com tolerância de cinco minutos. Não salva o segredo nem a assinatura.
+3. Autentica o vendedor TEST pelo token, compara seu ID, consulta `GET /v1/payments/{id}` e exige `collector_id` idêntico ao vendedor, `live_mode=false` e moeda BRL.
+4. Cruza `external_reference=pope-sandbox:<id da tentativa>` com uma preparação de pagamento TEST e compara o subtotal em centavos. Se a reserva já venceu ou foi cancelada, registra a divergência, nunca libera o pedido.
+5. Registra apenas **metadados sanitizados** em `payment_webhook_receipts` (`provider, external_event_id` único), com hash SHA-256 do JSON, status consultado no MP, valor, identidade do vendedor e vínculo com a tentativa de teste. Não guarda payload, dados do comprador ou cartão.
+
+O painel `/admin/pagamentos` contém uma auditoria somente para administradores, com os últimos 100 eventos. Nenhuma rota faz `UPDATE orders.status='paid'`, captura, estorno ou envio de e-mail. Eventos com `approved` no provedor não representam receita da loja: são apenas informativos até a homologação do fluxo real de frete, pagamento, conciliação e estornos.
+
+**Referências do provedor:** [Webhooks Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/your-integrations/notifications/webhooks) e [Consultar pagamentos](https://www.mercadopago.com.br/developers/pt/reference/online-payments/checkout-pro-preferences/get-payment/get).
+
+**Limite atual:** nenhuma credencial de TEST nem chave de serviço foi configurada na Vercel, portanto não é possível verificar a entrega de um webhook real de homologação. O endpoint continua fechado (`503`) até a configuração explícita.

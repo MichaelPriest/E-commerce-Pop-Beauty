@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {Activity,Boxes,ArrowUpRight,ShoppingBag,Truck,Users,PackagePlus,
- PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards,Timer} from 'lucide-react';
+ PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards,Timer,CreditCard} from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {formatBRL} from '@/lib/products';
 

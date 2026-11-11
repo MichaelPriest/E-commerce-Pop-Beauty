@@ -649,3 +649,14 @@ npm run typecheck
 Em 11/11/2026 foi gerado o `package-lock.json` **v3** em um workflow isolado, verificado com `npm ci`, 17 testes, `next build` e `tsc --noEmit`. Ele registra versões transitivas e hashes de integridade, evitando atualizações silenciosas no CI. O workflow principal `quality.yml` instala com `npm ci --no-audit --no-fund` usando cache npm.
 
 Sempre revisar PRs que alterem `package.json` ou `package-lock.json`, executar `npm ci && npm run check:ci` e publicar somente após passar. Dependências novas ainda exigem avaliação de licença, segurança e compatibilidade; lockfile não substitui auditoria de vulnerabilidades. A branch auxiliar `automation/npm-lockfile` foi usada apenas para preparar o arquivo sem arriscar alterações diretas de dependências na produção.
+
+## 20. Painel de prontidão de produção
+
+A rota **`/admin/prontidao`** foi incluída no menu Sistema, com acesso restrito à função `requireAdmin()`. Ela permite acompanhar, **somente por leitura**, o catálogo comum, presença de medidas e CEP de origem, configuração de SMTP, escolha de gateway e configuração do Mercado Pago TEST, além dos bloqueios de checkout/frete comerciais e validações manuais.
+
+- Nenhum token, segredo, senha ou valor de variável de ambiente é enviado ao navegador. O painel apenas indica ausência/presença de configurações.
+- As consultas ao banco são feitas com a sessão administrativa e RLS; erros não são tratados como aprovação.
+- O indicador **“Verificado”** significa que uma condição técnica local foi observada; não garante entrega SMTP, integração externa, pagamento conciliado ou liberação comercial.
+- O sistema **nunca** usa esse painel para ativar o checkout. A lógica pura de resumo em `src/lib/release-readiness.ts` mantém `canOpen=false`; testes cobrem a impossibilidade de liberar vendas pela soma de checks.
+- O painel inclui pendências manuais (emissão fiscal, documentos comerciais, proteção de senha, revisão de segurança) para evitar sensação enganosa de prontidão.
+- Antes da liberação, conferir a lista com o desenvolvedor, a operação comercial e a contabilidade; somente após homologação dos fluxos transacionais criar uma decisão separada de lançamento.

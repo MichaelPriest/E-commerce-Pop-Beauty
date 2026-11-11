@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -60,6 +60,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {title:'Sistema',items:[
    {href:'/admin/usuarios',label:'Usuários e permissões',icon:UserCog},
    {href:'/admin/auditoria',label:'Auditoria',icon:History},
+   {href:'/admin/prontidao',label:'Prontidão para produção',icon:ClipboardCheck},
    {href:'/admin/configuracoes',label:'Configurações',icon:Settings}
   ]}
  ],[onlineCount,pendingOrders,pendingNotifications]);
@@ -77,7 +78,8 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/gateways',label:'Comparar gateways',icon:WalletCards},
   {href:'/admin/pagamentos',label:'Preparar testes de pagamento',icon:CreditCard},
   {href:'/admin/reservas',label:'Ver reservas de teste',icon:Timer},
-  {href:'/admin/frete',label:'Cadastrar embalagens e frete',icon:PackagePlus}
+  {href:'/admin/frete',label:'Cadastrar embalagens e frete',icon:PackagePlus},
+  {href:'/admin/prontidao',label:'Ver prontidão de lançamento',icon:ClipboardCheck}
  ];
  const quickResults=shortcuts.filter(item=>item.label.toLocaleLowerCase('pt-BR')
   .includes(quickFilter.toLocaleLowerCase('pt-BR')));

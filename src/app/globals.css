@@ -848,3 +848,28 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-mp-webhook-status{display:inline-flex;align-items:center;gap:8px;border-radius:99px;background:#fff3df;color:#90642b;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap}
 .pope-mp-webhook-status.enabled{background:#e7f8ed;color:#23774d}
 .pope-mp-webhook-route{display:inline-block;font-size:11px;font-weight:800;color:#7b3b76;margin:0 5px}
+
+/* Painel de prontidão: informativo, sem liberar operação comercial */
+.pope-readiness-page{padding-bottom:48px}
+.pope-readiness-banner{display:flex;align-items:flex-start;gap:13px;padding:18px;margin:14px 0 22px;border:1px solid #edceab;border-radius:13px;background:#fff6e7;color:#895828}
+.pope-readiness-banner>svg{flex-shrink:0;margin-top:1px}
+.pope-readiness-banner h2{font:900 18px Nunito,sans-serif;margin:0 0 6px;color:#825121}
+.pope-readiness-banner p{font-size:12px;line-height:1.65;margin:0}
+.pope-readiness-legend{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+.pope-readiness-status{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:99px;font-size:10px;letter-spacing:.01em;font-weight:900;white-space:nowrap}
+.pope-readiness-status.state-ready{background:#e7f7ed;color:#236c46}
+.pope-readiness-status.state-pending{background:#fff2e0;color:#9b6427}
+.pope-readiness-status.state-blocked{background:#ffe8eb;color:#a1344a}
+.pope-readiness-status.state-manual{background:#f0effa;color:#65599e}
+.pope-readiness-group{margin:25px 0}
+.pope-readiness-group>h2{display:flex;align-items:center;gap:9px;font:900 21px Nunito,sans-serif;color:#733377;margin:0 0 13px}
+.pope-readiness-group>h2 svg{color:#c22f96}
+.pope-readiness-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pope-readiness-item{min-width:0;border:1px solid #efdbeb;border-radius:13px;background:#fff;padding:16px;box-shadow:0 4px 12px #8219720a}
+.pope-readiness-item-title{display:flex;justify-content:space-between;align-items:start;gap:10px;flex-wrap:wrap}
+.pope-readiness-item-title>strong{color:#763a70;font-size:13px}
+.pope-readiness-item p{color:#856e84;font-size:12px;line-height:1.7;margin:11px 0}
+.pope-readiness-item>a{display:inline-flex;gap:6px;align-items:center;text-decoration:none;color:#b5298d;font-weight:800;font-size:11px}
+.pope-readiness-footnote{display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.7;color:#9a7e8e;margin:20px 0}
+.pope-readiness-footnote svg{flex-shrink:0}
+@media(max-width:780px){.pope-readiness-grid{grid-template-columns:1fr}}

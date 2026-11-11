@@ -26,7 +26,7 @@ export function VolumeEditor({orderId,count,editable,records}:Props){
   e.preventDefault();if(saving||!editable)return;
   const weight=Number(form.weight),height=Number(form.height),width=Number(form.width),length=Number(form.length);
   if(!/^\d+$/.test(form.weight)||!Number.isInteger(weight)||weight<1||weight>500000||
-   ![height,width,length].every(n=>Number.isFinite(n)&&n>0&&n<=300&&Math.round(n*100)===n*100)){
+   ![height,width,length].every(n=>Number.isFinite(n)&&n>0&&n<=300&&Math.abs(Math.round(n*100)-n*100)<1e-8)){
    setError('Informe peso inteiro em gramas e dimensões positivas até 300 cm, com no máximo 2 casas decimais.');
    return;
   }

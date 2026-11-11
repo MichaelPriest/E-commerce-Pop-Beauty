@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getProducts, formatBRL } from '@/lib/catalog';
 import { ProductCard } from '@/components/product-card';
 import { ShieldCheck, Truck } from 'lucide-react';
+import {productImageSrc} from '@/lib/products';
 export default async function ProductPage({params}:{params:Promise<{slug:string}>}) {
  const {slug}=await params; const {products,demo}=await getProducts();
  const product=products.find(p=>p.slug===slug); if(!product) notFound();
@@ -10,7 +11,7 @@ export default async function ProductPage({params}:{params:Promise<{slug:string}
  <div className="breadcrumbs"><Link href="/">Início</Link> / <Link href="/#destaques">Produtos</Link> / {product.name}</div>
  <p className="demo-alert">{demo?'Demonstração: este item não está disponível para compra real.':'A Popê Beauty ainda não está recebendo pedidos ou pagamentos.'}</p>
  <div className="product-layout">
- <div className={'detail-visual tone-'+(product.tone||'pink')}>{product.image_url?<img src={product.image_url} alt={product.name}/>:<span>{product.emoji||'💖'}</span>}</div>
+ <div className={'detail-visual tone-'+(product.tone||'pink')}>{productImageSrc(product.image_url)?<img src={productImageSrc(product.image_url)!} alt={product.name}/>:<span>{product.emoji||'💖'}</span>}</div>
  <div className="detail-content"><span className="section-kicker">{product.category} • {product.brand}</span><h1>{product.name}</h1><p>{product.description}</p>
  <div className="stars">✦ Novidade na Popê</div>
  {product.compare_at_cents?<del>{formatBRL(product.compare_at_cents)}</del>:null}

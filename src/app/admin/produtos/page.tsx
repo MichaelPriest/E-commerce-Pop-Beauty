@@ -6,9 +6,9 @@ export const dynamic='force-dynamic';
 export default async function AdminProductsPage() {
  const supabase = await requireAdmin();
  const [categoriesResult, productsResult] = await Promise.all([
-  supabase.from('categories').select('id,name').eq('active',true).order('position'),
+  supabase.from('categories').select('id,name,is_adult').eq('active',true).order('position'),
   supabase.from('products')
-   .select('id,slug,name,brand,description,category_id,price_cents,cost_cents,compare_at_cents,image_url,active,created_at,categories(id,name),variants(id,sku,name,shade,ean,active,inventory(on_hand,reserved,safety_stock),inventory_lots(id,lot_code,expires_at,on_hand))')
+   .select('id,slug,name,brand,description,category_id,price_cents,cost_cents,compare_at_cents,image_url,active,is_adult,created_at,categories(id,name,is_adult),variants(id,sku,name,shade,ean,active,inventory(on_hand,reserved,safety_stock),inventory_lots(id,lot_code,expires_at,on_hand))')
    .order('created_at',{ascending:false}).limit(250),
  ]);
  if(categoriesResult.error || productsResult.error)

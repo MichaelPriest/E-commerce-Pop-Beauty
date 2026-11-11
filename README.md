@@ -48,3 +48,13 @@ Este projeto foi inicialmente preparado para implantação, sem habilitar compra
 Após entrar com sua conta administradora, acesse `/admin/produtos` para cadastrar o catálogo. Ao criar um produto, informe pelo menos um SKU e o saldo inicial (opcional); as alterações de estoque utilizam a função SQL transacional `adjust_stock` com lote e justificativa. Variações adicionais começam com saldo zero e podem ser abastecidas em `/admin/estoque`.
 
 A loja é **uma vitrine em implantação**: mesmo um produto publicado ainda não pode ser comprado, e o estoque **não sincroniza** com os marketplaces. Não cadastre informações financeiras sensíveis em campos públicos.
+
+## Seção bem-estar íntimo +18 (segurança)
+
+A opção **/admin/configuracoes** habilita ou desabilita globalmente a seção. Por padrão está **desligada**. O banco aplica políticas RLS que impedem a leitura de produtos e variações adultos por qualquer visitante ou cliente que não tenha prova de maioridade aprovada e válida; as imagens usam um bucket privado `adult-products` servido apenas por rota autenticada e sem cache público. Clientes só podem solicitar análise; apenas administradores autorizados podem aprovar após conferir prova de idade confiável fora do site. Nenhum documento ou dado de nascimento é persistido nesta etapa. A aquisição ainda está **desabilitada**.
+
+O cadastro de produtos escolhe a categoria `Sex Shop +18` para identificar automaticamente itens adultos. Nunca use imagens públicas ou URL externa para produtos adultos. Os arquivos desta seção são carregados separadamente no bucket privado.
+
+**Importante:** aprovação manual depende de procedimento confiável de verificação de idade e titularidade; a mera marcação no painel sem conferência real **não atende** a esse requisito. Para escala, integrar provedor especializado, auditar o processo e rever a adequação à ANPD/ECA Digital antes de comercializar.
+
+**Supabase Free:** a detecção de senhas vazadas exige Pro. A tela de cadastro passou a sugerir e validar 12+ caracteres com maiúsculas, minúsculas, números e símbolos, mas isso é apenas controle de interface. Configure também a política de senhas no provedor Supabase Auth para fiscalização no servidor.

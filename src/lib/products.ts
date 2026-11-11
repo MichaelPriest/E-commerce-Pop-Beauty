@@ -1,7 +1,7 @@
 export type Product = {
   id: string; slug: string; name: string; description: string; brand: string;
   price_cents: number; compare_at_cents: number | null; image_url: string | null;
-  category: string; emoji?: string; tone?: string;
+  category: string; is_adult?: boolean; emoji?: string; tone?: string;
 };
 export const demoProducts: Product[] = [
   {id:'demo-1',slug:'batom-cremoso-rosa',name:'Batom Cremoso Rosa Pop',description:'Cor vibrante e acabamento confortável para arrasar.',brand:'Popê Beauty',price_cents:2990,compare_at_cents:3990,image_url:null,category:'Make',emoji:'💄',tone:'pink'},
@@ -13,3 +13,13 @@ export const demoProducts: Product[] = [
 ];
 export const formatBRL = (cents: number) => (cents / 100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
+
+/** Private +18 images may only be delivered by an authenticated no-cache endpoint. */
+export function productImageSrc(url:string|null|undefined):string|null{
+ if(!url)return null;
+ if(url.startsWith('adult-products:products/')){
+  const file=url.slice('adult-products:products/'.length);
+  return /^[a-f0-9-]{36}\.(?:jpg|png|webp)$/.test(file)?'/api/adult-image/'+file:null;
+ }
+ return url;
+}

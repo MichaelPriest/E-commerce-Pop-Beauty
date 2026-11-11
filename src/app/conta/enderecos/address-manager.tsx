@@ -1,9 +1,11 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {MapPin,Plus,Edit2,Trash2,Save,X,CheckCircle2,House,Phone,ShieldCheck} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {BRAZIL_STATES,formatZip,type CustomerAddress} from '@/types/customer-address';
+import {CepInput,PhoneInput,onlyDigits} from '@/components/forms/masked-fields';
+import {usePostalCodeLookup} from '@/hooks/use-postal-code-lookup';
 
 type AddressFields={
  recipient:string;phone:string;postal_code:string;street:string;house_number:string;
@@ -19,9 +21,36 @@ export function AddressManager({initialAddresses}:{initialAddresses:CustomerAddr
  const [editing,setEditing]=useState<string|null|undefined>(undefined);
  const [fields,setFields]=useState<AddressFields>(empty);
  const [busy,setBusy]=useState(false);
+ const {loading:zipBusy,error:zipError,result:zipResult,lookup:lookupZip,reset:resetZip}=usePostalCodeLookup();
+ const lastRequestedZip=useRef('');
  const [message,setMessage]=useState(''),[error,setError]=useState('');
  useEffect(()=>setItems(initialAddresses),[initialAddresses]);
+ // Consulta automática, com debounce, apenas ao alterar para um CEP completo.
+ useEffect(()=>{
+  if(editing===undefined)return;
+  const zip=onlyDigits(fields.postal_code,8);
+  if(zip.length!==8||zip===lastRequestedZip.current)return;
+  const timer=window.setTimeout(()=>{
+   lastRequestedZip.current=zip;
+   void lookupZip(zip);
+  },500);
+  return ()=>window.clearTimeout(timer);
+ },[editing,fields.postal_code,lookupZip]);
+ useEffect(()=>{
+  if(!zipResult||editing===undefined)return;
+  setFields(old=>{
+   if(onlyDigits(old.postal_code,8)!==zipResult.postal_code)return old;
+   return {
+    ...old,street:zipResult.street||old.street,
+    district:zipResult.district||old.district,
+    city:zipResult.city||old.city,state_code:zipResult.state_code||old.state_code
+   };
+  });
+  setMessage('CEP localizado via '+zipResult.source+'. Confira o número e o complemento.');
+ },[zipResult,editing]);
  function start(address?:CustomerAddress){
+  resetZip();
+  lastRequestedZip.current=onlyDigits(address?.postal_code??'',8);
   setEditing(address?.id??null);
   setFields(address?{
    recipient:address.recipient,phone:address.phone,postal_code:address.postal_code,
@@ -32,7 +61,17 @@ export function AddressManager({initialAddresses}:{initialAddresses:CustomerAddr
   setError('');setMessage('');
  }
  function update(field:keyof AddressFields,value:string|boolean){
+  if(field==='postal_code'){
+   resetZip();
+   setMessage('');
+  }
   setFields(old=>({...old,[field]:value}));
+ }
+ function findZip(){
+  const zip=onlyDigits(fields.postal_code,8);
+  if(zip.length!==8)return;
+  lastRequestedZip.current=zip;
+  void lookupZip(zip);
  }
  async function save(event:React.FormEvent<HTMLFormElement>){
   event.preventDefault();
@@ -64,6 +103,7 @@ export function AddressManager({initialAddresses}:{initialAddresses:CustomerAddr
  }
  const edit=editing!==undefined;
  return <div className="pope-address-manager">
+  {zipError?<p role="alert" className="form-error">{zipError} Você também pode preencher o endereço manualmente.</p>:null}
   {message?<p role="status" className="form-success">{message}</p>:null}
   {error?<p role="alert" className="form-error">{error}</p>:null}
   <div className="pope-address-toolbar">
@@ -95,10 +135,21 @@ export function AddressManager({initialAddresses}:{initialAddresses:CustomerAddr
    <div className="pope-address-form-grid">
     <label className="wide">Nome de quem receberá<input required minLength={2} maxLength={120}
      value={fields.recipient} onChange={e=>update('recipient',e.target.value)} autoComplete="name"/></label>
-    <label>Telefone com DDD<input required inputMode="tel" maxLength={20} value={fields.phone}
-     onChange={e=>update('phone',e.target.value)} autoComplete="tel" placeholder="(11) 99999-9999"/></label>
-    <label>CEP<input required inputMode="numeric" maxLength={10} value={fields.postal_code}
-     onChange={e=>update('postal_code',e.target.value)} autoComplete="postal-code" placeholder="00000-000"/></label>
+    <label>Telefone com DDD<PhoneInput required value={fields.phone}
+     onValueChange={value=>update('phone',value)} autoComplete="tel" aria-label="Telefone com DDD"/></label>
+    <label>CEP
+     <div className="pope-address-zip-row">
+      <CepInput required value={fields.postal_code}
+       onValueChange={value=>update('postal_code',value)}
+       autoComplete="postal-code" aria-label="CEP"/>
+      <button type="button" className="admin-outline"
+       onClick={findZip} disabled={zipBusy||onlyDigits(fields.postal_code).length!==8}>
+       {zipBusy?'Buscando...':'Buscar CEP'}
+      </button>
+     </div>
+     <small className="pope-address-zip-helper">{zipBusy?'Consultando endereço...':
+      'O endereço é preenchido automaticamente quando o CEP estiver completo.'}</small>
+    </label>
     <label className="wide">Rua / avenida<input required minLength={4} maxLength={120} value={fields.street}
      onChange={e=>update('street',e.target.value)} autoComplete="address-line1"/></label>
     <label>Número<input required maxLength={20} value={fields.house_number}

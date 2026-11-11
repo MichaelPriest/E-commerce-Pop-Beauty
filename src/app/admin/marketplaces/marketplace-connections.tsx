@@ -27,7 +27,11 @@ export function MarketplaceConnections({
  const router=useRouter();
  const [busy,setBusy]=useState(''),[message,setMessage]=useState(''),
   [error,setError]=useState('');
- async function operation(id:string,task:'listing'|'order'|'disconnect'){
+ const [nextCursors,setNextCursors]=useState<Record<string,string>>({});
+ const cursorKey=(id:string,kind:'listing'|'order')=>id+':'+kind;
+ async function operation(
+  id:string,task:'listing'|'order'|'disconnect',loadMore=false
+ ){
   if(busy)return;
   if(task==='disconnect'&&!window.confirm(
    'Desconectar esta conta? Os tokens locais serão apagados; a autorização externa deve ser revogada também no marketplace.'))return;
@@ -37,11 +41,22 @@ export function MarketplaceConnections({
     '/api/admin/marketplaces/disconnect':'/api/admin/marketplaces/sync',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(task==='disconnect'?{connection_id:id}:
-     {connection_id:id,kind:task}),cache:'no-store'
+     {connection_id:id,kind:task,
+      ...(loadMore?{cursor:nextCursors[cursorKey(id,task)]??''}:{})}),
+    cache:'no-store'
    });
    const result=await response.json();
    if(!response.ok)throw new Error(result.error||'Operação indisponível.');
    setMessage(result.message||'Operação concluída.');
+   if(task==='disconnect'){
+    setNextCursors(old=>Object.fromEntries(
+     Object.entries(old).filter(([key])=>!key.startsWith(id+':'))));
+   }else{
+    const key=cursorKey(id,task);
+    setNextCursors(old=>({
+     ...old,[key]:typeof result.next_cursor==='string'?result.next_cursor:''
+    }));
+   }
    router.refresh();
   }catch(e){setError(e instanceof Error?e.message:'Erro ao acessar o marketplace.');}
   finally{setBusy('');}
@@ -89,6 +104,15 @@ export function MarketplaceConnections({
       disabled={!!busy||a.status!=='connected'}
       onClick={()=>operation(a.id,'order')}>
       <ShoppingBag size={15}/>{busy===a.id+'order'?'Consultando...':'Pedidos'}</button>
+     {(['listing','order'] as const).map(kind=>
+       nextCursors[cursorKey(a.id,kind)]?
+       <button key={kind} type="button" className="admin-outline"
+        disabled={!!busy||a.status!=='connected'}
+        onClick={()=>operation(a.id,kind,true)}>
+        <RefreshCw size={15}/>
+        {busy===a.id+kind?'Carregando...':
+         kind==='listing'?'Mais anúncios':'Mais pedidos'}
+       </button>:null)}
      <button type="button" className="admin-outline"
       disabled={!!busy||a.status==='disconnected'}
       onClick={()=>operation(a.id,'disconnect')}>

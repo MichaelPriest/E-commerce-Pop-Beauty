@@ -727,3 +727,11 @@ O painel `/admin/marketplaces` consulta conexões Shopee/Mercado Livre, mas **n�
 ### 21.4. Comparação de SKUs na prévia
 
 A tabela de anúncios importados exibe o resultado da **conciliação somente leitura** entre `item_sku` / `seller_custom_field` do marketplace e `variants.sku` da Popê. A correspondência é exata (espaços externos e letras maiúsculas/minúsculas são normalizados), sem fuzzy matching. Resultados possíveis: SKU localizado, sem SKU externo, não encontrado, SKU ambíguo e produto +18 bloqueado. Esse indicador **não** atualiza `marketplace_listings`, `inventory`, preços ou quantidades. Antes de habilitar estoque compartilhado, confirmar manualmente cada variação/modelo e as regras de reserva por canal.
+
+### 21.5. Paginação autenticada de anúncios e pedidos
+
+A consulta administrativa oferece **Mais anúncios** e **Mais pedidos** quando as APIs indicam haver outra página. O cursor é **assinado com HMAC-SHA256**, fica vinculado ao canal, ao tipo de consulta e à conta vendedora, expira em 20 minutos e limita a navegação a dez páginas por sequência. Para Shopee, o cursor de pedidos preserva a janela fixa de 7 dias; para os demais endpoints é usado o offset, limitado a 500. As páginas são gravadas idempotentemente na tabela de staging sem movimentar estoque.
+
+**Atenção:** esta é paginação manual sob demanda, não um processo agendado ou integração incremental com webhooks. A API retorna apenas campos operacionais resumidos, nunca dados pessoais de compradores. A homologação real depende de credenciais autorizadas.
+
+A autorização Shopee utiliza `/api/v2/shop/auth_partner`, assinatura HMAC dos campos obrigatórios, expiração curta e `state` preservado na URL de retorno. O endpoint anterior `open.shopee.com.br/auth` foi substituído por esse padrão.

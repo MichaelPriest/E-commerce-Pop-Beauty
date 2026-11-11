@@ -2,6 +2,10 @@ import 'server-only';
 import {meliGET,shopeeShopGET,type MarketplaceChannel} from './provider-auth';
 import {safeMercadoLivreListingSku,safeShopeeListingSku} from './external-sku-core';
 import {
+ normalizeMercadoLivreOrderLines,normalizeShopeeOrderLines,
+ type PreviewOrderGroup
+} from './order-line-core';
+import {
  encodeMarketplaceCursor,decodeMarketplaceCursor,type PageState
 } from './pagination-core';
 
@@ -10,7 +14,7 @@ export type MarketplaceImportedRow={
  kind:'listing'|'order';external_id:string;title:string;sku:string;
  external_status:string;amount_cents:number|null;quantity:number|null;
 };
-export type MarketplacePage={rows:MarketplaceImportedRow[];nextCursor:string|null};
+export type MarketplacePage={rows:MarketplaceImportedRow[];nextCursor:string|null;orders?:PreviewOrderGroup[]};
 type Kind='listing'|'order';
 const obj=(v:unknown):Raw=>v&&typeof v==='object'&&!Array.isArray(v)?v as Raw:{};
 const arr=(v:unknown):Raw[]=>Array.isArray(v)?v.map(obj):[];
@@ -49,7 +53,9 @@ export async function readMarketplacePage(
   if(kind==='order'){
    const response=await meliGET('/orders/search?seller='+accountId+
      '&sort=date_desc'+suffix,token);
-   const rows=arr(response.results).slice(0,pageSize).map(o=>({
+   const rawOrders=arr(response.results).slice(0,pageSize);
+   const orders=normalizeMercadoLivreOrderLines(rawOrders,accountId);
+   const rows=rawOrders.map(o=>({
     kind:'order' as const,external_id:id(o.id),title:'',sku:'',
     external_status:str(o.status,80),amount_cents:cents(o.total_amount),
     quantity:arr(o.order_items).reduce((sum,i)=>sum+(qty(i.quantity)??0),0)
@@ -57,7 +63,7 @@ export async function readMarketplacePage(
    const total=Number(obj(response.paging).total);
    const more=rows.length===pageSize&&
     (!Number.isFinite(total)||state.offset+pageSize<total);
-   return {rows,nextCursor:more?follow(state,state.offset+pageSize):null};
+   return {rows,nextCursor:more?follow(state,state.offset+pageSize):null,orders};
   }
   const response=await meliGET('/users/'+accountId+
    '/items/search?limit='+pageSize+'&offset='+state.offset,token);
@@ -102,7 +108,15 @@ export async function readMarketplacePage(
   const next=typeof body.next_cursor==='string'?body.next_cursor:'';
   const encoded=Buffer.from(next,'utf8').toString('base64url');
   const more=body.more===true&&next.length>0&&encoded.length<=200;
-  return {rows,nextCursor:more?follow(state,0,encoded):null};
+  // get_order_list entrega IDs/status; obter itens por get_order_detail sem PII.
+  // Se a API omitir qualquer pedido, falhar integralmente em vez de gravar dados incompletos.
+  const requested=rows.map(row=>row.external_id);
+  const details=requested.length?
+   await shopeeShopGET('/api/v2/order/get_order_detail',token,accountId,{
+    order_sn_list:requested.join(','),response_optional_fields:'item_list'
+   }):{response:{order_list:[]}};
+  const orders=normalizeShopeeOrderLines(details,requested);
+  return {rows,nextCursor:more?follow(state,0,encoded):null,orders};
  }
  const response=await shopeeShopGET('/api/v2/product/get_item_list',token,accountId,{
   item_status:['NORMAL'],offset:String(state.offset),page_size:'30'

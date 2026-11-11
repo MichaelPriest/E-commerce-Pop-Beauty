@@ -38,6 +38,12 @@ export async function POST(request:NextRequest){
    token,kind,typeof cursor==='string'?cursor:undefined);
   const rows=page.rows;
   if(rows.length>30)throw new Error('Limite de sincronização excedido.');
+  if(kind==='order'&&page.orders?.length){
+   const {error:linesError}=await sb.rpc('replace_marketplace_order_line_previews',{
+    p_connection_id:accountId,p_orders:page.orders
+   });
+   if(linesError)throw new Error('Não foi possível gravar as linhas sanitizadas dos pedidos.');
+  }
   if(rows.length){
    const {error:saveError}=await sb.from('marketplace_readonly_imports')
     .upsert(rows.map(row=>({...row,connection_id:accountId,
@@ -49,6 +55,7 @@ export async function POST(request:NextRequest){
   if(markError)throw new Error('Não foi possível registrar a conferência.');
   return NextResponse.json({success:true,imported:rows.length,kind,
    next_cursor:page.nextCursor,
+   order_lines:page.orders?.reduce((sum,order)=>sum+order.lines.length,0)??0,
    message:'Página consultada ('+rows.length+' registros). Nenhum pedido, preço ou estoque comercial foi alterado.'},
    {headers:noStore});
  }catch(e){

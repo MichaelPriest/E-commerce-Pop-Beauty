@@ -2,12 +2,12 @@
 import {useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {ArrowDown,ArrowUp,Boxes,CalendarClock,PackageSearch,Search,ShieldAlert,Truck,Warehouse, X, Clock, CheckCircle2} from 'lucide-react';
+import {ArrowDown,ArrowUp,Boxes,CalendarClock,PackageSearch,Search,ShieldAlert,Warehouse, X, Clock, CheckCircle2, History} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
-import type {StockVariant,LotRow} from '@/types/admin';
-type Props={variants:StockVariant[]};
-const isoToday=()=>new Date().toISOString().slice(0,10);
-const expiresSoon=(date:string|null)=>date!==null&&date<=new Date(Date.now()+60*86400000).toISOString().slice(0,10);
+import type {StockVariant,StockMovement} from '@/types/admin';
+type Props={variants:StockVariant[];movements:StockMovement[]};
+const isoToday=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});
+const expiresSoon=(date:string|null)=>date!==null&&date<=new Date(Date.now()+60*86400000).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});
 function statusFor(v:StockVariant){
  const on=v.inventory?.on_hand??0, reserved=v.inventory?.reserved??0, minimum=v.inventory?.safety_stock??0;
  const validLots=(v.inventory_lots??[]).filter(l=>l.on_hand>0);
@@ -17,7 +17,7 @@ function statusFor(v:StockVariant){
  return 'ok';
 }
 function readableDate(value:string|null){if(!value)return 'Sem validade';const [y,m,d]=value.split('-');return [d,m,y].join('/');}
-export function StockManager({variants}:Props){
+export function StockManager({variants,movements}:Props){
  const router=useRouter(),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos');
  const [selected,setSelected]=useState<StockVariant|null>(null),[direction,setDirection]=useState<'in'|'out'>('in');
  const [amount,setAmount]=useState('1'),[reason,setReason]=useState('Entrada de mercadorias');
@@ -95,6 +95,17 @@ export function StockManager({variants}:Props){
    })}
    {visible.length===0?<div className="admin-empty"><Warehouse size={35}/><h3>Nenhum SKU para exibir</h3><p>Cadastre um produto com variação para iniciar o estoque.</p><Link className="admin-primary" href="/admin/produtos">Cadastrar produto</Link></div>:null}
   </div>
+  <section className="admin-history">
+   <div className="admin-history-header"><div><span className="section-kicker">AUDITORIA DE INVENTÁRIO</span><h2><History size={21}/> Últimas movimentações</h2></div><span className="admin-cell-muted">Exibindo até 100 registros recentes</span></div>
+   {movements.length===0?<p className="admin-history-empty">Ainda não há entradas ou saídas registradas.</p>:
+   <div className="admin-history-scroll"><table><thead><tr><th>Data e hora</th><th>Produto / SKU</th><th>Lote</th><th>Motivo</th><th>Quantidade</th></tr></thead><tbody>
+    {movements.map(move=><tr key={move.id}>
+     <td>{new Date(move.created_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'})}</td>
+     <td><strong>{move.variants?.products?.name??'Produto'}</strong><small>{move.variants?.sku??'Sem SKU'}</small></td>
+     <td>{move.inventory_lots?.lot_code??'—'}</td><td>{move.reason}</td>
+     <td><strong className={move.delta>=0?'movement-in':'movement-out'}>{move.delta>0?'+':''}{move.delta}</strong></td></tr>)}
+   </tbody></table></div>}
+  </section>
   {selected?<div className="admin-modal-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setSelected(null);}}>
    <section className="admin-modal smaller" role="dialog" aria-modal="true" aria-label="Movimentar estoque">
     <div className="admin-modal-header"><div><span className="section-kicker">MOVIMENTAÇÃO DE ESTOQUE</span><h2>{selected.products?.name} 📦</h2><p>SKU {selected.sku} • Saldo {selected.inventory?.on_hand??0} un.</p></div><button onClick={()=>setSelected(null)} aria-label="Fechar" disabled={saving}><X/></button></div>

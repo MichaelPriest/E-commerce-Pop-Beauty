@@ -13,3 +13,9 @@ export type AdminProduct = {
 export type StockVariant = Omit<VariantRow,'product_id'> & {
  products: {id:string;name:string;brand:string;active:boolean;price_cents:number;cost_cents:number}|null;
 };
+
+export type StockMovement={
+ id:string;delta:number;reason:string;created_at:string;
+ variants:{sku:string;products:{name:string}|null}|null;
+ inventory_lots:{lot_code:string}|null;
+};

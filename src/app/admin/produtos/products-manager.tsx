@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {Boxes, Camera, ChevronDown, Edit3, PackagePlus, Plus, Search, Tag, X, Check, AlertTriangle, Layers3} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
-import {formatBRL} from '@/lib/products';
+import {formatBRL,productImageSrc} from '@/lib/products';
 import type {AdminProduct, Category} from '@/types/admin';
 
 type ProductForm = {
@@ -41,6 +41,7 @@ export function ProductsManager({initialProducts,categories}:Props){
  const [file,setFile]=useState<File|null>(null),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
  const [variantFor,setVariantFor]=useState<AdminProduct|null>(null),[variantEditingId,setVariantEditingId]=useState<string|null>(null);
  const [vSku,setVSku]=useState(''),[vName,setVName]=useState(''),[vShade,setVShade]=useState(''),[vEan,setVEan]=useState(''),[vSafety,setVSafety]=useState('0');
+ const isAdultCategory=!!categories.find(c=>c.id===form.category_id)?.is_adult;
  const filtered=useMemo(()=>initialProducts.filter(p=>{
   const q=query.toLocaleLowerCase('pt-BR');
   return (!q||[p.name,p.brand,p.slug,...(p.variants??[]).map(v=>v.sku)].join(' ').toLocaleLowerCase('pt-BR').includes(q)) &&
@@ -66,14 +67,22 @@ export function ProductsManager({initialProducts,categories}:Props){
  }
  function onFile(e:ChangeEvent<HTMLInputElement>){const f=e.target.files?.[0]??null;setFile(f);if(f)change('image_url','');}
  async function uploadImage(supabase:ReturnType<typeof createClient>){
-  if(!file)return form.image_url.trim()||null;
+  if(!file){
+   const value=form.image_url.trim();
+   if(isAdultCategory && value && !value.startsWith('adult-products:'))
+    throw new Error('Produtos +18 só aceitam fotos no bucket privado. Selecione uma foto para upload.');
+   if(!isAdultCategory && value.startsWith('adult-products:'))
+    throw new Error('A foto privada não pode ser usada no catálogo comum.');
+   return value||null;
+  }
   if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Use JPG, PNG ou WebP.');
   if(file.size>5*1024*1024)throw new Error('Imagem deve ter até 5 MB.');
   const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
   const path='products/'+crypto.randomUUID()+'.'+ext;
-  const {error:uploadError}=await supabase.storage.from('product-images').upload(path,file,{contentType:file.type,upsert:false});
+  const bucket=isAdultCategory?'adult-products':'product-images';
+  const {error:uploadError}=await supabase.storage.from(bucket).upload(path,file,{contentType:file.type,upsert:false});
   if(uploadError)throw uploadError;
-  return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+  return isAdultCategory?'adult-products:'+path:supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
  }
  async function save(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(saving)return;
@@ -163,8 +172,8 @@ export function ProductsManager({initialProducts,categories}:Props){
    {filtered.map(p=>{
     const amount=(p.variants??[]).reduce((a,v)=>a+(v.inventory?.on_hand??0),0);
     return <div className="admin-data-row" key={p.id}>
-     <div className="admin-product-name"><div className="admin-product-thumb">{p.image_url?<img src={p.image_url} alt=""/>:'💄'}</div><div><strong>{p.name}</strong><small>{p.brand}</small><small className="admin-tiny">{p.slug}</small></div></div>
-     <span className="admin-cell-muted">{p.categories?.name??'Sem categoria'}</span>
+     <div className="admin-product-name"><div className="admin-product-thumb">{productImageSrc(p.image_url)?<img src={productImageSrc(p.image_url)!} alt=""/>:'💄'}</div><div><strong>{p.name}</strong><small>{p.brand}</small><small className="admin-tiny">{p.slug}</small></div></div>
+     <span className="admin-cell-muted">{p.categories?.name??'Sem categoria'}{p.is_adult?<small>🔒 Exclusivo +18</small>:null}</span>
      <span><strong>{formatBRL(p.price_cents)}</strong><small>Custo {formatBRL(p.cost_cents??0)}</small></span>
      <span><strong>{(p.variants??[]).length} SKU(s)</strong><small>{amount} un. em estoque</small></span>
      <span className={p.active?'admin-status live':'admin-status draft'}>{p.active?'Ativo':'Rascunho'}</span>
@@ -182,7 +191,7 @@ export function ProductsManager({initialProducts,categories}:Props){
      <form className="admin-form" onSubmit={save}>
       <div className="admin-form-grid">
        <label className="full">Nome do produto *<input required maxLength={150} value={form.name} onChange={e=>{change('name',e.target.value);if(!editing&&!form.slug)setForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}));}} placeholder="Ex.: Base Líquida Alta Cobertura"/></label>
-       <label>Categoria *<select value={form.category_id} onChange={e=>change('category_id',e.target.value)} required><option value="">Selecionar...</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+       <label>Categoria *<select value={form.category_id} disabled={!!editing} onChange={e=>{const next=e.target.value;const oldAdult=!!categories.find(c=>c.id===form.category_id)?.is_adult;const newAdult=!!categories.find(c=>c.id===next)?.is_adult;setForm(f=>({...f,category_id:next,image_url:oldAdult!==newAdult?'':f.image_url}));setFile(null);}} required><option value="">Selecionar...</option>{categories.map(c=><option key={c.id} value={c.id}>{c.is_adult?'🔒 ':''}{c.name}</option>)}</select></label>
        <label>Marca<input value={form.brand} onChange={e=>change('brand',e.target.value)} maxLength={100}/></label>
        <label className="full">Endereço (slug)<input required disabled={!!editing} value={form.slug} onChange={e=>change('slug',slugify(e.target.value))} placeholder="base-liquida-alta-cobertura"/></label>
        <label className="full">Descrição<textarea rows={3} value={form.description} onChange={e=>change('description',e.target.value)} placeholder="Descrição para a vitrine, benefícios e informações importantes"/></label>
@@ -190,8 +199,9 @@ export function ProductsManager({initialProducts,categories}:Props){
        <label>Custo unitário (R$) *<input inputMode="decimal" required value={form.cost} onChange={e=>change('cost',e.target.value)}/></label>
        <label>Preço anterior (R$)<input inputMode="decimal" placeholder="Opcional" value={form.compare} onChange={e=>change('compare',e.target.value)}/></label>
        <label className="admin-form-check"><input type="checkbox" checked={form.active} onChange={e=>change('active',e.target.checked)}/> Publicar na vitrine</label>
-       <label className="full admin-file-label"><Camera size={19}/> Foto do produto (JPG, PNG, WebP; até 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile}/>{file?<small>{file.name}</small>:null}</label>
-       <label className="full">Ou URL da foto<input type="url" placeholder="https://..." disabled={!!file} value={form.image_url} onChange={e=>change('image_url',e.target.value)}/></label>
+       {isAdultCategory?<p className="adult-admin-note">🔒 Este produto será ocultado para visitantes e menores de idade. A foto ficará em armazenamento privado.</p>:null}
+       <label className="full admin-file-label"><Camera size={19}/> {isAdultCategory?'Foto privada +18':'Foto do produto'} (JPG, PNG, WebP; até 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile}/>{file?<small>{file.name}</small>:null}</label>
+       {!isAdultCategory?<label className="full">Ou URL da foto<input type="url" placeholder="https://..." disabled={!!file} value={form.image_url} onChange={e=>change('image_url',e.target.value)}/></label>:null}
       </div>
       {!editing?<><h3>SKU e estoque inicial</h3><p className="admin-help">Cada cor ou apresentação possui SKU próprio. Outras variações podem ser adicionadas após salvar.</p>
       <div className="admin-form-grid">

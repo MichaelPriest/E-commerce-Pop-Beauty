@@ -4,7 +4,7 @@ import {useRouter} from 'next/navigation';
 import {MapPin,Plus,Edit2,Trash2,Save,X,CheckCircle2,House,Phone,ShieldCheck} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {BRAZIL_STATES,formatZip,type CustomerAddress} from '@/types/customer-address';
-import {CepInput,PhoneInput,onlyDigits} from '@/components/forms/masked-fields';
+import {CepInput,PhoneInput,onlyDigits,formatPhone} from '@/components/forms/masked-fields';
 import {usePostalCodeLookup} from '@/hooks/use-postal-code-lookup';
 
 type AddressFields={
@@ -117,7 +117,7 @@ export function AddressManager({initialAddresses}:{initialAddresses:CustomerAddr
      {address.is_default?<b className="pope-address-default"><CheckCircle2 size={14}/> Principal</b>:null}</div>
     <p>{address.street}, {address.house_number}{address.complement?', '+address.complement:''}</p>
     <p>{address.district} · {address.city}/{address.state_code} · {formatZip(address.postal_code)}</p>
-    <p className="pope-address-phone"><Phone size={15}/> {address.phone}</p>
+    <p className="pope-address-phone"><Phone size={15}/> {formatPhone(address.phone)}</p>
     <div className="pope-address-card-actions">
      <button type="button" className="admin-outline" disabled={busy||edit}
       onClick={()=>start(address)}><Edit2 size={15}/> Editar</button>

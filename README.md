@@ -170,3 +170,9 @@ A loja possui `/checkout`, uma **prévia de conferência**, vinculada à página
 
 ### Separação das reservas de teste e financeiro
 Reservas de homologação com `origin='store_api'` são listadas somente em `/admin/reservas` e `/conta` do titular. Pedidos comerciais manuais são exibidos em `/admin/pedidos`, `/admin/logistica`, relatórios e financeiro. A migração `supabase/exclude_checkout_test_from_financial_metrics.sql` exclui `store_api` das agregações mensais. A sidebar também exclui essas reservas do contador de pedidos pendentes. Assim, reservas de teste não distorcem receita prevista nem quantidade de pedidos de clientes.
+
+## Plugins de CEP e máscaras nos formulários
+- `react-imask@7.6.1` em `src/components/forms/masked-fields.tsx` aplica máscaras sem alterar os valores normalizados enviados ao Supabase: CEP `00000-000`, telefones de 10/11 dígitos, além de componentes reutilizáveis para CPF e CNPJ (estes não coletam dados nesta versão).
+- Endereços em `/conta/enderecos`: o CEP de oito números inicia consulta automática após 500 ms, com botão de tentativa manual. O servidor consulta ViaCEP e, se falhar ou não encontrar o CEP, tenta a BrasilAPI. Rua, bairro, cidade e UF são preenchidos quando disponíveis; número e complemento permanecem para digitação manual. O usuário deve conferir antes de salvar.
+- Área `/admin/frete`: origem e destino com máscara de CEP, pesquisa automática de cidade/UF e mensagens de erros. A cotação permanece restrita ao sandbox e depende do token.
+- A consulta pública de CEP no Next.js **exige login**, valida oito dígitos, não armazena o endereço consultado e não aceita URL arbitrária enviada pelo usuário. Dados obtidos do serviço externo não substituem validações do Supabase no cadastro.

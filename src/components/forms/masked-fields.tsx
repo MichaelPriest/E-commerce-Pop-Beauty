@@ -37,3 +37,10 @@ export function CnpjInput({value,onValueChange,placeholder='00.000.000/0000-00',
   onAccept={v=>onValueChange(onlyDigits(String(v),14))}
   inputMode="numeric" placeholder={placeholder} {...props}/>;
 }
+
+export const formatPhone=(value:string)=>{
+ const d=onlyDigits(value,11);
+ if(d.length===11)return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);
+ if(d.length===10)return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);
+ return d;
+};

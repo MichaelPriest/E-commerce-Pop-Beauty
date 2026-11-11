@@ -137,6 +137,10 @@ create policy "profiles_self_or_staff_read" on public.profiles for select to aut
 create policy "profiles_self_display_name_update" on public.profiles for update to authenticated
  using (id=(select auth.uid())) with check (id=(select auth.uid()));
 -- GRANT por coluna impede alterar 'role' pela API mesmo com o UPDATE acima.
+-- Revogar quaisquer privilégios UPDATE em nível de tabela (Supabase pode concedê-los por padrão).
+-- RLS controla linhas, mas não impede por si só que um usuário altere sua coluna de papel.
+revoke update on public.profiles from public, anon, authenticated;
+revoke insert, delete on public.profiles from public, anon, authenticated;
 grant select on public.profiles to authenticated;
 grant update(display_name) on public.profiles to authenticated;
 

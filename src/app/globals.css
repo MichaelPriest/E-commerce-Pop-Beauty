@@ -597,3 +597,74 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-report-danger{color:#bc2b67;font-weight:900}
 @media(max-width:800px){.pope-report-card{padding:15px}.pope-report-alert-stats{grid-template-columns:1fr}.pope-report-chart{gap:9px;padding:13px 7px 0}.pope-report-column{min-width:55px}.pope-report-column-value{font-size:9px}}
 @media(max-width:500px){.pope-report-filters{width:100%;justify-content:stretch}.pope-report-filters select{flex:1;min-width:115px}.pope-report-filters button{width:100%}}
+
+
+/* Central de gateways — comparação e homologação, sem fluxo de cobrança */
+.pope-gateway-page{padding-bottom:32px}
+.pope-gateway-intro{display:flex;justify-content:space-between;align-items:center;gap:24px;border:1px solid #ebd0e4;background:linear-gradient(118deg,#fff4fb,#f8f2ff);border-radius:17px;padding:20px 23px;margin-bottom:20px}
+.pope-gateway-intro>div:first-child{flex:1}
+.pope-gateway-section-kicker{display:flex;align-items:center;gap:7px;color:#af2286;font-size:10px;letter-spacing:1px;font-weight:900}
+.pope-gateway-intro h2{font:900 21px Nunito,sans-serif;color:#642766;margin:10px 0}
+.pope-gateway-intro p{color:#906f8b;font-size:12px;line-height:1.6;margin:0}
+.pope-gateway-choice{display:flex;flex-direction:column;gap:7px;padding:14px 17px;background:#fff;border:1px solid #e9cbe0;border-radius:12px;min-width:180px}
+.pope-gateway-choice small{color:#9d7790;font-size:11px}
+.pope-gateway-choice strong{color:#6e2b6c;font-size:17px}
+.pope-gateway-choice span{color:#268453;font-size:10px;font-weight:900}
+.pope-gateway-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:18px 0 25px}
+.pope-gateway-card{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid #efdae7;border-radius:18px;padding:20px;box-shadow:0 8px 22px #8f2d780c}
+.pope-gateway-card.preferred{border:2px solid #ed53a4;background:linear-gradient(160deg,#fff9fd,#fff)}
+.pope-gateway-card-head{display:flex;align-items:center;gap:10px}
+.pope-gateway-logo{width:44px;height:44px;flex-shrink:0;display:grid;place-items:center;background:#ffebf5;color:#c12f8a;border-radius:12px}
+.pope-gateway-title{flex:1;min-width:0}
+.pope-gateway-title h3{font:900 19px Nunito,sans-serif;color:#65306a;margin:0}
+.pope-gateway-title small{font-size:11px;color:#967c91}
+.pope-gateway-preference{display:flex;align-items:center;gap:4px;background:#fff0f9;color:#b82381;border-radius:99px;font-size:10px;font-weight:900;padding:7px 8px;white-space:nowrap}
+.pope-gateway-description{font-size:12px;color:#886e85;line-height:1.65;margin:14px 0 10px}
+.pope-gateway-capabilities{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px}
+.pope-gateway-capabilities span{background:#f8f0fc;color:#78517a;font-weight:800;font-size:10px;padding:6px 10px;border-radius:99px}
+.pope-gateway-integration{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #f2e2ec;padding-top:12px;font-size:11px}
+.pope-gateway-integration span{color:#9c8095}
+.pope-gateway-integration strong{color:#744273;text-align:right}
+.pope-gateway-status-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0}
+.pope-gateway-status-grid>div{background:#fff8fc;border:1px solid #f7e6f1;border-radius:11px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.pope-gateway-status-grid small{color:#9b7b94;font-size:10px}
+.pope-gateway-status-grid strong{font-size:11px;line-height:1.45}
+.pope-gateway-ok{color:#267a51}
+.pope-gateway-caution{color:#a66b23}
+.pope-gateway-muted{color:#9c8798}
+.pope-gateway-alert,.pope-gateway-check{display:flex;align-items:flex-start;gap:7px;font-size:11px;line-height:1.6;padding:11px;border-radius:9px}
+.pope-gateway-alert svg,.pope-gateway-check svg{flex-shrink:0}
+.pope-gateway-alert{background:#fff4e1;color:#8a642d;margin:0 0 12px;border:1px solid #f0d9aa}
+.pope-gateway-check{margin:0 0 13px}
+.pope-gateway-check.passed{color:#207b51;background:#e9f9ef}
+.pope-gateway-check.failed{color:#8b612c;background:#fff3e3}
+.pope-gateway-env{display:flex;flex-direction:column;gap:9px;background:#faf7fc;border:1px solid #f0e5f6;border-radius:11px;padding:13px;margin-top:auto}
+.pope-gateway-env>strong{display:flex;align-items:center;gap:7px;font-size:11px;color:#734773}
+.pope-gateway-env>small{font-size:10px;color:#99889a}
+.pope-gateway-key-list{display:flex;flex-direction:column;gap:6px}
+.pope-gateway-key-list code{font-size:10px;font-weight:800;padding:7px 9px;border-radius:6px;overflow-wrap:anywhere}
+.pope-gateway-key-list code.missing{color:#a55071;background:#fff0f3}
+.pope-gateway-key-list code.present{color:#28784f;background:#e9f8ed}
+.pope-gateway-actions{display:flex;flex-wrap:wrap;gap:9px;margin:13px 0}
+.pope-gateway-actions .admin-outline{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:11px;min-height:38px}
+.pope-gateway-actions button:disabled{opacity:.42;cursor:not-allowed}
+.pope-gateway-compare{display:flex;flex-direction:column;gap:12px;border-top:1px solid #f2e1eb;padding-top:15px}
+.pope-gateway-compare .settings-check{margin:0}
+.pope-gateway-note-label{display:flex;flex-direction:column;gap:7px;font-weight:800;font-size:11px;color:#795475}
+.pope-gateway-note-label textarea{width:100%;border:1px solid #ead2e2;border-radius:10px;background:#fff;color:#654267;padding:10px;resize:vertical;min-height:63px;font-size:12px}
+.pope-gateway-save-row{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.pope-gateway-save-row small{color:#a0849a;font-size:10px}
+.pope-gateway-save-row button{font-size:11px}
+.pope-gateway-next,.pope-gateway-audit{border:1px solid #f0d4e6;border-radius:16px;background:#fff;padding:21px;margin-top:20px}
+.pope-gateway-next h2,.pope-gateway-audit h2{font:900 19px Nunito,sans-serif;color:#6d2e70;display:flex;align-items:center;gap:10px;margin:0 0 18px}
+.pope-gateway-next-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pope-gateway-next-grid>div{background:#fff8fc;border:1px solid #f4e2ed;border-radius:10px;padding:14px}
+.pope-gateway-next-grid strong{font-size:12px;color:#71366e}
+.pope-gateway-next-grid p,.pope-gateway-audit>p{font-size:11px;color:#94788b;line-height:1.7}
+.pope-gateway-next-grid a{color:#af2c84;font-weight:800;text-decoration:underline}
+.pope-finance-gateways{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:#fff4fb;border:1px solid #eed6e7;padding:17px;border-radius:13px;margin:17px 0}
+.pope-finance-gateways strong{font-size:14px;color:#722e70}
+.pope-finance-gateways p{font-size:12px;color:#8a748d;line-height:1.6;margin:6px 0}
+@media(max-width:1150px){.pope-gateway-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.pope-gateway-intro{flex-direction:column;align-items:stretch;padding:16px}.pope-gateway-choice{min-width:0}.pope-gateway-next-grid{grid-template-columns:1fr}.pope-gateway-next,.pope-gateway-audit{padding:15px}}
+@media(max-width:460px){.pope-gateway-card{padding:14px}.pope-gateway-status-grid{grid-template-columns:1fr}.pope-gateway-save-row{flex-wrap:wrap}.pope-gateway-preference{font-size:9px}}

@@ -66,7 +66,7 @@ begin
  end if;
  return query
  select p.id,p.display_name,p.role,p.created_at,
-        coalesce(u.email,''),u.email_confirmed_at is not null,u.last_sign_in_at
+        coalesce(u.email,'')::text,u.email_confirmed_at is not null,u.last_sign_in_at
  from public.profiles p join auth.users u on u.id=p.id
  order by p.created_at desc limit 1000;
 end;

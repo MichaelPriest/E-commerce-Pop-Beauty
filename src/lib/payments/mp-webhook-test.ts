@@ -1,5 +1,7 @@
 import 'server-only';
 
+const idPattern=/^[0-9]{1,24}$/;
+
 import {parsePaymentSnapshot} from './mp-payment-snapshot-core';
 export {parsePaymentSnapshot} from './mp-payment-snapshot-core';
 export type {MpPaymentSnapshot} from './mp-payment-snapshot-core';

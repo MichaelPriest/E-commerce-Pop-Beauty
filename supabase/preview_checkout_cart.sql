@@ -53,7 +53,7 @@ begin
    where id=v_id_text::uuid and active=true and is_adult=false;
    if found and v_p.price_cents>0 then
     v_line_cents:=v_p.price_cents::bigint*v_qty;
-    select count(*)::integer,min(id) into v_variant_count,v_variant
+    select count(*)::integer,min(id::text)::uuid into v_variant_count,v_variant
     from public.variants where product_id=v_p.id and active=true;
     if v_variant_count=1 then
      select i.on_hand,i.reserved into v_stock

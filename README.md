@@ -640,4 +640,6 @@ npm run typecheck
 
 **Limitações:** testes unitários/estáticos não substituem os testes de ponta a ponta com Supabase, gateway TEST, entrega de e-mails e frete. O repositório ainda não tem lockfile npm: gerar/revisar `package-lock.json` e migrar o workflow para `npm ci` antes de um processo de release plenamente reproduzível.
 
+**Primeira execução verificada:** o workflow [Qualidade Popê Beauty #43088869320](https://github.com/MichaelPriest/E-commerce-Pop-Beauty/actions/runs/43088869320) terminou com **sucesso** no commit `9ffdcecf`: **17 testes aprovados, 0 falhas**, compilação Next.js e validação TypeScript aprovadas. A Vercel publicou esse mesmo commit com estado `READY`. Isso **não** homologa pagamentos reais nem frete e **não** configura automaticamente a proteção da branch.
+
 **Proteção de releases ainda depende de configuração:** o workflow não impede automaticamente que o Git da Vercel publique um push direto na branch `main`. Configure em GitHub → Settings → Rules/Rulesets ou Branch protection uma regra para `main` exigindo pull requests e o check `testes-build-tipos`; para impedir promoção/publicação antecipada, configurar também Deployment Checks da Vercel e revisar o fluxo de implantação. Não reivindicar aprovação de produção apenas porque o CI passou.

@@ -751,3 +751,29 @@ Os pedidos consultados por um administrador agora são complementados com itens 
 - Quando a resposta de um provedor não apresenta detalhes de um pedido solicitado, a importação falha sem assumir valores vazios. Valores e quantidades inválidos não são tratados como confirmados.
 
 **Os pedidos externos continuam sem financeiro e sem estoque automático.** Para avançar para a sincronização transacional, ainda serão necessários eventos incrementais autenticados, conciliação de pedidos cancelados/reembolsados, reserva serializada por SKU/lote, idempotência por canal e tratamento de eventos fora de ordem.
+
+## 22. Documentos fiscais e etiquetas internas (sem integração externa)
+
+O desenvolvimento da central **`/admin/fiscal`** foi iniciado em 11/11/2026 para preparar a emissão futura de **NF-e modelo 55** e **NFC-e modelo 65**, além de documentos internos de expedição.
+
+- `supabase/fiscal_preparation_internal_packing_v1.sql`: cria `product_fiscal_details`, `fiscal_order_drafts` e `internal_package_preparations`, com RLS e RPCs restritas a admin.
+- `supabase/fiscal_document_readiness_v1.sql`: cria `fiscal_issuer_settings` (emitente), `fiscal_order_recipients` (destinatário por pedido) e `fiscal_document_integration` (status único `not_submitted`), acrescenta CFOP, CST, CSOSN, PIS, COFINS e códigos IBS/CBS aos produtos e RPCs com validação e controle de permissão.
+- A aba Emitente prepara razão social, CNPJ, IE, CRT e endereço com código IBGE, sem armazenar certificado ou CSC.
+- A aba Produtos permite revisar NCM, CEST, origem, unidade comercial, CFOP e classificações fiscais. Os campos **não são sugeridos automaticamente**, pois dependem de regime, produto e natureza da operação. Validar com contabilidade e a tabela vigente.
+- A aba Pedidos guarda o tipo de documento (55/65), natureza da operação, destinatário, CPF/CNPJ e observações. O status é apenas `draft`, nunca `authorized`.
+- Os documentos imprimíveis `/admin/fiscal/documentos/[id]?tipo=conferencia`, `?tipo=separacao` e `?tipo=etiqueta` exigem administrador e pedido `origin='admin_manual'`. A conferência fiscal contém um aviso permanente **RASCUNHO — SEM VALOR FISCAL**; listas de separação e etiquetas internas não comprovam postagem nem substituem etiquetas de transportadoras.
+- A validação `src/lib/fiscal/readiness-core.ts` identifica ausências básicas, utiliza dígitos verificadores CPF/CNPJ e relaciona os itens ao NCM e à classificação cadastrada. Resultado sem alertas **não autoriza emissão**; cálculo tributário e conformidade fiscal exigem mecanismo homologado.
+
+### Falta para NF-e/NFC-e oficial
+
+1. Confirmar CNPJ, IE, CRT, credenciamento/ambiente na SEFAZ e versão vigente do XML NF-e 4.00, inclusive alterações da reforma tributária IBS/CBS.
+2. Definir um emissor homologado (provedor fiscal ou integração direta com SEFAZ) e configurar o certificado digital A1 ou mecanismo de assinatura eletrônica admissível, **somente no servidor/cofre seguro**.
+3. Para NFC-e, cadastrar CSC/ID CSC, série/número fiscal, regras de QR Code, contingência e DANFE NFC-e conforme UF; verificar legislação de SP.
+4. Preencher impostos por item e operação: CFOP, ICMS/CSOSN/CST, PIS/COFINS, IBS/CBS, classificação tributária, bases, alíquotas, descontos, frete, pagamentos e total fiscal. Não inferir automaticamente alíquotas dos dados atuais.
+5. Implementar schema XSD e assinatura do XML, envio e processamento assíncrono, retorno autorizado/rejeitado, protocolo, chave de 44 dígitos, XML autorizado, DANFE oficial, cancelamento e carta de correção quando aplicáveis.
+6. Adicionar armazenamento privado imutável do XML autorizado e trilha de auditoria; nunca marcar nota como autorizada por formulário ou por pedido marcado manualmente como pago.
+7. Homologar com contador e ambiente SEFAZ antes de ativar emissão em produção.
+
+**Referências:** [SEFAZ SP NFC-e](https://portal.fazenda.sp.gov.br/servicos/nfce/), [Portal Nacional NF-e](https://www.nfe.fazenda.gov.br/portal/), [Reforma tributária nos DF-e](https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/julho/receita-federal-e-comite-gestor-do-ibs-publicam-o-cronograma-de-implementacao-dos-documentos-fiscais-eletronicos-da-reforma-tributaria-do-consumo).
+
+A central de preparação é uma **base técnica, não um emissor fiscal**. Os documentos imprimíveis são exclusivamente internos.

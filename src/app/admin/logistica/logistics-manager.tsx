@@ -2,7 +2,7 @@
 import {useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {PackageCheck,Truck,Search,Clock,CheckCircle2,PackageOpen,X,Send} from 'lucide-react';
+import {PackageCheck,Truck,Search,Clock,CheckCircle2,PackageOpen,X,Send,FileText} from 'lucide-react';
 import {MailCheck} from 'lucide-react';
 import {ORDER_LABELS,dateTimeBR,type OrderRow,type OrderStatus} from '@/types/operations';
 import {formatBRL} from '@/lib/products';
@@ -33,7 +33,7 @@ export function LogisticsManager({orders}:Props){
   finally{setBusy(false);}
  }
  return <div className="container admin-workspace">
-  <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div><h1>Logística e entregas 🚚</h1><p>Acompanhe separação, envio e confirmação de entrega dos pedidos internos.</p></div><div className="admin-adult-controls"><Link className="admin-outline" href="/admin/notificacoes"><MailCheck size={17}/> E-mails</Link><Link className="admin-outline" href="/admin/pedidos"><PackageOpen size={17}/> Voltar aos pedidos</Link></div></div>
+  <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div><h1>Logística e entregas 🚚</h1><p>Acompanhe separação, envio e confirmação de entrega dos pedidos internos.</p></div><div className="admin-adult-controls"><Link className="admin-outline" href="/admin/notificacoes"><MailCheck size={17}/> E-mails</Link><Link className="admin-outline" href="/admin/pedidos"><PackageOpen size={17}/> Voltar aos pedidos</Link><Link className="admin-outline" href="/admin/fiscal"><FileText size={17}/> Fiscal e etiquetas</Link></div></div>
   <div className="admin-metric-row"><div><Clock/><small>Pagos aguardando separação</small><strong>{stats.paid}</strong></div>
   <div><PackageOpen/><small>Em separação</small><strong>{stats.packing}</strong></div>
   <div><Truck/><small>Enviados</small><strong>{stats.shipped}</strong></div>

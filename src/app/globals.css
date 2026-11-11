@@ -897,3 +897,56 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 }
 .pope-marketplace-sku-good{background:#eaf8ed;color:#237548}
 .pope-marketplace-sku-review{background:#fff2df;color:#8d5a22}
+
+/* Fiscal e impressão: documentos internos e espelho SEM VALOR FISCAL */
+.pope-fiscal-area .ops-form-card{margin:16px 0}
+.pope-fiscal-area .ops-form-card h2{display:flex;align-items:center;gap:8px}
+.pope-fiscal-warning{background:#fff2e6;border:1px solid #e8c3a2;color:#865021;
+ display:flex;align-items:flex-start;gap:11px;padding:16px;border-radius:12px;line-height:1.6;font-size:12px;margin:16px 0}
+.pope-fiscal-warning>svg{flex-shrink:0}
+.pope-fiscal-tabs{display:flex;flex-wrap:wrap;gap:9px;margin:20px 0}
+.pope-fiscal-tabs button{border:1px solid #e9d3e5;background:#fff;border-radius:11px;
+ padding:10px 15px;color:#7b4a76;font-weight:800;cursor:pointer}
+.pope-fiscal-tabs button.active{background:#92256f;color:#fff;border-color:#92256f}
+.pope-fiscal-area .admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:15px 0}
+.pope-fiscal-area .admin-form-grid label{font-size:12px;font-weight:700;display:flex;flex-direction:column;gap:5px}
+.pope-fiscal-area .admin-form-grid input,.pope-fiscal-area .admin-form-grid select,
+.pope-fiscal-area .admin-form-grid textarea{min-width:0;width:100%;border:1px solid #e4cedf;
+ border-radius:9px;padding:10px;background:#fff;font:inherit}
+.pope-fiscal-area .admin-form-grid .full{grid-column:1/-1}
+.pope-fiscal-area .admin-form-footer{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px}
+.pope-fiscal-area .admin-form-footer a,.pope-fiscal-area .admin-form-footer button{display:inline-flex;align-items:center;gap:7px}
+.pope-print-document{max-width:1040px;margin:auto;padding:15px;color:#1b1b1b}
+.pope-print-header{display:flex;justify-content:flex-end;gap:10px;margin:12px 0 26px}
+.pope-print-sheet{border:1px solid #ddd;border-radius:6px;background:#fff;padding:28px;max-width:850px;margin:auto}
+.pope-print-sheet h1,.pope-internal-label h1{font-size:23px;color:#111;display:flex;align-items:center;gap:10px;margin:12px 0}
+.pope-print-sheet h2{font-size:16px;border-bottom:1px solid #ddd;margin:0 0 8px;padding-bottom:6px}
+.pope-print-section{padding:13px 0}
+.pope-print-section p{font-size:12px;line-height:1.6;margin:6px 0}
+.pope-print-stamp{background:#faf0f0;color:#8b1212;border:2px solid #a62f2f;
+ padding:8px 14px;font-size:13px;font-weight:900;text-align:center;letter-spacing:1px}
+.pope-print-warning{display:flex;gap:6px;align-items:center;font-size:11px;font-weight:bold;color:#a12424}
+.pope-print-table{width:100%;border-collapse:collapse;font-size:11px}
+.pope-print-table th,.pope-print-table td{border:1px solid #bbb;padding:9px;text-align:left;vertical-align:top}
+.pope-print-table small{display:block;color:#555}
+.pope-print-total{text-align:right;font-size:14px;font-weight:800;margin-top:12px}
+.pope-print-total small{display:block;font-size:11px;font-weight:400}
+.pope-print-disclaimer{font-size:10px;line-height:1.6;font-weight:600;color:#ad2828;margin-top:25px}
+.pope-print-label-grid{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.pope-internal-label{box-sizing:border-box;width:100mm;min-height:150mm;border:2px solid #222;
+ padding:12mm;background:#fff;break-inside:avoid;page-break-inside:avoid}
+.pope-internal-label h2{font-size:16px;text-transform:uppercase}
+.pope-internal-label p{font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:740px){.pope-fiscal-area .admin-form-grid{grid-template-columns:1fr}}
+@media print{
+ @page{size:A4;margin:10mm}
+ body:has(.pope-print-document) .pope-admin-sidebar,
+ body:has(.pope-print-document) .pope-admin-topbar,
+ body:has(.pope-print-document) .pope-admin-footer,
+ .pope-print-actions{display:none!important}
+ body:has(.pope-print-document){background:white!important}
+ .pope-print-document{padding:0;margin:0;max-width:none}
+ .pope-print-sheet{box-shadow:none;border:0;padding:0;max-width:none}
+ .pope-internal-label{margin:0;break-inside:avoid;page-break-inside:avoid}
+ .pope-print-stamp{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

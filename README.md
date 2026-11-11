@@ -616,3 +616,28 @@ Sincronização completa Shopee e Mercado Livre, múltiplos gateways produtivos,
 ---
 
 **Regra de liberação:** o produto está disponível para desenvolvimento e homologação, **não** para venda. A produção comercial exige aprovação conjunta de checkout, pagamentos, frete, segurança, comunicação, documentação fiscal e operação de atendimento.
+
+## 19. Testes automatizados e GitHub Actions (CI)
+
+O projeto possui o workflow `.github/workflows/quality.yml`, executado em pull requests para `main`, pushes em `main` e manualmente. O job `testes-build-tipos` roda `npm run test`, `npm run build` e `npm run typecheck`, sem credenciais de pagamento.
+
+Os **17 testes** em `tests/` usam o runner nativo de Node 22 (`--experimental-strip-types`):
+
+- assinatura HMAC-SHA256 do Mercado Pago: timestamps válidos, alterações indevidas, assinatura ausente/duplicada, formato e expiração;
+- transformação da resposta do provedor em snapshot de auditoria: centavos, status, IDs, metadados divergentes e não propagação de dados pessoais;
+- proteções estáticas: checkout público desligado, webhook TEST exigindo assinatura e ausência de baixa `paid` pelo webhook.
+
+A lógica pura testável foi separada em `src/lib/payments/mp-webhook-signature-core.ts` e `mp-payment-snapshot-core.ts`. Os wrappers usados pelo Next.js preservam `server-only`.
+
+### Como executar
+
+```bash
+npm install
+npm run test
+npm run build
+npm run typecheck
+```
+
+**Limitações:** testes unitários/estáticos não substituem os testes de ponta a ponta com Supabase, gateway TEST, entrega de e-mails e frete. O repositório ainda não tem lockfile npm: gerar/revisar `package-lock.json` e migrar o workflow para `npm ci` antes de um processo de release plenamente reproduzível.
+
+**Proteção de releases ainda depende de configuração:** o workflow não impede automaticamente que o Git da Vercel publique um push direto na branch `main`. Configure em GitHub → Settings → Rules/Rulesets ou Branch protection uma regra para `main` exigindo pull requests e o check `testes-build-tipos`; para impedir promoção/publicação antecipada, configurar também Deployment Checks da Vercel e revisar o fluxo de implantação. Não reivindicar aprovação de produção apenas porque o CI passou.

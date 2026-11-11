@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test tests/*.test.mjs",
+    "check:ci": "npm run test && npm run build && npm run typecheck"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

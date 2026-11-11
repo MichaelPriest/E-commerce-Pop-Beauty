@@ -1,0 +1,38 @@
+name: Qualidade Popê Beauty
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: testes-build-tipos
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout somente leitura
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Testes automatizados
+        run: npm run test
+      - name: Compilar Next.js
+        run: npm run build
+      - name: Validar TypeScript
+        run: npm run typecheck

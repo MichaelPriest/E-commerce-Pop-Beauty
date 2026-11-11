@@ -239,7 +239,7 @@ Todas as rotas `/admin/*` são para perfil `admin` verificado no banco.
 | `/admin/frete` | CEP de origem, peso/medidas e cotação sandbox |
 | `/admin/financeiro` | Indicadores de pedidos com confirmação administrativa |
 | `/admin/relatorios` | Evolução mensal, CSV e alertas de estoque |
-| `/admin/marketplaces` | Associação cadastral com anúncios externos |
+| `/admin/marketplaces` | OAuth de contas Shopee/Mercado Livre, importação manual somente leitura e vínculos de SKU |
 | `/admin/notificacoes` | Fila de e-mails de pedidos; reprocessamento |
 | `/admin/gateways` | Comparação de dez provedores, credenciais e preferências |
 | `/admin/pagamentos` | Preparação de pagamentos TEST, links TEST e auditoria de webhooks |
@@ -427,7 +427,7 @@ O fluxo ainda não foi validado ponta a ponta com eventos reais de TEST; faltam 
 
 O `/admin/financeiro` considera **confirmação administrativa de recebimento**, não pagamento bancário conciliado. `/admin/relatorios` oferece evolução mensal, exportação CSV e alertas operacionais. Reservas TEST `store_api` são excluídas desses indicadores.
 
-Vínculos em `/admin/marketplaces` são apenas cadastrais; **não existe sincronização Shopee/Mercado Livre em tempo real**.
+`/admin/marketplaces` já oferece OAuth Shopee/Mercado Livre e consulta manual da primeira página de anúncios/pedidos em tabelas isoladas. **Não existem sincronização contínua, reserva automática de estoque nem criação de pedidos de marketplace no módulo operacional**.
 
 ### 12.2. E-mails dos pedidos
 
@@ -660,3 +660,66 @@ A rota **`/admin/prontidao`** foi incluída no menu Sistema, com acesso restrito
 - O sistema **nunca** usa esse painel para ativar o checkout. A lógica pura de resumo em `src/lib/release-readiness.ts` mantém `canOpen=false`; testes cobrem a impossibilidade de liberar vendas pela soma de checks.
 - O painel inclui pendências manuais (emissão fiscal, documentos comerciais, proteção de senha, revisão de segurança) para evitar sensação enganosa de prontidão.
 - Antes da liberação, conferir a lista com o desenvolvedor, a operação comercial e a contabilidade; somente após homologação dos fluxos transacionais criar uma decisão separada de lançamento.
+
+## 21. Integrações Shopee e Mercado Livre — OAuth e consultas em leitura
+
+Implementadas em 11/11/2026. O módulo `/admin/marketplaces` passou a apresentar conexão OAuth, contas autorizadas, consulta manual de anúncios e pedidos, histórico resumido de importações e desconexão. A implementação permanece **desligada até o proprietário cadastrar os aplicativos e autorizar suas contas**.
+
+### 21.1. Credenciais e URLs de callback
+
+**Mercado Livre** (https://developers.mercadolivre.com.br):
+- Criar aplicação própria no Mercado Livre DevCenter e solicitar permissões de leitura de anúncios/pedidos e `offline_access`. Não reutilizar aplicação de Mercado Pago.
+- Configurar `MELI_APP_ID` e `MELI_CLIENT_SECRET` em Vercel → Environment Variables **somente servidor**.
+- Cadastrar a URL estática exata de redirecionamento: `https://e-commerce-pope-beauty.vercel.app/api/admin/marketplaces/oauth/callback/mercadolivre`.
+- O fluxo utiliza Authorization Code + `state` e PKCE S256. O token é obtido no servidor por POST `/oauth/token`, e `GET /users/me` confirma a conta vendedora brasileira (`site_id=MLB`).
+- O access token tem duração limitada; cada refresh token é de **uso único**. A renovação substitui ambos os tokens no cofre e usa `revision` (compare-and-swap) para impedir gravação de versões antigas.
+
+**Shopee** (https://open.shopee.com.br):
+- Solicitar acesso Shopee Open Platform, criar aplicação com autorizações de **produtos e pedidos**, e obter `Partner ID` e `Partner Key`.
+- Configurar `SHOPEE_PARTNER_ID` e `SHOPEE_PARTNER_KEY` em Vercel → Environment Variables **somente servidor**.
+- Cadastrar o domínio e o retorno: `https://e-commerce-pope-beauty.vercel.app/api/admin/marketplaces/oauth/callback/shopee`.
+- A autorização utiliza o endereço mais recente `https://open.shopee.com.br/auth`, parâmetros `partner_id`, `auth_type=seller`, `response_type=code`, `redirect_uri` e `state`. Tokens são trocados em `/api/v2/auth/token/get`. As chamadas à API utilizam assinatura HMAC-SHA256 sobre os campos de assinatura pública ou de loja.
+- O fluxo de integração foi escrito para uma **conta de loja Shopee com `shop_id`**, não para conta principal que retorna apenas `main_account_id`. A integração de múltiplas lojas em conta master é etapa separada.
+
+**Cofre obrigatório para ambos:**
+- `MARKETPLACE_TOKEN_ENCRYPTION_KEY`: **32 bytes aleatórios em hexadecimal (64 caracteres)**, protegidos como segredo Vercel. Gerar em ambiente seguro com `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` e cadastrar diretamente na Vercel — **não enviar por chat ou commit**.
+- `MARKETPLACE_OAUTH_ORIGIN` (opcional; por padrão `https://e-commerce-pope-beauty.vercel.app`). Precisa coincidir com o domínio configurado nos aplicativos.
+- O token de acesso e refresh são cifrados com **AES-256-GCM**, com IV aleatório e tag de autenticação. O texto cifrado fica no schema `private`, sem acesso direto para o browser. A aplicação depende da chave do servidor para recuperar credenciais.
+- **Faça backup seguro da chave de criptografia:** perdê-la exige reconectar as lojas, pois os tokens existentes não poderão ser decifrados. A rotação de chave exigirá procedimento específico de recifra antes de substituir o segredo.
+
+**Nunca configurar tokens de vendedores reais no código, README ou logs.** O OAuth solicita autorização ao vendedor; não é necessário compartilhar senhas da Shopee/Mercado Livre com a Popê Beauty.
+
+### 21.2. Funcionalidades e limites
+
+| Operação | Implementação | Limite |
+| --- | --- | --- |
+| Conexão de loja | OAuth oficial e callbacks com `state` | Requer cadastro do aplicativo e aprovação do vendedor |
+| Cofre de tokens | AES-256-GCM no servidor, função SQL privada | Requer chave de cofre válida |
+| Renovação de token | On-demand ao consultar quando estiver próximo de expirar | Sem rotina agendada |
+| Consulta Mercado Livre anúncios | `/users/{seller_id}/items/search` + `/items/bulk` | Até 30 anúncios por clique |
+| Consulta Mercado Livre pedidos | `/orders/search?seller={id}` | Até 20 pedidos por clique |
+| Consulta Shopee anúncios | `/api/v2/product/get_item_list` e `get_item_base_info` | Até 30 anúncios por clique |
+| Consulta Shopee pedidos | `/api/v2/order/get_order_list` (últimos 7 dias) | Até 20 pedidos por clique |
+| Histórico local | `marketplace_readonly_imports`, idempotência por conta/tipo/ID | Sem informações pessoais do comprador |
+| Desconexão | Elimina tokens cifrados locais | Revogação junto ao marketplace também deve ser realizada no portal externo |
+| Estoque/preço/exportação | **Desativados** | Não chama endpoints de escrita |
+| Criação de pedidos comerciais | **Desativada** | Importação não altera `orders` nem `inventory` |
+| Rotina cron/webhooks | **Pendente** | Sem sincronização automática |
+
+Tabelas: `marketplace_connections` (contas/status), `private.marketplace_token_vault` (tokens cifrados e revisão) e `marketplace_readonly_imports` (snapshots operacionais sem PII). Migração: `supabase/marketplace_oauth_readonly.sql`.
+
+### 21.3. Segurança, testes e futura sincronização
+
+- Rotas `/api/admin/marketplaces/oauth/start/[channel]`, `oauth/callback/[channel]`, `sync` e `disconnect` exigem conta **admin**. Callbacks exigem state consistente, cookie `HttpOnly`/SameSite Lax, e no Mercado Livre também PKCE.
+- Tokens nunca são enviados como propriedades da interface administrativa, nem usados pelo browser para chamar APIs externas.
+- Apenas origens OAuth HTTPS configuradas e endpoints oficiais fixos são aceitos. POSTs verificam a origem e o host.
+- Testes automatizados para HMAC Shopee, cifragem AES-GCM, adulteração, controle de acesso e ausência de mutações de pedidos/estoque.
+- Os dados importados **não são pedidos comerciais reconciliados** e não representam pagamento confirmado.
+- Pendente antes da sincronização completa: validação da conta de vendedor real, reconciliação de variações/SKUs e estoques por loja, atualização de status e cancelamentos, sincronização incremental/webhooks, política de devoluções, rate limits, reprocessamento e suporte para Shopee main accounts.
+- Nenhuma conexão foi autorizada ou verificada de ponta a ponta com os provedores enquanto não houver credenciais e aprovação de aplicativos.
+
+**Checklist de conexão:** configurar três/duas variáveis conforme o canal, salvar a URL de callback no provedor, fazer novo deploy, acessar `/admin/marketplaces`, clicar `Conectar conta`, autorizar a loja e usar os botões `Anúncios` / `Pedidos`. Validar IDs e SKUs antes de habilitar qualquer escrita.
+
+### Integrações de marketplaces
+
+O painel `/admin/marketplaces` consulta conexões Shopee/Mercado Livre, mas **não** libera pedidos reais. Antes de produção dos marketplaces, concluir autorização OAuth real, sincronização incremental segura, estoque por SKU/loja e conciliação de pedidos externos.

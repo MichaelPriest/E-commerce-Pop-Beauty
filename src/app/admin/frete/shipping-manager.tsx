@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Truck,PackageCheck,MapPin,Save,Search,FlaskConical,ShieldCheck,
@@ -7,6 +7,8 @@ import {Truck,PackageCheck,MapPin,Save,Search,FlaskConical,ShieldCheck,
 import {createClient} from '@/lib/supabase/browser';
 import {formatBRL} from '@/lib/products';
 import type {ShippingVariant} from './page';
+import {CepInput,onlyDigits} from '@/components/forms/masked-fields';
+import {usePostalCodeLookup} from '@/hooks/use-postal-code-lookup';
 
 type Spec={weight_g:string;height_cm:string;width_cm:string;length_cm:string};
 type Quote={service_id:string;service:string;carrier:string;price_cents:number;delivery_days:number};
@@ -23,6 +25,27 @@ export function ShippingManager({rows,initialOriginZip,sandboxTokenPresent}:{
  const [filter,setFilter]=useState(''),[onlyMissing,setOnlyMissing]=useState(false);
  const [editing,setEditing]=useState(''),[spec,setSpec]=useState<Spec>({weight_g:'',height_cm:'',width_cm:'',length_cm:''});
  const [target,setTarget]=useState(''),[productId,setProductId]=useState('');
+ const originCep=usePostalCodeLookup();
+ const destinationCep=usePostalCodeLookup();
+ const lastOrigin=useRef(''),lastDestination=useRef('');
+ useEffect(()=>{
+  const value=onlyDigits(origin,8);
+  if(value.length!==8||value===lastOrigin.current)return;
+  const timer=window.setTimeout(()=>{
+   lastOrigin.current=value;
+   void originCep.lookup(value);
+  },550);
+  return ()=>window.clearTimeout(timer);
+ },[origin,originCep.lookup]);
+ useEffect(()=>{
+  const value=onlyDigits(target,8);
+  if(value.length!==8||value===lastDestination.current)return;
+  const timer=window.setTimeout(()=>{
+   lastDestination.current=value;
+   void destinationCep.lookup(value);
+  },550);
+  return ()=>window.clearTimeout(timer);
+ },[target,destinationCep.lookup]);
  const [quantity,setQuantity]=useState(1),[quotes,setQuotes]=useState<Quote[]>([]);
  const [quoteNotice,setQuoteNotice]=useState('');
  const eligible=useMemo(()=>{
@@ -88,8 +111,13 @@ export function ShippingManager({rows,initialOriginZip,sandboxTokenPresent}:{
    <section className="pope-shipping-box">
     <h2><MapPin size={20}/> CEP de origem</h2>
     <p>Informe o CEP de onde a loja realmente pretende postar os pedidos. Não é o CEP do cliente.</p>
-    <label>CEP de postagem<input inputMode="numeric" autoComplete="off" placeholder="00000-000"
-     maxLength={9} value={origin} onChange={e=>setOrigin(e.target.value)}/></label>
+    <label>CEP de postagem<CepInput value={origin} autoComplete="off" aria-label="CEP de origem"
+     onValueChange={value=>{setOrigin(value);originCep.reset();}}/></label>
+    {originCep.loading?<small className="pope-shipping-zip-feedback">Consultando CEP de origem...</small>:null}
+    {originCep.error?<small role="alert" className="pope-shipping-zip-feedback warning">{originCep.error}</small>:null}
+    {originCep.result?<small className="pope-shipping-zip-feedback">
+     <MapPin size={14}/>{originCep.result.city}/{originCep.result.state_code} · {originCep.result.source}
+    </small>:null}
     <button type="button" className="admin-primary" onClick={saveOrigin}
      disabled={!!busy||origin.replace(/\D/g,'').length!==8}>
      <Save size={16}/>{busy==='origin'?'Salvando...':'Salvar origem'}</button>
@@ -155,8 +183,16 @@ export function ShippingManager({rows,initialOriginZip,sandboxTokenPresent}:{
       {v.product_name} · {v.sku}{v.weight_g?'':' (sem medidas)'}
      </option>)}
     </select></label>
-    <label>CEP destino<input inputMode="numeric" maxLength={9} value={target}
-     onChange={e=>setTarget(e.target.value)} placeholder="01001-000"/></label>
+    <label>CEP destino
+     <CepInput value={target} aria-label="CEP de destino" placeholder="01001-000"
+      onValueChange={value=>{setTarget(value);destinationCep.reset();setQuotes([]);}}/>
+     {destinationCep.loading?<small>Consultando CEP de destino...</small>:null}
+     {destinationCep.error?<small role="alert" className="pope-shipping-zip-feedback warning">
+      {destinationCep.error}</small>:null}
+     {destinationCep.result?<small className="pope-shipping-zip-feedback">
+      {destinationCep.result.city}/{destinationCep.result.state_code} · {destinationCep.result.source}
+     </small>:null}
+    </label>
     <label>Quantidade<input type="number" min="1" max="30" step="1" value={quantity}
      onChange={e=>setQuantity(Number(e.target.value))}/></label>
     <button className="admin-primary" type="button" onClick={simulate}

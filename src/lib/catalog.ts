@@ -12,5 +12,5 @@ export async function getProducts(): Promise<{products:Product[]; demo:boolean}>
     id:p.id,slug:p.slug,name:p.name,description:p.description??'',brand:p.brand??'',price_cents:p.price_cents,
     compare_at_cents:p.compare_at_cents,image_url:p.image_url,category:p.categories?.name??'Beleza',
   })) as Product[];
-  return { products, demo:false };
+  return products.length ? { products, demo:false } : { products:demoProducts, demo:true };
 }

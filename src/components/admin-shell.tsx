@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -49,6 +49,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/clientes',label:'Clientes',icon:Users},
    {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity,count:onlineCount},
    {href:'/admin/logistica',label:'Logística',icon:Truck},
+   {href:'/admin/remessas',label:'Central de remessas',icon:ClipboardList},
    {href:'/admin/frete',label:'Frete e embalagem',icon:PackagePlus},
    {href:'/admin/fiscal',label:'Fiscal e documentos',icon:FileText},
    {href:'/admin/financeiro',label:'Financeiro',icon:CreditCard},
@@ -80,6 +81,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/pagamentos',label:'Preparar testes de pagamento',icon:CreditCard},
   {href:'/admin/reservas',label:'Ver reservas de teste',icon:Timer},
   {href:'/admin/frete',label:'Cadastrar embalagens e frete',icon:PackagePlus},
+  {href:'/admin/remessas',label:'Preparar remessas',icon:ClipboardList},
   {href:'/admin/fiscal',label:'Preparar documentos fiscais e etiquetas',icon:FileText},
   {href:'/admin/prontidao',label:'Ver prontidão de lançamento',icon:ClipboardCheck}
  ];

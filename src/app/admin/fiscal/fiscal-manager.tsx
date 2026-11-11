@@ -234,6 +234,8 @@ export function FiscalManager({issuer,products,orders,drafts,recipients,packages
      <Link className="admin-outline"
       href={'/admin/fiscal/documentos/'+orderId+'?tipo=conferencia'} target="_blank">
       <Printer size={16}/> Conferência fiscal</Link>
+     <a className="admin-outline" href={'/api/admin/fiscal/export/'+orderId}>
+      <FileText size={16}/> Exportar dados para emissor (JSON)</a>
     </div></>:<p className="admin-help">Nenhum pedido administrativo cadastrado.</p>}
    </section>
    {selectedOrder?<section className="ops-form-card">

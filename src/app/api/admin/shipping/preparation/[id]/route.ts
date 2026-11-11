@@ -1,5 +1,6 @@
 import {NextResponse,type NextRequest} from 'next/server';
 import {createClient} from '@/lib/supabase/server';
+import {providerPreparationReview,type ProviderDraft} from '@/lib/shipping/provider-adapters';
 import {checkShipmentPreparation,type PreparedVolume,type ShippingDestination} from '@/lib/shipping/shipment-preparation';
 
 export const dynamic='force-dynamic';
@@ -21,7 +22,7 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   .select('role').eq('id',auth.claims.sub).maybeSingle();
  if(profileError||profile?.role!=='admin')
   return NextResponse.json({error:'Acesso restrito ao administrador.'},{status:403,headers});
- const [order,packing,volumeRows,originSettings]=await Promise.all([
+ const [order,packing,volumeRows,originSettings,providerDraft]=await Promise.all([
   sb.from('orders').select('id,origin,status,shipping_address_snapshot')
    .eq('id',id).eq('origin','admin_manual').maybeSingle(),
   sb.from('internal_package_preparations')
@@ -30,11 +31,14 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
    .select('volume_number,weight_g,height_cm,width_cm,length_cm,contents_note')
    .eq('order_id',id).order('volume_number'),
   sb.from('shipping_origin_settings')
-   .select('origin_postal_code').eq('id',1).maybeSingle()
+   .select('origin_postal_code').eq('id',1).maybeSingle(),
+  sb.from('shipment_provider_drafts')
+   .select('order_id,provider,service_code,operator_notes,revision,draft_token')
+   .eq('order_id',id).maybeSingle()
  ]);
  if(order.error||!order.data)
   return NextResponse.json({error:'Pedido não encontrado.'},{status:404,headers});
- if(packing.error||volumeRows.error||originSettings.error)
+ if(packing.error||volumeRows.error||originSettings.error||providerDraft.error)
   return NextResponse.json({error:'Falha ao consultar a preparação da remessa.'},{status:503,headers});
  const volumes:PreparedVolume[]=(volumeRows.data??[]).map(v=>({
   volume_number:v.volume_number,weight_g:v.weight_g,
@@ -52,6 +56,9 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
    issues:review.issues,document_status:'not_submitted'},
    {status:409,headers});
  }
+ const providerReview=providerPreparationReview({
+  orderId:id,draft:providerDraft.data as ProviderDraft|null,check:review,volumes
+ });
  const body={
   format:'pope.shipping.preparation.v1',
   is_official_shipping_label:false,
@@ -60,7 +67,8 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   quotation_performed:false,
   shipment_purchased:false,
   tracking_created:false,
-  ready_for_provider_review:true,
+  ready_for_provider_review:providerReview.ready_for_internal_review,
+  provider_review:providerReview,
   ready_for_label_purchase:false,
   requires_manual_fiscal_and_carrier_review:true,
   order_id:id,

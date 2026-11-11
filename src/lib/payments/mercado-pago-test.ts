@@ -11,7 +11,12 @@ export function sandboxPreferenceEnabled(){
 }
 export async function verifyMercadoPagoTestSeller():Promise<{token:string;seller:TestSeller}>{
  if(!sandboxPreferenceEnabled())throw new Error('Ambiente de preferências de teste não habilitado.');
- const token=process.env.MP_TEST_ACCESS_TOKEN!.trim();
+ return verifyMercadoPagoTestSellerCredentials();
+}
+/** Validação de identidade da conta TEST independente da chave de habilitação de preferências. */
+export async function verifyMercadoPagoTestSellerCredentials():Promise<{token:string;seller:TestSeller}>{
+ const token=process.env.MP_TEST_ACCESS_TOKEN?.trim();
+ if(!token||!process.env.MP_TEST_SELLER_ID?.trim())throw new Error('Credenciais de vendedor TEST não configuradas.');
  const expectedId=process.env.MP_TEST_SELLER_ID!.trim();
  // O prefixo APP_USR aparece em credenciais de teste E produção; não comprova sandbox.
  if(!token.startsWith('APP_USR-'))throw new Error('Access Token inválido para Checkout Pro de testes.');

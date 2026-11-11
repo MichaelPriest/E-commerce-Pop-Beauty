@@ -81,29 +81,34 @@ export function fiscalChecklist(input:{
  return [...new Set(issues)];
 }
 
-/** Reconciliação aritmética em centavos; não representa cálculo de tributos. */
+/** Reconciliação em centavos inteiros; entrada inválida nunca produz diferença aparente. */
 export function fiscalAmountReconciliation(lines:Pick<FiscalItem,'quantity'|'priceCents'>[],orderTotalCents:number){
  const issues:string[]=[];
- if(!Number.isSafeInteger(orderTotalCents)||orderTotalCents<0)
+ const orderValid=Number.isSafeInteger(orderTotalCents)&&orderTotalCents>=0;
+ if(!orderValid)
   issues.push('Total do pedido inválido ou fora do intervalo seguro em centavos');
+ let linesValid=lines.length>0;
+ if(!lines.length)issues.push('Pedido sem itens para conciliação');
  let itemsTotalCents=0;
  for(const item of lines){
   if(!Number.isSafeInteger(item.quantity)||item.quantity<=0||
      !Number.isSafeInteger(item.priceCents)||item.priceCents<0){
    issues.push('Item com quantidade ou preço inválido para conciliação');
+   linesValid=false;
    continue;
   }
   const lineTotal=item.quantity*item.priceCents;
   if(!Number.isSafeInteger(lineTotal)||!Number.isSafeInteger(itemsTotalCents+lineTotal)){
    issues.push('Soma de itens excede o intervalo seguro em centavos');
+   linesValid=false;
    continue;
   }
   itemsTotalCents+=lineTotal;
  }
- const differenceCents=Number.isSafeInteger(orderTotalCents)&&
-  Number.isSafeInteger(itemsTotalCents)?orderTotalCents-itemsTotalCents:null;
+ const complete=orderValid&&linesValid;
+ const differenceCents=complete?orderTotalCents-itemsTotalCents:null;
  if(differenceCents!==null&&differenceCents!==0)
   issues.push('Diferença entre itens e total do pedido: discriminar frete, desconto ou ajuste antes de emitir');
- return {items_total_cents:itemsTotalCents,
+ return {items_total_cents:complete?itemsTotalCents:null,
   difference_cents:differenceCents,issues:[...new Set(issues)]};
 }

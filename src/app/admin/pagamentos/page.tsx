@@ -40,10 +40,10 @@ export default async function SandboxPaymentsPage(){
    <div><CreditCard/><small>Transações reais executadas</small><strong>0</strong></div>
   </div>
   <p className="ops-info"><ShieldCheck size={18}/>
-   O botão desta página registra somente uma <strong>preparação interna de sandbox</strong>.
-   Nenhuma API de cobrança é acionada. O valor é copiado do pedido de teste, não
-   de informações enviadas pelo navegador; não é possível registrar pagamento
-   aprovado ou liquidado por esta interface. Reservas vencem em 15 minutos.
+   A preparação inicial registra apenas um <strong>rascunho interno de sandbox</strong>.
+   Com credenciais TEST verificadas, um botão separado pode gerar uma preferência Checkout Pro
+   vinculada à conta vendedora de teste. Não é possível registrar pagamento aprovado
+   ou liquidado nesta interface. Reservas vencem em 15 minutos.
   </p>
   <SandboxPaymentPlanner reservations={reservations} attempts={drafts} mpSandboxReady={sandboxPreferenceEnabled()}/>
  </div>;

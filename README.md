@@ -739,3 +739,15 @@ A autorização Shopee utiliza `/api/v2/shop/auth_partner`, assinatura HMAC dos 
 ### 21.6. Segurança dos SKUs nas variações
 
 O anúncio pai **não** é automaticamente considerado um SKU vendável quando possui variações. Na Shopee, `item_sku` só é aproveitado quando `has_model=false`; modelos requerem consulta futura a `get_model_list` e vínculo por `model_id` / `model_sku`. No Mercado Livre, o SKU considerado confiável é o atributo `SELLER_SKU`; `seller_custom_field` é uma referência independente e não autoriza relação automática. Anúncios com `variations` mantêm vínculo pendente, sem atualizar saldos. Tests unitários garantem esse comportamento conservador. Documentação: [Mercado Livre — Variações](https://developers.mercadolivre.com.br/pt_br/variacoes) e [Shopee — get_model_list](https://open.shopee.com/documents/v2/v2.product.get_model_list).
+
+### 21.7. Conferência por item de pedidos (somente leitura)
+
+Os pedidos consultados por um administrador agora são complementados com itens individuais:
+- **Mercado Livre:** `order_items` do resultado autorizado `/orders/search`, incluindo `item.seller_sku`, `variation_id`, título, quantidade e preço unitário. A importação confere o ID do vendedor quando presente.
+- **Shopee:** após `get_order_list`, a aplicação consulta `/api/v2/order/get_order_detail` com `order_sn_list` e solicita o campo `item_list`. Usa `model_sku` quando `model_id>0`; se não houver SKU do modelo, deixa-o em branco (jamais o substitui pelo SKU do item pai). Para produtos sem modelo, usa `item_sku`.
+- Os dados são normalizados em `src/lib/marketplaces/order-line-core.ts`, **descartando inteiramente** comprador, endereço, telefone e detalhes de pagamento/entrega.
+- A migração `supabase/marketplace_order_line_previews.sql` cria staging por conta, pedido e linha; a RPC `replace_marketplace_order_line_previews` substitui as linhas consultadas numa transação, sem alterar `orders`, `order_items`, `inventory` ou `order_notifications`.
+- Em `/admin/marketplaces`, a tabela **Conferência de itens de pedidos** compara cada SKU a `variants.sku`, classifica ausência, ambiguidade ou produto adulto bloqueado, e mostra saldo físico/reservado **apenas como informação cadastral**, não disponibilidade para venda.
+- Quando a resposta de um provedor não apresenta detalhes de um pedido solicitado, a importação falha sem assumir valores vazios. Valores e quantidades inválidos não são tratados como confirmados.
+
+**Os pedidos externos continuam sem financeiro e sem estoque automático.** Para avançar para a sincronização transacional, ainda serão necessários eventos incrementais autenticados, conciliação de pedidos cancelados/reembolsados, reserva serializada por SKU/lote, idempotência por canal e tratamento de eventos fora de ordem.

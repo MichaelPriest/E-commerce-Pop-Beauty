@@ -891,3 +891,9 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-marketplace-footer{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-top:18px}
 .pope-marketplace-footer a{display:inline-flex;align-items:center;gap:5px;color:#a82785;text-decoration:underline}
 @media(max-width:670px){.pope-marketplace-provider-grid{grid-template-columns:1fr}.pope-marketplace-api{padding:15px}}
+
+.pope-marketplace-sku-good,.pope-marketplace-sku-review{
+ display:inline-block;border-radius:999px;font-size:10px;padding:5px 9px;font-weight:800
+}
+.pope-marketplace-sku-good{background:#eaf8ed;color:#237548}
+.pope-marketplace-sku-review{background:#fff2df;color:#8d5a22}

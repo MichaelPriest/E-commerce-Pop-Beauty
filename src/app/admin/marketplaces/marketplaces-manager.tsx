@@ -5,12 +5,12 @@ import {Link2,Search,RefreshCw,ShieldAlert,Store,Box,Save} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import type {SellableSku,ListingRow} from '@/types/operations';
 import {MarketplaceConnections,type MarketplaceAccountRow,
- type MarketplaceImportRow} from './marketplace-connections';
+ type MarketplaceImportRow,type MarketplaceOrderLineRow} from './marketplace-connections';
 type Props={links:ListingRow[];variants:SellableSku[];
- accounts:MarketplaceAccountRow[];imports:MarketplaceImportRow[];
+ accounts:MarketplaceAccountRow[];imports:MarketplaceImportRow[];orderLines:MarketplaceOrderLineRow[];
  vaultReady:boolean;configured:{shopee:boolean;mercadolivre:boolean};};
 const channels=[{id:'shopee',label:'Shopee',symbol:'🟠'},{id:'mercadolivre',label:'Mercado Livre',symbol:'🟡'}];
-export function MarketplacesManager({links,variants,accounts,imports,vaultReady,configured}:Props){
+export function MarketplacesManager({links,variants,accounts,imports,orderLines,vaultReady,configured}:Props){
  const router=useRouter(),[channel,setChannel]=useState('shopee'),[sku,setSku]=useState(''),[listingId,setListingId]=useState('');
  const [query,setQuery]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const eligible=useMemo(()=>variants.filter(v=>v.products&&!v.products.is_adult),[variants]);
@@ -39,8 +39,12 @@ export function MarketplacesManager({links,variants,accounts,imports,vaultReady,
   Os registros importados são prévias e NÃO atualizam automaticamente estoque, preços ou pedidos internos.
   Produtos +18 não podem ser vinculados aos SKUs desta área.</p>
   <MarketplaceConnections accounts={accounts} imports={imports}
+   orderLines={orderLines}
    vaultReady={vaultReady} configured={configured}
-   localSkus={variants.map(v=>({sku:v.sku,isAdult:!!v.products?.is_adult}))}/>
+   localSkus={variants.map(v=>({
+    sku:v.sku,isAdult:!!v.products?.is_adult,
+    onHand:v.inventory?.on_hand??null,reserved:v.inventory?.reserved??null
+   }))}/>
   <section className="ops-form-card"><h2><Link2 size={20}/> Vincular anúncio existente</h2>
    <form onSubmit={link} className="ops-link-form">
     <label>Marketplace<select value={channel} onChange={e=>setChannel(e.target.value)}>

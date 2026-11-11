@@ -16,13 +16,20 @@ export type MarketplaceImportRow={
  external_id:string;title:string;sku:string;external_status:string;
  amount_cents:number|null;quantity:number|null;updated_at:string;
 };
+export type MarketplaceOrderLineRow={
+ id:string;connection_id:string;external_order_id:string;line_key:string;
+ external_listing_id:string;external_variation_id:string;sku:string;title:string;
+ quantity:number|null;unit_price_cents:number|null;updated_at:string;
+};
+type LocalSku=SkuCandidate&{onHand:number|null;reserved:number|null};
 const labels={shopee:'Shopee',mercadolivre:'Mercado Livre'};
 export function MarketplaceConnections({
- accounts,imports,configured,vaultReady,localSkus
+ accounts,imports,orderLines,configured,vaultReady,localSkus
 }:{
  accounts:MarketplaceAccountRow[];imports:MarketplaceImportRow[];
+ orderLines:MarketplaceOrderLineRow[];
  configured:{shopee:boolean;mercadolivre:boolean};vaultReady:boolean;
- localSkus:SkuCandidate[];
+ localSkus:LocalSku[];
 }){
  const router=useRouter();
  const [busy,setBusy]=useState(''),[message,setMessage]=useState(''),
@@ -47,7 +54,9 @@ export function MarketplaceConnections({
    });
    const result=await response.json();
    if(!response.ok)throw new Error(result.error||'Operação indisponível.');
-   setMessage(result.message||'Operação concluída.');
+   setMessage(result.message||
+    'Operação concluída.'+
+    (result.order_lines?' '+result.order_lines+' linhas de pedido conferidas.':''));
    if(task==='disconnect'){
     setNextCursors(old=>Object.fromEntries(
      Object.entries(old).filter(([key])=>!key.startsWith(id+':'))));
@@ -149,6 +158,50 @@ export function MarketplaceConnections({
   </table>
   {imports.length===0?<p className="admin-help">Nenhuma consulta concluída. Após conectar,
    use Anúncios ou Pedidos para buscar a primeira página da API.</p>:null}</div>
+  <h3><ShoppingBag size={18}/> Conferência de itens de pedidos</h3>
+  <p>Os itens são consultados nos detalhes dos pedidos autorizados. Confira SKU de modelo,
+   quantidade e estoque cadastrado; o sistema não reserva unidades nem confirma pagamentos.</p>
+  <div className="ops-table-scroll"><table className="ops-table">
+   <thead><tr><th>Marketplace / Pedido</th><th>Anúncio / Modelo</th>
+    <th>SKU recebido</th><th>Quantidade / Preço</th>
+    <th>Conferência de SKU</th><th>Estoque cadastrado</th></tr></thead>
+   <tbody>{orderLines.map(line=>{
+    const account=accounts.find(a=>a.id===line.connection_id);
+    const match=classifyMarketplaceSku(line.sku,localSkus);
+    const local=match==='matched'?
+      localSkus.find(v=>v.sku.trim().toLocaleUpperCase('pt-BR')===
+       line.sku.trim().toLocaleUpperCase('pt-BR')):undefined;
+    const labelsByMatch={
+     matched:'SKU único localizado',missing:'SKU ausente',
+     unmatched:'Sem correspondência',ambiguous:'SKU duplicado',
+     adult_blocked:'Produto +18 bloqueado'
+    };
+    return <tr key={line.id}>
+     <td><strong>{account?labels[account.channel]:'Marketplace'}</strong>
+      <small>#{line.external_order_id}</small></td>
+     <td>{line.title||'Produto sem título'}
+      <small>Anúncio {line.external_listing_id||'—'} · Modelo {line.external_variation_id||'—'}</small></td>
+     <td><strong>{line.sku||'—'}</strong></td>
+     <td>{line.quantity??'Quantidade indisponível'}
+      <small>{line.unit_price_cents!=null?
+       new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'})
+        .format(line.unit_price_cents/100):'Preço não informado'}</small></td>
+     <td><span className={match==='matched'?'pope-marketplace-sku-good':'pope-marketplace-sku-review'}>
+      {labelsByMatch[match]}</span></td>
+     <td>{local&&local.onHand!==null&&local.reserved!==null?
+       <>Físico: {local.onHand} <small>Reservado: {local.reserved}</small></>:
+       'Não confirmado'}</td>
+    </tr>;
+   })}</tbody>
+  </table>
+  {orderLines.length===0?<p className="admin-help">
+   Ainda não há itens de pedidos para conferir. Depois de conectar o vendedor,
+   clique em Pedidos para consultar os detalhes em modo somente leitura.</p>:null}
+  </div>
+  <p className="pope-marketplace-warning"><AlertTriangle size={16}/>
+   Estoque exibido é uma referência cadastral, não saldo vendável garantido:
+   confira lotes, validade, reservas e atualizações concorrentes antes de sincronizar.
+   Pedidos externos não serão enviados à expedição.</p>
   <p className="pope-marketplace-footer"><ShieldCheck size={16}/>
    Sincronização somente leitura. Sem criação de pedidos, baixa de estoque,
    atualização de preço, geração de etiquetas ou envio de dados para os marketplaces.

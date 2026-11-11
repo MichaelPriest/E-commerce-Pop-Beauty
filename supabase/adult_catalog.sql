@@ -105,7 +105,7 @@ begin
  if new.is_adult then
    -- Produtos +18 nunca expõem imagens externas ou do bucket público.
    if new.image_url is not null and
-      new.image_url !~ '^adult-products:products/[a-f0-9-]{36}\\.(jpg|png|webp)$' then
+      new.image_url !~ '^adult-products:products/[a-f0-9-]{36}[.](jpg|png|webp)$' then
       raise exception 'Imagem adulta precisa ser enviada ao armazenamento privado.';
    end if;
  else
@@ -170,3 +170,19 @@ grant execute on function public.review_age_verification(uuid,boolean,text) to a
 
 -- Desativação invalida imediatamente todas as permissões de visualização sem apagar
 -- as verificações registradas. Nenhuma verificação autoriza acesso sem a flag.
+
+-- Bloqueia troca arbitrária da classificação de categorias já utilizadas.
+create or replace function private.prevent_category_age_flip() returns trigger
+ language plpgsql set search_path=''
+as $$
+begin
+ if new.is_adult is distinct from old.is_adult and
+    exists(select 1 from public.products where category_id=old.id) then
+   raise exception 'Não é possível alterar classificação etária de categoria com produtos cadastrados';
+ end if;
+ return new;
+end;
+$$;
+drop trigger if exists pope_prevent_category_age_flip on public.categories;
+create trigger pope_prevent_category_age_flip before update of is_adult
+ on public.categories for each row execute function private.prevent_category_age_flip();

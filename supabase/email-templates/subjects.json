@@ -1,0 +1,66 @@
+{
+  "brand": "Popê Beauty",
+  "sender_name": "Popê Beauty",
+  "sender_email": "popebeauty.e@gmail.com",
+  "auth_templates": {
+    "01-confirmacao-cadastro.html": {
+      "tipo": "Confirmação de cadastro",
+      "subject": "Popê Beauty | Confirme seu cadastro"
+    },
+    "02-recuperacao-senha.html": {
+      "tipo": "Recuperação de senha",
+      "subject": "Popê Beauty | Redefina sua senha"
+    },
+    "03-login-link-magico.html": {
+      "tipo": "Link mágico / OTP",
+      "subject": "Popê Beauty | Seu link de acesso"
+    },
+    "04-convite.html": {
+      "tipo": "Convite",
+      "subject": "Popê Beauty | Você recebeu um convite"
+    },
+    "05-alteracao-email.html": {
+      "tipo": "Alteração de e-mail",
+      "subject": "Popê Beauty | Confirme a alteração de e-mail"
+    },
+    "06-reauthenticacao.html": {
+      "tipo": "Reautenticação",
+      "subject": "Popê Beauty | Seu código de verificação"
+    },
+    "07-notificacao-senha-alterada.html": {
+      "tipo": "Aviso: senha alterada",
+      "subject": "Popê Beauty | Sua senha foi alterada"
+    },
+    "08-notificacao-email-alterado.html": {
+      "tipo": "Aviso: e-mail alterado",
+      "subject": "Popê Beauty | Seu e-mail foi alterado"
+    },
+    "09-notificacao-telefone-alterado.html": {
+      "tipo": "Aviso: telefone alterado",
+      "subject": "Popê Beauty | Telefone da conta alterado"
+    },
+    "10-notificacao-mfa-adicionado.html": {
+      "tipo": "Aviso: método MFA adicionado",
+      "subject": "Popê Beauty | Nova proteção ativada"
+    },
+    "11-notificacao-mfa-removido.html": {
+      "tipo": "Aviso: método MFA removido",
+      "subject": "Popê Beauty | Um método de proteção foi removido"
+    },
+    "12-notificacao-login-vinculado.html": {
+      "tipo": "Aviso: acesso vinculado",
+      "subject": "Popê Beauty | Novo método de login vinculado"
+    },
+    "13-notificacao-login-removido.html": {
+      "tipo": "Aviso: acesso removido",
+      "subject": "Popê Beauty | Método de login removido"
+    }
+  },
+  "order_templates": {
+    "01-pedido-registrado.html": "Popê Beauty | Recebemos o pedido [[PEDIDO]]",
+    "02-pagamento-confirmado.html": "Popê Beauty | Pagamento confirmado do pedido [[PEDIDO]]",
+    "03-pedido-enviado.html": "Popê Beauty | Pedido [[PEDIDO]] enviado",
+    "04-pedido-entregue.html": "Popê Beauty | Seu pedido [[PEDIDO]] foi entregue",
+    "05-pedido-cancelado.html": "Popê Beauty | Pedido [[PEDIDO]] cancelado"
+  }
+}

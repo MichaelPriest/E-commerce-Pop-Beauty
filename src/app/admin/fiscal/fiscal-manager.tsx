@@ -106,7 +106,7 @@ export function FiscalManager({issuer,products,orders,drafts,recipients,packages
   setVolumes(String(p?.volumes??1));setWeight(String(p?.weight_g??''));
   setPackingNotes(p?.packing_notes??'');setNotice('');setError('');
  }
- async function execute(title:string,call:()=>Promise<{error?:{message:string}|null}>){
+ async function execute(title:string,call:()=>PromiseLike<{error?:{message:string}|null}>){
   if(working)return;setWorking(title);setNotice('');setError('');
   try{const r=await call();if(r.error)throw new Error(r.error.message);
    setNotice('Informações salvas. São preparatórias e não representam emissão fiscal.');

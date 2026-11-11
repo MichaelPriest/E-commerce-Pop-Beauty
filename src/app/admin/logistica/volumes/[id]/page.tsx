@@ -4,6 +4,7 @@ import {ArrowLeft,Package,ClipboardCheck,AlertTriangle,FileDown} from 'lucide-re
 import {requireAdmin} from '@/lib/admin';
 import {checkShipmentPreparation,type PreparedVolume,type ShippingDestination} from '@/lib/shipping/shipment-preparation';
 import {VolumeEditor} from './volume-editor';
+import {DeliveryAddressEditor} from './delivery-address-editor';
 
 export const dynamic='force-dynamic';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -70,6 +71,9 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
      destinatário e quantidade prevista na preparação do pedido.</p>
    </div>}
   </section>
+
+  <DeliveryAddressEditor orderId={id} editable={editable}
+   initial={order.data.shipping_address_snapshot as ShippingDestination|null}/>
 
   {!prep.data?<p className="form-error">Defina primeiro a quantidade de volumes em
    <Link href="/admin/fiscal"> Fiscal e etiquetas</Link>, na seção de preparação de embalagem.</p>:

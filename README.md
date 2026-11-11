@@ -777,3 +777,9 @@ O desenvolvimento da central **`/admin/fiscal`** foi iniciado em 11/11/2026 para
 **Referências:** [SEFAZ SP NFC-e](https://portal.fazenda.sp.gov.br/servicos/nfce/), [Portal Nacional NF-e](https://www.nfe.fazenda.gov.br/portal/), [Reforma tributária nos DF-e](https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026/julho/receita-federal-e-comite-gestor-do-ibs-publicam-o-cronograma-de-implementacao-dos-documentos-fiscais-eletronicos-da-reforma-tributaria-do-consumo).
 
 A central de preparação é uma **base técnica, não um emissor fiscal**. Os documentos imprimíveis são exclusivamente internos.
+
+### 22.1. Exportação de dados para integração com emissor
+
+O administrador pode baixar `GET /api/admin/fiscal/export/[id]`, que gera um **JSON de preparação** `pope.fiscal.preparation.v1` contendo modelo escolhido, emitente, destinatário, itens, classificações fiscais, entrega, valores e alertas de campos básicos. A exportação exige autenticação de administrador, usa `Cache-Control: private, no-store` e retorna sempre `is_official_document=false`, `document_status=not_submitted` e `ready_for_transmission=false`. Não envia dados à SEFAZ, não calcula impostos automaticamente, não produz XML assinado nem DANFE. É uma interface de integração futura, não um documento fiscal.
+
+O destinatário pode conter CPF/CNPJ e o endereço do pedido; portanto o JSON exportado é **sensível** e deve ser guardado apenas em ambiente corporativo autorizado, com retenção e proteção adequadas à LGPD. Nunca compartilhar esse arquivo publicamente.

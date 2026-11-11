@@ -12,7 +12,9 @@ test('paginação assinada recupera offset, cursor e janela fixa',()=>{
 });
 test('paginação rejeita alterações, conta diferente e chave diferente',()=>{
  const t=encodeMarketplaceCursor(state,secret,now);
- assert.throws(()=>decodeMarketplaceCursor(t.slice(0,-1)+(t.endsWith('A')?'B':'A'),secret,scope,now));
+ const [payload,signature]=t.split('.');
+ assert.throws(()=>decodeMarketplaceCursor(
+  (payload[0]==='A'?'B':'A')+payload.slice(1)+'.'+signature,secret,scope,now));
  assert.throws(()=>decodeMarketplaceCursor(t,randomBytes(32),scope,now));
  assert.throws(()=>decodeMarketplaceCursor(t,secret,{...scope,accountId:'7654321'},now));
  assert.throws(()=>decodeMarketplaceCursor(t,secret,{...scope,kind:'listing'},now));

@@ -6,7 +6,7 @@ import {readMarketplacePage} from '@/lib/marketplaces/read-only';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const noStore={'Cache-Control':'private, no-store, max-age=0'};
-const uuid=/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i;
+const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const fail=(message:string,status:number)=>NextResponse.json({error:message},{status,headers:noStore});
 
 export async function POST(request:NextRequest){
@@ -22,15 +22,21 @@ export async function POST(request:NextRequest){
  if(!input||typeof input!=='object')return fail('Solicitação inválida.',400);
  const payload=input as Record<string,unknown>;
  const accountId=payload.connection_id,kind=payload.kind;
+ const cursor=payload.cursor;
  if(typeof accountId!=='string'||!uuid.test(accountId)||
-  (kind!=='listing'&&kind!=='order'))return fail('Conta ou tipo de sincronização inválido.',400);
+  (kind!=='listing'&&kind!=='order')||
+  (cursor!==undefined&&
+   (typeof cursor!=='string'||cursor.length>1000)))
+  return fail('Conta, tipo ou cursor de sincronização inválido.',400);
  const {data:account,error}=await sb.from('marketplace_connections')
   .select('id,channel,external_account_id,display_name,status,token_expires_at,last_synced_at,last_error')
   .eq('id',accountId).maybeSingle();
  if(error||!account||account.status!=='connected')return fail('Conta não conectada.',409);
  try{
   const token=await marketplaceAccessToken(sb,account as MarketplaceAccount);
-  const rows=await readMarketplacePage(account.channel,account.external_account_id,token,kind);
+  const page=await readMarketplacePage(account.channel,account.external_account_id,
+   token,kind,typeof cursor==='string'?cursor:undefined);
+  const rows=page.rows;
   if(rows.length>30)throw new Error('Limite de sincronização excedido.');
   if(rows.length){
    const {error:saveError}=await sb.from('marketplace_readonly_imports')
@@ -42,7 +48,8 @@ export async function POST(request:NextRequest){
   const {error:markError}=await sb.rpc('record_marketplace_sync',{p_id:accountId});
   if(markError)throw new Error('Não foi possível registrar a conferência.');
   return NextResponse.json({success:true,imported:rows.length,kind,
-   message:'Dados consultados. Nenhum pedido, preço ou estoque comercial foi alterado.'},
+   next_cursor:page.nextCursor,
+   message:'Página consultada ('+rows.length+' registros). Nenhum pedido, preço ou estoque comercial foi alterado.'},
    {headers:noStore});
  }catch(e){
   return fail(e instanceof Error?e.message:'Falha ao consultar marketplace.',502);

@@ -1,5 +1,6 @@
 import 'server-only';
 import {meliGET,shopeeShopGET,type MarketplaceChannel} from './provider-auth';
+import {safeMercadoLivreListingSku,safeShopeeListingSku} from './external-sku-core';
 import {
  encodeMarketplaceCursor,decodeMarketplaceCursor,type PageState
 } from './pagination-core';
@@ -70,8 +71,11 @@ export async function readMarketplacePage(
   }));
   const rows=ids.map(external_id=>{
    const o=indexed.get(external_id)??{};
-   return {kind:'listing' as const,external_id,title:str(o.title,200),
-    sku:str(o.seller_custom_field,100),external_status:str(o.status,80),
+   const hasVariations=arr(o.variations).length>0;
+   const title=str(o.title,hasVariations?150:200)+
+    (hasVariations?' (vários modelos: requer vínculo por variação)':'');
+   return {kind:'listing' as const,external_id,title:title.slice(0,200),
+    sku:safeMercadoLivreListingSku(o),external_status:str(o.status,80),
     amount_cents:cents(o.price),quantity:qty(o.available_quantity)};
   });
   const total=Number(obj(response.paging).total);
@@ -114,9 +118,11 @@ export async function readMarketplacePage(
   [id(item.item_id),item] as const));
  const rows=listings.map(x=>{
   const external_id=id(x.item_id),item=indexed.get(external_id)??{};
+  const hasModel=item.has_model===true;
   return {kind:'listing' as const,external_id,
-   title:str(item.item_name,200),sku:str(item.item_sku,100),
-   external_status:str(x.item_status,80),
+   title:(str(item.item_name,hasModel?145:200)+
+    (hasModel?' (modelos: conferir SKUs individuais)':'')).slice(0,200),
+   sku:safeShopeeListingSku(item),external_status:str(x.item_status,80),
    amount_cents:null,quantity:null};
  }).filter(x=>x.external_id);
  const nextOffset=Number(body.next_offset);

@@ -735,3 +735,7 @@ A consulta administrativa oferece **Mais anúncios** e **Mais pedidos** quando a
 **Atenção:** esta é paginação manual sob demanda, não um processo agendado ou integração incremental com webhooks. A API retorna apenas campos operacionais resumidos, nunca dados pessoais de compradores. A homologação real depende de credenciais autorizadas.
 
 A autorização Shopee utiliza `/api/v2/shop/auth_partner`, assinatura HMAC dos campos obrigatórios, expiração curta e `state` preservado na URL de retorno. O endpoint anterior `open.shopee.com.br/auth` foi substituído por esse padrão.
+
+### 21.6. Segurança dos SKUs nas variações
+
+O anúncio pai **não** é automaticamente considerado um SKU vendável quando possui variações. Na Shopee, `item_sku` só é aproveitado quando `has_model=false`; modelos requerem consulta futura a `get_model_list` e vínculo por `model_id` / `model_sku`. No Mercado Livre, o SKU considerado confiável é o atributo `SELLER_SKU`; `seller_custom_field` é uma referência independente e não autoriza relação automática. Anúncios com `variations` mantêm vínculo pendente, sem atualizar saldos. Tests unitários garantem esse comportamento conservador. Documentação: [Mercado Livre — Variações](https://developers.mercadolivre.com.br/pt_br/variacoes) e [Shopee — get_model_list](https://open.shopee.com/documents/v2/v2.product.get_model_list).

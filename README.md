@@ -117,3 +117,11 @@ Para garantir segurança de transporte, as Functions fazem STARTTLS em 587 (ou T
 - Uma falha ou timeout na resposta do SMTP após aceitar uma mensagem pode exigir conciliação e causar reenvio. Não há garantia absoluta de entrega exatamente uma vez em e-mails SMTP; conferir o status antes de reenviar.
 - O campo `sent` registra aceitação pelo servidor SMTP, não leitura/entrega final ao destinatário.
 - Ainda não há email para compras públicas porque o checkout está desabilitado.
+
+## Admin V2 — sidebar e atividade de usuários
+- Todas as páginas `/admin/*` utilizam sidebar lateral com atalhos por grupo, ícones, recolhimento no desktop, gaveta móvel e destaque de rota ativa.
+- Cabeçalho contém conta autenticada (nome e e-mail), acesso à página `/conta`, botão **Sair**, atalhos rápidos e indicador aproximado de usuários com atividade recente.
+- `/admin/usuarios-online` lista usuário, endereço de e-mail, papel, atividade de sessão (janela de 3 minutos), último sinal e sessões recentes nas últimas 24 horas. Atualiza a cada 60 segundos.
+- A migração `supabase/user_session_presence.sql` cria tabela RLS e `supabase/user_presence_admin_identity.sql` permite identificar o usuário. O `SessionPresence` envia heartbeat em páginas autenticadas. `signOutAction` encerra a presença antes de encerrar a sessão Auth.
+- **Limitação**: o indicador de presença é aproximado, NÃO equivale a listar sessões Supabase Auth com garantia de revogação. Fechamento de aba não gera logout imediato; após 3 minutos sem heartbeat a sessão deixa de ser considerada ativa. Nenhum IP, GPS ou histórico de páginas é coletado.
+- Só administradores autenticados podem listar outros usuários; outros usuários veem exclusivamente suas próprias sessões pela RLS. Escrita é restrita a funções privadas, vinculadas ao `session_id` do JWT.

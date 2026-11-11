@@ -1,29 +1,90 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { Boxes, LayoutDashboard, PackageOpen, ShoppingBasket, Truck, Users, Settings, ShieldAlert, ArrowLeft, RefreshCw, Eye, CreditCard, Store, MailCheck } from 'lucide-react';
-import { createClient } from '@/lib/supabase/server';
-import { isSupabaseConfigured } from '@/lib/supabase/config';
-import { formatBRL } from '@/lib/catalog';
+import {Activity,Boxes,ArrowUpRight,ShoppingBag,Truck,Users,PackagePlus,
+ PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock} from 'lucide-react';
+import {requireAdmin} from '@/lib/admin';
+import {formatBRL} from '@/lib/products';
+
 export const dynamic='force-dynamic';
-export default async function AdminPage() {
- if(!isSupabaseConfigured())return <div className="container account-page"><h1>Painel Popê Beauty</h1><p className="demo-alert">A administração estará disponível depois da criação do projeto Supabase e aplicação do esquema SQL.</p><Link href="/">Voltar à vitrine</Link></div>;
- const supabase=await createClient();
- const {data:claimData}=await supabase.auth.getClaims();
- const claims=claimData?.claims;
- if(!claims?.sub)redirect('/entrar');
- const {data:profile}=await supabase.from('profiles').select('role,display_name').eq('id',claims.sub).maybeSingle();
- if(!profile||!['admin','staff'].includes(profile.role))return <div className="container account-page"><ShieldAlert size={42}/><h1>Acesso restrito</h1><p>Esta área é exclusiva da equipe autorizada.</p><Link href="/conta">Voltar à minha conta</Link></div>;
- const [products,orders,stock]=await Promise.all([
-   supabase.from('products').select('id,name,price_cents,active',{count:'exact'}).order('created_at',{ascending:false}).limit(8),
-   supabase.from('orders').select('id,status,channel,total_cents',{count:'exact'}).order('created_at',{ascending:false}).limit(8),
-   supabase.from('inventory').select('variant_id,on_hand,reserved',{count:'exact'}).limit(8)
+export default async function AdminPage(){
+ const supabase=await requireAdmin();
+ const {data:auth}=await supabase.auth.getClaims();
+ const userId=auth?.claims?.sub??'';
+ const since=new Date(Date.now()-3*60*1000).toISOString();
+ const [profile,products,orders,stock,activity,notifications]=await Promise.all([
+  supabase.from('profiles').select('display_name').eq('id',userId).maybeSingle(),
+  supabase.from('products').select('id,name,price_cents,active',{count:'exact'})
+   .order('created_at',{ascending:false}).limit(6),
+  supabase.from('orders').select('id,status,channel,total_cents,created_at',{count:'exact'})
+   .order('created_at',{ascending:false}).limit(6),
+  supabase.from('inventory').select('variant_id',{count:'exact',head:true}),
+  supabase.from('user_session_presence').select('user_id')
+   .is('signed_out_at',null).gte('last_seen_at',since).limit(500),
+  supabase.from('order_notifications').select('id',{count:'exact',head:true})
+   .in('status',['pending','failed'])
  ]);
- return <div className="dashboard container"><div className="admin-top"><div><div className="section-kicker">CENTRAL DE GESTÃO</div><h1>Olá, equipe Popê! 👋</h1><p>Gerencie sua operação de beleza em um só lugar.</p></div><Link href="/" className="outline-link"><ArrowLeft size={16}/> Ver loja</Link></div>
- <div className="admin-nav"><Link href="/admin"><LayoutDashboard/> Visão geral</Link><Link href="/admin/pedidos"><ShoppingBasket/> Pedidos</Link><Link href="/admin/notificacoes"><MailCheck/> Notificações</Link><Link href="/admin/produtos"><PackageOpen/> Produtos</Link><Link href="/admin/estoque"><Boxes/> Estoque</Link><Link href="/admin/logistica"><Truck/> Logística</Link><Link href="/admin/clientes"><Users/> Clientes</Link>
- <Link href="/admin/marketplaces"><Store/> Marketplaces</Link><Link href="/admin/financeiro"><CreditCard/> Financeiro</Link><Link href="/admin/configuracoes"><Settings/> Configurações</Link><Link href="/admin/adulto"><Eye/> Prévia +18</Link></div>
- <div className="stats-grid"><div><ShoppingBasket/><small>Pedidos registrados</small><strong>{orders.count??0}</strong></div><div><PackageOpen/><small>Produtos cadastrados</small><strong>{products.count??0}</strong></div><div><Boxes/><small>SKUs cadastrados</small><strong>{stock.count??0}</strong></div><div><RefreshCw/><small>Marketplaces</small><strong>Não conectados</strong></div></div>
- <div className="admin-panels"><section className="admin-panel"><h2>Produtos recentes</h2>{products.error?<p>Não foi possível carregar os produtos. Confirme as tabelas e permissões.</p>:products.data?.length?<div className="admin-table"><div className="admin-table-row heading"><span>Produto</span><span>Preço</span><span>Status</span></div>{products.data.map(p=><div className="admin-table-row" key={p.id}><span>{p.name}</span><span>{formatBRL(p.price_cents)}</span><span className={p.active?'active-text':'muted'}>{p.active?'Ativo':'Rascunho'}</span></div>)}</div>:<p>Sem produtos cadastrados.</p>}</section>
- <section className="admin-panel"><h2>Pedidos recentes</h2>{orders.error?<p>Não foi possível consultar os pedidos.</p>:orders.data?.length?<div className="admin-table">{orders.data.map(o=><div className="admin-table-row" key={o.id}><span>{o.channel}</span><span>{formatBRL(o.total_cents)}</span><span>{o.status}</span></div>)}</div>:<p>Nenhum pedido registrado.</p>}<div className="marketplaces"><p>🛍️ Loja própria <b>Preparação</b></p><p>🟠 Shopee <b>Aguardando credenciais</b></p><p>🟡 Mercado Livre <b>Aguardando credenciais</b></p></div></section></div>
- <p className="demo-alert">Pedidos manuais, cadastro, expedição e controles financeiros administrativos estão disponíveis. Checkout público, integrações automáticas, etiquetas e gateways ainda não estão habilitados.</p>
+ const firstName=profile.data?.display_name?.trim().split(/\s+/)[0]||'equipe';
+ const onlineCount=new Set((activity.data??[]).map(x=>x.user_id)).size;
+ const shortcuts=[
+  {href:'/admin/produtos',label:'Cadastrar produto',caption:'Novo item do catálogo',icon:PackagePlus},
+  {href:'/admin/pedidos',label:'Novo pedido',caption:'Criar pedido interno',icon:ShoppingBag},
+  {href:'/admin/estoque',label:'Ajustar estoque',caption:'Lotes e movimentações',icon:Boxes},
+  {href:'/admin/notificacoes',label:'E-mails de pedidos',caption:'Fila e reenvios',icon:MailCheck}
+ ];
+ return <div className="dashboard container pope-admin-dashboard">
+  <div className="admin-top">
+   <div><div className="section-kicker">CENTRAL DE GESTÃO • POPÊ BEAUTY</div>
+    <h1>Olá, {firstName}! <span aria-hidden="true">👋</span></h1>
+    <p>Este é o resumo operacional da sua loja. Acesse os módulos pelo menu lateral.</p>
+   </div>
+   <Link href="/" className="admin-outline"><ArrowLeft size={16}/> Ver loja</Link>
+  </div>
+  <section aria-label="Atalhos rápidos" className="pope-admin-dashboard-shortcuts">
+   {shortcuts.map(item=>{const Icon=item.icon;return <Link href={item.href} key={item.href}>
+    <span className="pope-admin-dash-icon"><Icon size={21}/></span>
+    <span className="pope-admin-dash-copy"><strong>{item.label}</strong><small>{item.caption}</small></span>
+    <ArrowUpRight size={18} className="pope-admin-dash-arrow"/>
+   </Link>})}
+  </section>
+  <div className="stats-grid pope-admin-dashboard-stats">
+   <Link href="/admin/pedidos"><ShoppingBag/><small>Pedidos registrados</small><strong>{orders.count??0}</strong><span>Ver pedidos <ArrowUpRight size={15}/></span></Link>
+   <Link href="/admin/produtos"><PackageSearch/><small>Produtos cadastrados</small><strong>{products.count??0}</strong><span>Ver catálogo <ArrowUpRight size={15}/></span></Link>
+   <Link href="/admin/estoque"><Boxes/><small>SKUs no estoque</small><strong>{stock.count??0}</strong><span>Gerenciar <ArrowUpRight size={15}/></span></Link>
+   <Link href="/admin/usuarios-online"><Activity/><small>Usuários ativos recentemente</small><strong>{onlineCount}</strong><span>Ver atividade <ArrowUpRight size={15}/></span></Link>
+  </div>
+  <div className="admin-panels pope-admin-dashboard-panels">
+   <section className="admin-panel">
+    <div className="pope-admin-panel-heading"><h2>Produtos recentes</h2>
+     <Link href="/admin/produtos">Todos os produtos <ArrowUpRight size={15}/></Link></div>
+    {products.error?<p>Não foi possível consultar produtos.</p>:
+     products.data?.length?<div className="admin-table">
+      <div className="admin-table-row heading"><span>Produto</span><span>Preço</span><span>Status</span></div>
+      {products.data.map(p=><div className="admin-table-row" key={p.id}>
+       <span>{p.name}</span><span>{formatBRL(p.price_cents)}</span>
+       <span className={p.active?'active-text':'muted'}>{p.active?'Ativo':'Rascunho'}</span>
+      </div>)}</div>:
+      <div className="pope-admin-panel-empty"><PackagePlus size={24}/><p>Nenhum produto cadastrado.</p><Link href="/admin/produtos">Adicionar produto</Link></div>}
+   </section>
+   <section className="admin-panel">
+    <div className="pope-admin-panel-heading"><h2>Pedidos recentes</h2>
+     <Link href="/admin/pedidos">Todos os pedidos <ArrowUpRight size={15}/></Link></div>
+    {orders.error?<p>Não foi possível consultar pedidos.</p>:
+     orders.data?.length?<div className="admin-table">
+      <div className="admin-table-row heading"><span>Origem</span><span>Total</span><span>Status</span></div>
+      {orders.data.map(o=><div className="admin-table-row" key={o.id}>
+       <span>{o.channel==='store'?'Loja':o.channel}</span><span>{formatBRL(o.total_cents)}</span>
+       <span>{o.status}</span>
+      </div>)}</div>:
+      <div className="pope-admin-panel-empty"><ShoppingBag size={24}/><p>Nenhum pedido registrado.</p><Link href="/admin/pedidos">Abrir pedidos</Link></div>}
+    <div className="pope-admin-ops-shortcuts">
+     <Link href="/admin/logistica"><Truck size={16}/> Logística</Link>
+     <Link href="/admin/marketplaces"><Store size={16}/> Marketplaces</Link>
+     <Link href="/admin/clientes"><Users size={16}/> Clientes</Link>
+    </div>
+   </section>
+  </div>
+  <div className="pope-admin-dash-notice">
+   <ShieldCheck size={19}/><span><strong>Área de gestão protegida.</strong> O checkout público e a sincronização automática de marketplaces ainda não estão habilitados. {notifications.count?String(notifications.count)+' notificações de pedidos aguardam processamento.':'Notificações de pedidos: sem pendências conhecidas.'}</span>
+   <Link href="/admin/notificacoes"><MailCheck size={16}/> Notificações</Link>
+  </div>
  </div>;
 }

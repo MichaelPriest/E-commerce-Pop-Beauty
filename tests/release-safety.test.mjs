@@ -23,3 +23,17 @@ test('o fluxo de checkout comercial continua indisponível',()=>{
  assert.match(mp,/sandboxPreferenceEnabled\(\)/);
  assert.match(mp,/verifyMercadoPagoTestSeller\(\)/);
 });
+
+test('package-lock v3 mantém as dependências declaradas no projeto',()=>{
+ const manifest=JSON.parse(read('package.json'));
+ const lock=JSON.parse(read('package-lock.json'));
+ assert.equal(lock.lockfileVersion,3);
+ assert.equal(lock.name,manifest.name);
+ assert.deepEqual(lock.packages[''].dependencies,manifest.dependencies);
+ assert.deepEqual(lock.packages[''].devDependencies,manifest.devDependencies);
+});
+test('workflow principal exige instalação reproduzível via npm ci',()=>{
+ const workflow=read('.github/workflows/quality.yml');
+ assert.match(workflow,/run: npm ci --no-audit --no-fund/);
+ assert.doesNotMatch(workflow,/run: npm install(?:\s|$)/);
+});

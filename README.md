@@ -130,7 +130,7 @@ public/              Logo e favicon
 ### 3.2. Comandos
 
 ```bash
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 npm run typecheck
@@ -143,7 +143,7 @@ npm run start
 `npm run build` compila o Next.js.  
 `npm run start` inicia o build de produção.
 
-**Atenção ao controle de dependências:** revisar e manter o arquivo de lock versionado para instalações reprodutíveis; o repositório consultado não apresentava um lockfile. Executar testes antes de atualizar dependências.
+**Dependências reproduzíveis:** `package-lock.json` versão 3 está versionado; usar `npm ci` em CI e instalações limpas. Para atualizar bibliotecas, alterar `package.json` e o lockfile juntos, em PR separado, executar testes e revisar diferenças de dependências.
 
 ### 3.3. Supabase Auth: URLs
 
@@ -632,14 +632,20 @@ A lógica pura testável foi separada em `src/lib/payments/mp-webhook-signature-
 ### Como executar
 
 ```bash
-npm install
+npm ci
 npm run test
 npm run build
 npm run typecheck
 ```
 
-**Limitações:** testes unitários/estáticos não substituem os testes de ponta a ponta com Supabase, gateway TEST, entrega de e-mails e frete. O repositório ainda não tem lockfile npm: gerar/revisar `package-lock.json` e migrar o workflow para `npm ci` antes de um processo de release plenamente reproduzível.
+**Limitações:** testes unitários/estáticos não substituem os testes de ponta a ponta com Supabase, gateway TEST, entrega de e-mails e frete. O `package-lock.json` foi gerado por Node 22 e validado com `npm ci` no GitHub Actions; o workflow usa `npm ci` e cache de dependências para builds reproduzíveis.
 
 **Primeira execução verificada:** o workflow [Qualidade Popê Beauty #43088869320](https://github.com/MichaelPriest/E-commerce-Pop-Beauty/actions/runs/43088869320) terminou com **sucesso** no commit `9ffdcecf`: **17 testes aprovados, 0 falhas**, compilação Next.js e validação TypeScript aprovadas. A Vercel publicou esse mesmo commit com estado `READY`. Isso **não** homologa pagamentos reais nem frete e **não** configura automaticamente a proteção da branch.
 
 **Proteção de releases ainda depende de configuração:** o workflow não impede automaticamente que o Git da Vercel publique um push direto na branch `main`. Configure em GitHub → Settings → Rules/Rulesets ou Branch protection uma regra para `main` exigindo pull requests e o check `testes-build-tipos`; para impedir promoção/publicação antecipada, configurar também Deployment Checks da Vercel e revisar o fluxo de implantação. Não reivindicar aprovação de produção apenas porque o CI passou.
+
+### 19.1. Lockfile validado e política de dependências
+
+Em 11/11/2026 foi gerado o `package-lock.json` **v3** em um workflow isolado, verificado com `npm ci`, 17 testes, `next build` e `tsc --noEmit`. Ele registra versões transitivas e hashes de integridade, evitando atualizações silenciosas no CI. O workflow principal `quality.yml` instala com `npm ci --no-audit --no-fund` usando cache npm.
+
+Sempre revisar PRs que alterem `package.json` ou `package-lock.json`, executar `npm ci && npm run check:ci` e publicar somente após passar. Dependências novas ainda exigem avaliação de licença, segurança e compatibilidade; lockfile não substitui auditoria de vulnerabilidades. A branch auxiliar `automation/npm-lockfile` foi usada apenas para preparar o arquivo sem arriscar alterações diretas de dependências na produção.

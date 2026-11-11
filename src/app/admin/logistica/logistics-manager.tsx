@@ -59,7 +59,7 @@ export function LogisticsManager({orders}:Props){
     <td>{o.tracking_code?<><strong>{o.carrier}</strong><small>{o.tracking_code}</small></>:'Não despachado'}</td>
     <td><span className={'ops-tag status-'+o.status}>{ORDER_LABELS[o.status]??o.status}</span></td>
     <td>{o.origin!=='admin_manual'?<span className="ops-muted">Somente consulta</span>:<div style={{display:'flex',gap:6,flexWrap:'wrap'}}><Link className="ops-small" href={'/admin/logistica/volumes/'+o.id}><Boxes size={15}/> Volumes</Link>
-     o.status==='paid'?<button className="ops-small primary" onClick={()=>open(o,'packing')}><PackageOpen size={15}/> Iniciar separação</button>:
+     {o.status==='paid'?<button className="ops-small primary" onClick={()=>open(o,'packing')}><PackageOpen size={15}/> Iniciar separação</button>:
      o.status==='packing'?<button className="ops-small primary" onClick={()=>open(o,'shipped')}><Send size={15}/> Registrar envio</button>:
      o.status==='shipped'?<button className="ops-small primary" onClick={()=>open(o,'delivered')}><CheckCircle2 size={15}/> Marcar entregue</button>:
      <span className="ops-muted">Finalizado</span>}</div>}</td></tr>)}</tbody></table>

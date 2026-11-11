@@ -723,3 +723,7 @@ Tabelas: `marketplace_connections` (contas/status), `private.marketplace_token_v
 ### Integrações de marketplaces
 
 O painel `/admin/marketplaces` consulta conexões Shopee/Mercado Livre, mas **não** libera pedidos reais. Antes de produção dos marketplaces, concluir autorização OAuth real, sincronização incremental segura, estoque por SKU/loja e conciliação de pedidos externos.
+
+### 21.4. Comparação de SKUs na prévia
+
+A tabela de anúncios importados exibe o resultado da **conciliação somente leitura** entre `item_sku` / `seller_custom_field` do marketplace e `variants.sku` da Popê. A correspondência é exata (espaços externos e letras maiúsculas/minúsculas são normalizados), sem fuzzy matching. Resultados possíveis: SKU localizado, sem SKU externo, não encontrado, SKU ambíguo e produto +18 bloqueado. Esse indicador **não** atualiza `marketplace_listings`, `inventory`, preços ou quantidades. Antes de habilitar estoque compartilhado, confirmar manualmente cada variação/modelo e as regras de reserva por canal.

@@ -4,6 +4,7 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {Link2,RefreshCw,ShieldCheck,PackageSearch,ShoppingBag,
  Unplug,ExternalLink,AlertTriangle} from 'lucide-react';
+import {classifyMarketplaceSku,type SkuCandidate} from '@/lib/marketplaces/sku-match-core';
 
 export type MarketplaceAccountRow={
  id:string;channel:'shopee'|'mercadolivre';external_account_id:string;
@@ -17,10 +18,11 @@ export type MarketplaceImportRow={
 };
 const labels={shopee:'Shopee',mercadolivre:'Mercado Livre'};
 export function MarketplaceConnections({
- accounts,imports,configured,vaultReady
+ accounts,imports,configured,vaultReady,localSkus
 }:{
  accounts:MarketplaceAccountRow[];imports:MarketplaceImportRow[];
  configured:{shopee:boolean;mercadolivre:boolean};vaultReady:boolean;
+ localSkus:SkuCandidate[];
 }){
  const router=useRouter();
  const [busy,setBusy]=useState(''),[message,setMessage]=useState(''),
@@ -101,7 +103,7 @@ export function MarketplaceConnections({
    relacionados aos SKUs manualmente após revisar os dados.</p>
   <div className="ops-table-scroll"><table className="ops-table">
    <thead><tr><th>Canal</th><th>Tipo</th><th>ID externo</th><th>Produto / SKU</th>
-    <th>Status externo</th><th>Valor informado</th></tr></thead>
+    <th>Vínculo SKU</th><th>Status externo</th><th>Valor informado</th></tr></thead>
    <tbody>{imports.map(item=>{
     const account=accounts.find(a=>a.id===item.connection_id);
     return <tr key={item.id}>
@@ -109,6 +111,11 @@ export function MarketplaceConnections({
      <td>{item.kind==='order'?'Pedido':'Anúncio'}</td>
      <td>{item.external_id}</td>
      <td>{item.title||'—'}<small>{item.sku||''}</small></td>
+     <td>{item.kind==='listing'?({
+      matched:'SKU localizado',missing:'SKU externo ausente',
+      unmatched:'Sem correspondência',ambiguous:'SKU duplicado',
+      adult_blocked:'Produto +18 bloqueado'
+     }[classifyMarketplaceSku(item.sku,localSkus)]):'—'}</td>
      <td>{item.external_status||'—'}</td>
      <td>{item.amount_cents!=null?
       new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'})

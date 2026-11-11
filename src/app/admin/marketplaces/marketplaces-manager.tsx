@@ -39,7 +39,8 @@ export function MarketplacesManager({links,variants,accounts,imports,vaultReady,
   Os registros importados são prévias e NÃO atualizam automaticamente estoque, preços ou pedidos internos.
   Produtos +18 não podem ser vinculados aos SKUs desta área.</p>
   <MarketplaceConnections accounts={accounts} imports={imports}
-   vaultReady={vaultReady} configured={configured}/>
+   vaultReady={vaultReady} configured={configured}
+   localSkus={variants.map(v=>({sku:v.sku,isAdult:!!v.products?.is_adult}))}/>
   <section className="ops-form-card"><h2><Link2 size={20}/> Vincular anúncio existente</h2>
    <form onSubmit={link} className="ops-link-form">
     <label>Marketplace<select value={channel} onChange={e=>setChannel(e.target.value)}>

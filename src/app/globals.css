@@ -817,3 +817,23 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 @media(max-width:1100px){.pope-shipping-quote-form{grid-template-columns:repeat(2,minmax(0,1fr))}.pope-shipping-spec-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.pope-shipping-top{grid-template-columns:1fr}.pope-shipping-box{padding:16px}}
 @media(max-width:480px){.pope-shipping-quote-form{grid-template-columns:1fr}.pope-shipping-spec-grid{grid-template-columns:1fr}.pope-address-zip-row{flex-direction:column;align-items:stretch}.pope-address-zip-row button{justify-content:center}}
+
+/* Popê Beauty — preparação de pagamento e cotação sandbox */
+.pope-sandbox-pay-panel{padding:20px;border:1px solid #edd4e4;border-radius:16px;background:#fff;margin:19px 0}
+.pope-sandbox-pay-header{display:flex;align-items:center;justify-content:space-between;gap:13px;flex-wrap:wrap;margin-bottom:19px}
+.pope-sandbox-pay-header h2{font:900 20px Nunito,sans-serif;color:#682d71;display:flex;align-items:center;gap:9px;margin:0}
+.pope-sandbox-pay-header p{font-size:12px;line-height:1.5;color:#927b91;margin:8px 0 0}
+.pope-sandbox-pay-form{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+.pope-sandbox-pay-form label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#725072;font-weight:800}
+.pope-sandbox-pay-form select{padding:12px;border:1px solid #edd4e5;border-radius:9px;min-width:0;background:#fff;color:#6c486e}
+.pope-sandbox-pay-form button{min-height:42px;display:inline-flex;align-items:center;gap:8px}
+.pope-sandbox-pay-summary{border:1px solid #e9dcec;background:#fff9fe;display:flex;gap:15px;flex-wrap:wrap;align-items:center;border-radius:11px;padding:12px;margin:16px 0;font-size:11px}
+.pope-sandbox-pay-summary strong{color:#7b317c}
+.pope-sandbox-pay-summary span{color:#91758f}
+.pope-sandbox-pay-empty{display:flex;align-items:flex-start;gap:8px;border-radius:10px;background:#fff6e9;color:#845e2e;padding:12px;margin:14px 0;font-size:12px;line-height:1.55}
+.pope-sandbox-pay-empty svg{flex-shrink:0}
+.pope-sandbox-pay-empty a{color:#a13088;text-decoration:underline;font-weight:800}
+.pope-shipping-quote-notice{display:flex;align-items:flex-start;gap:6px;margin-top:14px!important;font-size:11px!important;color:#8a7187!important}
+.pope-shipping-quote-notice svg{flex-shrink:0}
+@media(max-width:870px){.pope-sandbox-pay-form{grid-template-columns:1fr 1fr}.pope-sandbox-pay-form button{grid-column:1/-1;justify-content:center}}
+@media(max-width:520px){.pope-sandbox-pay-form{grid-template-columns:1fr}.pope-sandbox-pay-form button{grid-column:auto}.pope-sandbox-pay-panel{padding:15px}}

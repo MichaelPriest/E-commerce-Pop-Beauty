@@ -52,6 +52,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/frete',label:'Frete e embalagem',icon:PackagePlus},
    {href:'/admin/financeiro',label:'Financeiro',icon:CreditCard},
    {href:'/admin/gateways',label:'Gateways de pagamento',icon:WalletCards},
+   {href:'/admin/pagamentos',label:'Pagamentos (sandbox)',icon:CreditCard},
    {href:'/admin/reservas',label:'Reservas de teste',icon:Timer},
    {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},
    {href:'/admin/marketplaces',label:'Marketplaces',icon:Store}
@@ -74,6 +75,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/usuarios',label:'Permissões',icon:UserCog},
   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},
   {href:'/admin/gateways',label:'Comparar gateways',icon:WalletCards},
+  {href:'/admin/pagamentos',label:'Preparar testes de pagamento',icon:CreditCard},
   {href:'/admin/reservas',label:'Ver reservas de teste',icon:Timer},
   {href:'/admin/frete',label:'Cadastrar embalagens e frete',icon:PackagePlus}
  ];

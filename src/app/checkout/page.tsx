@@ -10,7 +10,7 @@ export const metadata:Metadata={
  robots:{index:false,follow:false}
 };
 export default async function CheckoutPage(){
- let signedIn=false,isAdmin=false;
+ let signedIn=false,isAdmin=false,shippingOriginConfigured=false;
  let addresses:CustomerAddress[]=[];
  if(isSupabaseConfigured()){
   try{
@@ -26,8 +26,17 @@ export default async function CheckoutPage(){
     ]);
     isAdmin=p.data?.role==='admin';
     addresses=(a.data??[]) as CustomerAddress[];
+    if(isAdmin){
+     const {data:shipping}=await sb.from('shipping_origin_settings')
+      .select('origin_postal_code').eq('id',1).maybeSingle();
+     shippingOriginConfigured=!!shipping?.origin_postal_code;
+    }
    }
   }catch{/* Sem autorização nesta visita. */}
  }
- return <CheckoutPreviewPage signedIn={signedIn} isAdmin={isAdmin} addresses={addresses}/>;
+ return <CheckoutPreviewPage
+  signedIn={signedIn} isAdmin={isAdmin} addresses={addresses}
+  shippingSandboxTokenPresent={isAdmin&&Boolean(process.env.MELHOR_ENVIO_SANDBOX_TOKEN?.trim())}
+  shippingOriginConfigured={shippingOriginConfigured}
+ />;
 }

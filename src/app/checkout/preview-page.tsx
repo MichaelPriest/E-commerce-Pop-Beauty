@@ -8,11 +8,15 @@ import {
 import {formatBRL} from '@/lib/products';
 import {checkoutStatusLabel,type CheckoutPreview} from '@/lib/checkout-preview';
 import type {CustomerAddress} from '@/types/customer-address';
+import {SandboxShippingQuote} from '@/components/checkout/sandbox-shipping-quote';
 
 type CartRow={id:string;slug:string;name:string;price_cents:number;qty:number;emoji?:string};
 type Stage='loading'|'empty'|'failed'|'loaded';
-export function CheckoutPreviewPage({signedIn,isAdmin,addresses}:{
+export function CheckoutPreviewPage({
+ signedIn,isAdmin,addresses,shippingSandboxTokenPresent,shippingOriginConfigured
+}:{
  signedIn:boolean;isAdmin:boolean;addresses:CustomerAddress[];
+ shippingSandboxTokenPresent:boolean;shippingOriginConfigured:boolean;
 }){
  const [stage,setStage]=useState<Stage>('loading'),[quote,setQuote]=useState<CheckoutPreview|null>(null);
  const [error,setError]=useState(''),[cartRows,setCartRows]=useState<CartRow[]>([]);
@@ -146,6 +150,12 @@ export function CheckoutPreviewPage({signedIn,isAdmin,addresses}:{
         </option>)}
        </select>:<p>Você ainda não possui endereço cadastrado.
         <Link href="/conta/enderecos" className="pope-checkout-link"> Cadastrar endereço</Link></p>}
+       {isAdmin&&addresses.length>0?<SandboxShippingQuote
+        postalCode={addresses.find(a=>a.id===addressId)?.postal_code||''}
+        items={cartRows.map(row=>({product_id:row.id,quantity:row.qty}))}
+        sandboxTokenPresent={shippingSandboxTokenPresent}
+        originConfigured={shippingOriginConfigured}
+       />:null}
        {isAdmin?<div className="pope-checkout-admin-test">
         <p><ShieldCheck size={17}/> Teste administrativo: esta ação reserva estoque real por 15 minutos,
          sem cobrança, frete ou confirmação de venda. Uma única reserva ativa por conta.</p>

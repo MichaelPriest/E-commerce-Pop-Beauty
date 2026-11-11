@@ -18,6 +18,7 @@ export default async function FinancePage(){
  const pendingTotal=awaiting.reduce((sum,o)=>sum+o.total_cents,0);
  return <div className="container admin-workspace">
   <div className="admin-top"><div><div className="section-kicker">FINANCEIRO • POPÊ BEAUTY</div><h1>Pagamentos e recebimentos 💳</h1><p>Acompanhamento administrativo de pedidos — sem gateway integrado.</p></div><div className="admin-adult-controls"><Link href="/admin/gateways" className="admin-primary"><Settings2 size={17}/> Comparar gateways</Link>
+ <Link href="/admin/pagamentos" className="admin-outline"><CreditCard size={17}/> Pagamentos sandbox</Link>
  <Link href="/admin/pedidos" className="admin-outline"><ShoppingBag size={17}/> Abrir pedidos</Link></div></div>
   <div className="admin-metric-row"><div><Wallet/><small>Pagamentos registrados manualmente*</small><strong>{formatBRL(confirmedTotal)}</strong></div>
    <div><Clock/><small>Aguardando confirmação</small><strong>{formatBRL(pendingTotal)}</strong></div>

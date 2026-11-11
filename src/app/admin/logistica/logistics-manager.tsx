@@ -3,7 +3,7 @@ import {useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {PackageCheck,Truck,Search,Clock,CheckCircle2,PackageOpen,X,Send} from 'lucide-react';
-import {createClient} from '@/lib/supabase/browser';
+import {MailCheck} from 'lucide-react';
 import {ORDER_LABELS,dateTimeBR,type OrderRow,type OrderStatus} from '@/types/operations';
 import {formatBRL} from '@/lib/products';
 type Props={orders:OrderRow[]};
@@ -20,16 +20,20 @@ export function LogisticsManager({orders}:Props){
  async function submit(e:FormEvent){
   e.preventDefault();if(!editing||busy)return;setBusy(true);setError('');
   try{
-   const {error:rpcError}=await createClient().rpc('transition_admin_order',{
-    p_order_id:editing.order.id,p_next_status:editing.next,p_note:note||null,p_carrier:carrier||null,p_tracking_code:tracking||null
+   const response=await fetch('/api/admin/order-operations',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'transition',orderId:editing.order.id,nextStatus:editing.next,
+     note:note||null,carrier:carrier||null,tracking:tracking||null})
    });
-   if(rpcError)throw rpcError;
-   setEditing(null);setNotice('Expedição atualizada e registrada no histórico.');router.refresh();
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error||'Falha ao atualizar expedição');
+   setEditing(null);setNotice('Expedição registrada. '+(result.email?.notice||'Verifique a fila de e-mails.'));
+   router.refresh();
   }catch(err){setError(err instanceof Error?err.message:'Não foi possível atualizar a expedição.');}
   finally{setBusy(false);}
  }
  return <div className="container admin-workspace">
-  <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div><h1>Logística e entregas 🚚</h1><p>Acompanhe separação, envio e confirmação de entrega dos pedidos internos.</p></div><Link className="admin-outline" href="/admin/pedidos"><PackageOpen size={17}/> Voltar aos pedidos</Link></div>
+  <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div><h1>Logística e entregas 🚚</h1><p>Acompanhe separação, envio e confirmação de entrega dos pedidos internos.</p></div><div className="admin-adult-controls"><Link className="admin-outline" href="/admin/notificacoes"><MailCheck size={17}/> E-mails</Link><Link className="admin-outline" href="/admin/pedidos"><PackageOpen size={17}/> Voltar aos pedidos</Link></div></div>
   <div className="admin-metric-row"><div><Clock/><small>Pagos aguardando separação</small><strong>{stats.paid}</strong></div>
   <div><PackageOpen/><small>Em separação</small><strong>{stats.packing}</strong></div>
   <div><Truck/><small>Enviados</small><strong>{stats.shipped}</strong></div>

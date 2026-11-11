@@ -2,6 +2,7 @@
 import {useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import {MailCheck} from 'lucide-react';
 import {Boxes,CheckCircle2,Clock,PackagePlus,Search,ShoppingBag,Truck,X,Plus,Trash2,BadgeCheck,History} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {formatBRL} from '@/lib/products';
@@ -54,9 +55,13 @@ export function OrdersManager({orders,variants,customers}:Props){
   }
   setSaving(true);
   try{
-   const {error:rpcError}=await createClient().rpc('create_admin_order',{p_customer_id:buyer||null,p_items:items});
-   if(rpcError)throw rpcError;
-   setOpen(false);setNotice('Pedido interno criado e unidades reservadas. Nenhuma cobrança foi efetuada.');router.refresh();
+   const response=await fetch('/api/admin/order-operations',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'create',customerId:buyer||null,items})
+   });
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error||'Erro ao criar pedido');
+   setOpen(false);setNotice('Pedido interno criado e unidades reservadas. '+(result.email?.notice||'Confira o histórico de notificações.'));router.refresh();
   }catch(err){setError(err instanceof Error?err.message:'Não foi possível criar pedido.');}
   finally{setSaving(false);}
  }
@@ -67,13 +72,15 @@ export function OrdersManager({orders,variants,customers}:Props){
   e.preventDefault();if(!action||saving)return;
   setSaving(true);resetMessages();
   try{
-   const {error:rpcError}=await createClient().rpc('transition_admin_order',{
-    p_order_id:action.order.id,p_next_status:action.next,p_note:note||null,
-    p_carrier:carrier||null,p_tracking_code:tracking||null
+   const response=await fetch('/api/admin/order-operations',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'transition',orderId:action.order.id,nextStatus:action.next,
+     note:note||null,carrier:carrier||null,tracking:tracking||null})
    });
-   if(rpcError)throw rpcError;
+   const result=await response.json();
+   if(!response.ok)throw new Error(result.error||'Falha ao atualizar pedido');
    const label=ORDER_LABELS[action.next];
-   setAction(null);setNotice('Status atualizado: '+label+'. Histórico e estoque atualizados quando aplicável.');
+   setAction(null);setNotice('Status atualizado: '+label+'. '+(result.email?.notice||'Confira a fila de notificações.'));
    router.refresh();
   }catch(err){setError(err instanceof Error?err.message:'Não foi possível atualizar o pedido.');}
   finally{setSaving(false);}
@@ -90,7 +97,8 @@ export function OrdersManager({orders,variants,customers}:Props){
   <div className="admin-filterbar"><label className="admin-search"><Search size={17}/><input placeholder="Pesquisar código, SKU, cliente ou rastreio" value={query} onChange={e=>setQuery(e.target.value)}/></label>
    <select value={filter} onChange={e=>setFilter(e.target.value)}><option value="todos">Todos os status</option>
     {Object.entries(ORDER_LABELS).map(([code,label])=><option key={code} value={code}>{label}</option>)}</select>
-   <Link href="/admin/logistica" className="admin-outline"><Truck size={17}/> Logística</Link></div>
+   <Link href="/admin/logistica" className="admin-outline"><Truck size={17}/> Logística</Link>
+   <Link href="/admin/notificacoes" className="admin-outline"><MailCheck size={17}/> Notificações</Link></div>
   {notice&&!open&&!action?<p className="form-success" role="status">{notice}</p>:null}
   <div className="ops-table-scroll"><table className="ops-table"><thead><tr><th>Código / Data</th><th>Cliente</th><th>Origem</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
    <tbody>{shown.map(o=><tr key={o.id}>

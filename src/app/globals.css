@@ -837,3 +837,8 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-shipping-quote-notice svg{flex-shrink:0}
 @media(max-width:870px){.pope-sandbox-pay-form{grid-template-columns:1fr 1fr}.pope-sandbox-pay-form button{grid-column:1/-1;justify-content:center}}
 @media(max-width:520px){.pope-sandbox-pay-form{grid-template-columns:1fr}.pope-sandbox-pay-form button{grid-column:auto}.pope-sandbox-pay-panel{padding:15px}}
+
+.pope-mp-test-warning{display:flex;gap:9px;align-items:flex-start;border:1px solid #eddcc5;background:#fff7e8;color:#7c642e;border-radius:10px;padding:13px;font-size:11px;line-height:1.65;margin-bottom:15px}
+.pope-mp-test-warning svg{flex-shrink:0}
+.pope-mp-test-link{display:flex;align-items:center;gap:9px;border:1px solid #b9e4c9;background:#f0fbf3;border-radius:10px;padding:12px;font-size:12px;margin:12px 0}
+.pope-mp-test-link a{color:#167d51;text-decoration:underline;font-weight:900}

@@ -3,6 +3,7 @@ import {CreditCard,ShieldCheck,Clock3,ClipboardList,ArrowLeft} from 'lucide-reac
 import {requireAdmin} from '@/lib/admin';
 import {SandboxPaymentPlanner} from './sandbox-payment-planner';
 import type {SandboxPaymentAttempt,SandboxReservation} from './types';
+import {sandboxPreferenceEnabled} from '@/lib/payments/mercado-pago-test';
 
 export const dynamic='force-dynamic';
 
@@ -13,7 +14,7 @@ export default async function SandboxPaymentsPage(){
    .select('id,origin,status,total_cents,reservation_expires_at,created_at')
    .eq('origin','store_api').order('created_at',{ascending:false}).limit(100),
   sb.from('sandbox_payment_attempts')
-   .select('id,order_id,provider,amount_cents,currency,environment,state,created_at')
+   .select('id,order_id,provider,amount_cents,currency,environment,state,created_at,checkout_generation_state,provider_checkout_url')
    .order('created_at',{ascending:false}).limit(200)
  ]);
  if(orders.error||attempts.error){
@@ -44,6 +45,6 @@ export default async function SandboxPaymentsPage(){
    de informações enviadas pelo navegador; não é possível registrar pagamento
    aprovado ou liquidado por esta interface. Reservas vencem em 15 minutos.
   </p>
-  <SandboxPaymentPlanner reservations={reservations} attempts={drafts}/>
+  <SandboxPaymentPlanner reservations={reservations} attempts={drafts} mpSandboxReady={sandboxPreferenceEnabled()}/>
  </div>;
 }

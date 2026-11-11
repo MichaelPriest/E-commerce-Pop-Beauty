@@ -2,7 +2,7 @@
 import {useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {ShieldCheck,ClipboardList,Clock3,AlertTriangle,RefreshCcw,FileCheck} from 'lucide-react';
+import {ShieldCheck,ClipboardList,Clock3,AlertTriangle,RefreshCcw,FileCheck,ExternalLink} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {PAYMENT_GATEWAYS} from '@/lib/payment-gateways';
 import {formatBRL} from '@/lib/products';
@@ -11,12 +11,15 @@ import type {SandboxPaymentAttempt,SandboxReservation} from './types';
 
 const allowed=PAYMENT_GATEWAYS.filter(g=>g.sandbox==='available');
 
-export function SandboxPaymentPlanner({reservations,attempts}:{
+export function SandboxPaymentPlanner({reservations,attempts,mpSandboxReady}:{
  reservations:SandboxReservation[];attempts:SandboxPaymentAttempt[];
+ mpSandboxReady:boolean;
 }){
  const router=useRouter();
  const [orderId,setOrderId]=useState(''),[provider,setProvider]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState('');
+ const [checkoutBusy,setCheckoutBusy]=useState<string|null>(null);
+ const [createdUrl,setCreatedUrl]=useState<string|null>(null);
  const idempotency=useRef<string|null>(null);
  const available=useMemo(()=>reservations.filter(r=>
   r.status==='pending'&&!!r.reservation_expires_at&&
@@ -38,6 +41,23 @@ export function SandboxPaymentPlanner({reservations,attempts}:{
   }catch(e){
    setError(e instanceof Error?e.message:'Falha ao preparar a simulação.');
   }finally{setBusy(false);}
+ }
+ async function createMercadoPagoTestCheckout(attemptId:string){
+  if(checkoutBusy||!mpSandboxReady)return;
+  if(!window.confirm('Este teste gerará uma preferência no Mercado Pago, usando somente a conta vendedora TEST previamente validada. Use APENAS uma conta compradora de teste. Continuar?'))return;
+  setCheckoutBusy(attemptId);setError('');setSuccess('');setCreatedUrl(null);
+  try{
+   const response=await fetch('/api/admin/payments/mercadopago/test-checkout',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({attempt_id:attemptId}),cache:'no-store'
+   });
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||'Não foi possível criar o checkout de testes.');
+   setCreatedUrl(data.checkout_url);
+   setSuccess('Link de checkout TEST criado. Use exclusivamente o usuário COMPRADOR de teste. Nenhum pedido foi marcado como pago.');
+   router.refresh();
+  }catch(e){setError(e instanceof Error?e.message:'Erro ao gerar checkout de testes.');}
+  finally{setCheckoutBusy(null);}
  }
  function updateOrder(value:string){setOrderId(value);idempotency.current=null;setSuccess('');setError('');}
  function updateProvider(value:string){setProvider(value);idempotency.current=null;setSuccess('');setError('');}
@@ -76,20 +96,41 @@ export function SandboxPaymentPlanner({reservations,attempts}:{
     <Link href="/checkout"> Conferência do checkout</Link> usando uma conta administradora.</p>:null}
    {error?<p role="alert" className="form-error">{error}</p>:null}
    {success?<p role="status" className="form-success">{success}</p>:null}
+   {createdUrl?<p className="pope-mp-test-link">
+    <ExternalLink size={16}/>
+    <a href={createdUrl} target="_blank" rel="noopener noreferrer">Abrir checkout Mercado Pago da conta TEST</a>
+   </p>:null}
   </section>
   <section className="pope-sandbox-pay-panel">
    <div className="pope-sandbox-pay-header">
     <div><h2><RefreshCcw size={20}/> Histórico de preparações</h2>
      <p>Preparações expiradas ou canceladas não representam transações financeiras.</p></div>
    </div>
+   <p className="pope-mp-test-warning">
+    <ShieldCheck size={17}/> Mercado Pago Checkout Pro: {mpSandboxReady?
+    'configuração de sandbox presente; antes da criação, o servidor verificará a conta vendedora TEST e o valor da reserva.':
+    'ainda não habilitado. Configure MP_TEST_ACCESS_TOKEN, MP_TEST_SELLER_ID e MP_TEST_PREFERENCE_CREATION_ENABLED no servidor.'}
+    Mesmo em testes, o botão não deve ser usado com contas pessoais de comprador.
+    A loja não recebe webhooks financeiros nesta fase.
+   </p>
    <div className="ops-table-scroll"><table className="ops-table">
-    <thead><tr><th>Registrado</th><th>Reserva</th><th>Gateway</th><th>Valor dos itens</th><th>Ambiente</th><th>Estado</th></tr></thead>
+    <thead><tr><th>Registrado</th><th>Reserva</th><th>Gateway</th><th>Valor dos itens</th><th>Ambiente</th><th>Estado</th><th>Checkout TEST</th></tr></thead>
     <tbody>{attempts.map(a=><tr key={a.id}>
      <td>{dateTimeBR(a.created_at)}</td>
      <td>#{a.order_id.slice(0,8).toUpperCase()}</td>
      <td>{PAYMENT_GATEWAYS.find(g=>g.id===a.provider)?.name??a.provider}</td>
      <td>{formatBRL(a.amount_cents)}</td><td><span className="ops-tag">Sandbox</span></td>
      <td>{a.state==='draft'?'Preparação (sem cobrança)':a.state==='expired'?'Expirada':'Cancelada'}</td>
+     <td>{a.provider==='mercado_pago'&&a.state==='draft'?(
+       a.checkout_generation_state==='ready'&&a.provider_checkout_url?
+        <a className="admin-outline" target="_blank" rel="noopener noreferrer" href={a.provider_checkout_url}>
+         <ExternalLink size={14}/> Abrir link TEST</a>:
+       a.checkout_generation_state==='preparing'?
+        <span className="ops-muted">Criação iniciada. Não repetir.</span>:
+       <button type="button" className="admin-outline" disabled={!mpSandboxReady||!!checkoutBusy}
+         onClick={()=>createMercadoPagoTestCheckout(a.id)}>
+        {checkoutBusy===a.id?'Gerando...':'Gerar link TEST'}</button>
+     ):<span className="ops-muted">—</span>}</td>
     </tr>)}</tbody>
    </table>
    {!attempts.length?<div className="admin-empty"><ClipboardList size={32}/>

@@ -60,7 +60,7 @@ begin
   raise exception 'Acesso negado' using errcode='42501';end if;
  if length(btrim(coalesce(p_preference_id,''))) not between 10 and 180 or
     length(coalesce(p_checkout_url,'')) not between 30 and 2000 or
-    p_checkout_url !~ '^https://(www[.])?mercadopago[.]com([./?]|$)' then
+    p_checkout_url !~ '^https://(www[.])?mercadopago[.]com([/?]|$)' then
   raise exception 'Resposta do Mercado Pago inválida';end if;
  perform pg_advisory_xact_lock(hashtext('pope-checkout-serialization'));
  select a.id,a.provider,a.state,a.checkout_generation_state,o.status,o.origin,

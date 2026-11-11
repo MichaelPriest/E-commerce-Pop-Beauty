@@ -185,3 +185,18 @@ Reservas de homologação com `origin='store_api'` são listadas somente em `/ad
 - `/admin/pagamentos` mostra preparações, reservas elegíveis e seleção de gateway para homologação — sem **nenhuma transação bancária**.
 - No `/checkout`, administradores podem solicitar uma cotação ao endpoint já existente `/api/admin/shipping/quote`, somente quando o token de Melhor Envio sandbox e CEP de origem estiverem configurados. A cotação não é incluída no subtotal nem gravada na reserva: valores reais precisam ser novamente validados antes da cobrança.
 - Corrigido o dashboard: a lista de produtos não aplica mais o filtro `origin` inexistente; pedidos de teste são excluídos dos indicadores comerciais.
+
+## Checkout Pro real com VENDEDOR DE TESTE (desativado até credenciais)
+
+A API privada `POST /api/admin/payments/mercadopago/test-checkout` permite ao **administrador** gerar uma preferência Checkout Pro de testes, a partir de um `sandbox_payment_attempts` do Mercado Pago ligado a uma reserva ativa. O recurso fica **bloqueado por padrão** e não envia dados de cartão. Não é uma venda na Popê Beauty e não atualiza o status financeiro.
+
+Variáveis **somente no servidor** Vercel, com valores exclusivos do painel Teste:
+- `MP_TEST_ACCESS_TOKEN`: token obtido na aba **Teste** do Mercado Pago Developers. O prefixo `APP_USR-` também existe em produção e, sozinho, não distingue ambientes.
+- `MP_TEST_SELLER_ID`: ID numérico do usuário vendedor **de teste**, confirmado na aba de contas de teste.
+- `MP_TEST_PREFERENCE_CREATION_ENABLED=verified-test-account-only`: habilitação manual do módulo, **somente** após confirmar os dois campos acima.
+
+Antes de POST ao Mercado Pago, o servidor valida via `GET /users/me` que `id` corresponde a `MP_TEST_SELLER_ID`, o `nickname` começa com `TEST` e o país é `MLB`. O servidor gera a preferência com produtos e preços do banco, limita a validade à reserva e valida `collector_id` e o domínio do `init_point` retornado. A primeira geração passa por RPC atômica `begin_mp_test_checkout`; novas tentativas são negadas para evitar criação múltipla, inclusive após falha de rede. A RPC `finish_mp_test_checkout` grava o ID/link **somente** em preparação administrativa. Nunca marca pagamento aprovado.
+
+**Para testar na página externa:** entre SOMENTE com usuário de teste **comprador**. A API de produção do Mercado Pago é compartilhada com contas de teste; não existe domínio sandbox separado para Checkout Pro. A interface não redireciona automaticamente.
+
+Ainda pendentes: webhook assinado, consulta autoritativa dos pagamentos no provedor, conciliação dos valores finais com frete, pagamentos reais e estorno. Sem esses componentes, pedidos de teste serão encerrados após 15 minutos independentemente do que ocorrer externamente.

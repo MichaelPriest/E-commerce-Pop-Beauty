@@ -236,6 +236,7 @@ Todas as rotas `/admin/*` são para perfil `admin` verificado no banco.
 | `/admin/pedidos` | Pedidos internos, criação e alterações de status |
 | `/admin/clientes` | Clientes e relacionamentos com pedidos comerciais |
 | `/admin/logistica` | Separação, expedição, rastreio e baixa FEFO |
+| `/admin/remessas` | Fila administrativa de preparação por Correios/Melhor Envio (sem compra de frete) |
 | `/admin/frete` | CEP de origem, peso/medidas e cotação sandbox |
 | `/admin/financeiro` | Indicadores de pedidos com confirmação administrativa |
 | `/admin/relatorios` | Evolução mensal, CSV e alertas de estoque |
@@ -810,3 +811,19 @@ Pedidos administrativos sem endereço podem receber dados exclusivamente no form
 Após concluir a conferência, a rota **GET `/api/admin/shipping/preparation/[id]`** entrega um JSON `pope.shipping.preparation.v1` para integração futura, com cabeçalhos `private, no-store`. Ela revalida sessão admin e dados no servidor, retornando **HTTP 409** quando qualquer campo está pendente. O JSON contém CEPs, endereço, telefone e volumes, e portanto deve ser armazenado com proteção adequada à LGPD. Os campos `is_official_shipping_label=false`, `shipment_purchased=false`, `tracking_created=false` e `ready_for_label_purchase=false` deixam explícito que **nenhuma etiqueta, cotação, remessa postal ou comprovante oficial é gerado**. A exportação é somente para revisão interna, não pode ser submetida diretamente a uma transportadora sem adaptador homologado. Testes em `tests/shipment-preparation.test.mjs`.
 
 **Pendente para produção:** escolher transportadora e contrato, tratar as especificações individuais por serviço, NF-e/documentação fiscal exigida, serviços opcionais, seguro declarado, idempotência de compra, cancelamento de etiqueta, PLP, rastreamento confirmado e conciliação de frete. Não habilitar compra real com base somente na conferência estrutural.
+
+### 22.6. Central de remessas e adaptadores de transportadoras (sem chamadas externas)
+
+O módulo `/admin/remessas` oferece uma fila de até **100 pedidos internos** em `paid`/`packing`. Exibe volumes cadastrados, pendências da conferência estrutural e a transportadora selecionada, e direciona para `/admin/logistica/volumes/[id]`. Não altera pedido, estoque ou rastreio.
+
+Na tela de volumes, o administrador pode salvar a preferência por **Melhor Envio** ou **Correios — Pré-postagem**, um **código de serviço de referência ainda não validado** e observações. O formulário chama a RPC `save_shipment_provider_draft`; a tabela `shipment_provider_drafts` mantém somente configurações internas, versão, identificador do rascunho e auditoria, **sem duplicar dados pessoais** do destinatário. A operação exige `admin`, pedido manual elegível e validação de campos. Uma gravação idêntica não cria nova versão; alterações geram nova versão/identificador e evento de auditoria sem informações pessoais. A tabela tem RLS para leitura administrativa, sem gravação direta pelo navegador. Migração aplicada e versionada em `supabase/shipment_provider_drafts_v1.sql`.
+
+O arquivo `src/lib/shipping/provider-adapters.ts` descreve separadamente os fluxos de cada provedor, normaliza os volumes e lista verificações de contrato/documentação. O JSON administrativo de `GET /api/admin/shipping/preparation/[id]` passou a incluir `provider_review` (formato `pope.shipping.provider-review.v1`), mantendo o envelope `pope.shipping.preparation.v1`. A revisão distingue dados internos completos de integração homologada: **`ready_for_provider_request=false`, `ready_for_label_purchase=false`, `cart_created=false`, `shipment_purchased=false`, `label_generated=false` e `official_tracking_created=false`**, sempre. Não há chamadas `fetch` a transportadoras nesta nova etapa, nem custos/serviços inventados.
+
+Fluxos documentados com base nas referências oficiais: [Melhor Envio — inserir no carrinho](https://docs.melhorenvio.com.br/reference/inserir-fretes-no-carrinho), [compra](https://docs.melhorenvio.com.br/reference/compra-de-fretes-1), [geração](https://docs.melhorenvio.com.br/reference/geracao-de-etiquetas), [impressão](https://docs.melhorenvio.com.br/reference/impressao-de-etiquetas); [Correios — pré-postagem](https://www.correios.com.br/atendimento/developers/manual-do-usuario-ppn). Estas são referências de implementação futura e **não** implicam credenciais, autorização ou compatibilidade operacional ativa.
+
+Novos testes em `tests/shipping-provider-adapters.test.mjs` cobrem os campos de segurança, a distinção entre revisão e compra, as etapas dos provedores e o acesso administrativo. O comando `npm run build` foi atualizado para executar `npm run test` antes do build Next.js, de modo que testes falhos não possam resultar em deploy novo com status READY.
+
+**Etapas futuras (credenciais somente ao final):** validar dados completos do remetente, CPF/CNPJ, documentação fiscal, contrato e serviços habilitados; obter cotações reais/sandbox; modelar carrinho e operação de compra com chave de idempotência transacional; guardar IDs e etiquetas oficiais de modo privado; tratar cancelamento/estornos/PLP e conciliar rastreamento com eventos autenticados. O identificador do rascunho **não** é uma chave de compra aprovada.
+
+**Teste operacional pendente:** na inspeção do banco de 11/11/2026 não existiam pedidos administrativos com status `paid` ou `packing`; não foi alterado status de pedidos para fabricar dados de teste.

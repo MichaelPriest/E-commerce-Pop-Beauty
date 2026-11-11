@@ -668,3 +668,46 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 @media(max-width:1150px){.pope-gateway-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.pope-gateway-intro{flex-direction:column;align-items:stretch;padding:16px}.pope-gateway-choice{min-width:0}.pope-gateway-next-grid{grid-template-columns:1fr}.pope-gateway-next,.pope-gateway-audit{padding:15px}}
 @media(max-width:460px){.pope-gateway-card{padding:14px}.pope-gateway-status-grid{grid-template-columns:1fr}.pope-gateway-save-row{flex-wrap:wrap}.pope-gateway-preference{font-size:9px}}
+
+/* Popê Beauty — conferência de carrinho, sem pedidos nem cobranças */
+.pope-cart-review-button{display:flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;margin:11px 0}
+.pope-checkout-page{padding-top:36px;padding-bottom:55px}
+.pope-checkout-page>h1{font:900 34px Nunito,sans-serif;color:#691f70;margin:7px 0}
+.pope-checkout-page>p{color:#8b738b;font-size:13px;line-height:1.65}
+.pope-checkout-steps{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:21px 0 27px}
+.pope-checkout-steps>span{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:9px;background:#f7edf5;color:#8d6e89;font-size:11px;font-weight:800}
+.pope-checkout-steps>span.complete{background:#e9f9ef;color:#257b55}
+.pope-checkout-steps>span.current{background:#ffe9f4;color:#b72686}
+.pope-checkout-steps>span.disabled{opacity:.65}
+.pope-checkout-steps>svg{color:#c1a8be}
+.pope-checkout-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(275px,345px);align-items:start;gap:20px}
+.pope-checkout-items,.pope-checkout-summary{min-width:0;background:#fff;border:1px solid #efdae8;border-radius:16px;padding:22px;box-shadow:0 7px 26px #891c7709}
+.pope-checkout-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid #f2e3ed;padding-bottom:16px}
+.pope-checkout-head h2,.pope-checkout-summary h2{display:flex;align-items:center;gap:9px;font:900 19px Nunito,sans-serif;color:#6b2c73;margin:0}
+.pope-checkout-info{font-size:13px;color:#9d7d93;margin:22px 0}
+.pope-checkout-item{display:flex;align-items:flex-start;gap:14px;padding:21px 0;border-bottom:1px solid #f6e7ef}
+.pope-checkout-item:last-of-type{border-bottom:0}
+.pope-checkout-item-icon{width:45px;height:45px;display:grid;place-items:center;background:#fff0f9;border-radius:11px;flex-shrink:0;color:#c13391}
+.pope-checkout-item-content{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.pope-checkout-item-content>strong{font-size:13px;color:#683064}
+.pope-checkout-item-content small{font-size:11px;color:#9c7e90;line-height:1.5}
+.pope-checkout-state{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:5px 9px;border-radius:99px;font-size:10px;font-weight:900}
+.pope-checkout-state.ok{background:#e5f9ee;color:#287955}
+.pope-checkout-state.blocked{background:#fff0df;color:#956225}
+.pope-checkout-price{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right;min-width:85px}
+.pope-checkout-price strong{color:#752777;font-size:14px}
+.pope-checkout-price small{font-size:10px;color:#a389a1}
+.pope-checkout-warning{display:flex;gap:9px;align-items:start;color:#93651f;background:#fff5e0;border:1px solid #f4e1b7;border-radius:11px;padding:13px;font-size:12px;line-height:1.6}
+.pope-checkout-warning svg{flex-shrink:0}
+.pope-checkout-warning p{margin:0}
+.pope-checkout-summary>div:not(.pope-checkout-trust){display:flex;justify-content:space-between;gap:12px;font-size:12px;margin:18px 0}
+.pope-checkout-summary>div:not(.pope-checkout-trust) span{color:#90758d}
+.pope-checkout-summary>div:not(.pope-checkout-trust) strong{color:#702b6b}
+.pope-checkout-caution{display:flex;align-items:start;gap:8px;font-size:11px;line-height:1.7;color:#786386;border-radius:10px;background:#f7f1ff;padding:12px;margin:17px 0}
+.pope-checkout-caution svg{flex-shrink:0}
+.pope-checkout-summary>.add-button{width:100%;display:flex;gap:8px;align-items:center;justify-content:center;font-size:12px;opacity:.5;cursor:not-allowed}
+.pope-checkout-back{display:flex;align-items:center;gap:8px;font-size:12px;color:#a63088;font-weight:800;margin:17px 0}
+.pope-checkout-trust{border-top:1px solid #f4e2ee;padding-top:17px;margin-top:20px;display:flex;flex-direction:column;gap:10px}
+.pope-checkout-trust span{display:flex;align-items:center;gap:8px;color:#886a83;font-size:11px}
+@media(max-width:860px){.pope-checkout-body{grid-template-columns:1fr}.pope-checkout-summary{order:2}}
+@media(max-width:480px){.pope-checkout-page{padding-top:22px}.pope-checkout-page>h1{font-size:26px}.pope-checkout-items,.pope-checkout-summary{padding:16px}.pope-checkout-steps{gap:6px}.pope-checkout-steps>span{font-size:9px;padding:7px}.pope-checkout-steps>svg{width:12px}.pope-checkout-item{gap:9px}.pope-checkout-item-icon{width:36px;height:36px}}

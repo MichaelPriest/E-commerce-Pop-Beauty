@@ -145,3 +145,14 @@ Acesse `/admin/gateways`. Dez opções para avaliação: Mercado Pago, PagBank, 
 - **Não há checkout público, webhooks financeiros, aprovação de pagamento automática nem seleção de produção.** Para finalizar a escolha, será necessário integrar cobrança, conciliação, estornos e verificar encargos e condições contratuais.
 
 Variáveis opcionais de sandbox: `MP_TEST_ACCESS_TOKEN`, `PAGBANK_SANDBOX_TOKEN`, `PAGARME_TEST_SECRET_KEY`, `ASAAS_SANDBOX_API_KEY`, `STRIPE_TEST_SECRET_KEY`, `EFI_SANDBOX_CLIENT_ID`, `EFI_SANDBOX_CLIENT_SECRET`, `EFI_SANDBOX_CERT_BASE64`, `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`, `CIELO_SANDBOX_MERCHANT_ID`, `CIELO_SANDBOX_MERCHANT_KEY`, `IUGU_TEST_API_TOKEN`. Nunca use `NEXT_PUBLIC_` com chaves secretas.
+
+## Checkout: validação de preços e estoque sem cobrança
+
+A loja possui `/checkout`, uma **prévia de conferência**, vinculada à página `/carrinho`. A conferência calcula o subtotal com preços efetivos no PostgreSQL e verifica publicação do produto, variantes ativas, estoque reservado e lotes ainda válidos. Usa `/api/checkout/preview` (POST com verificação de origem, validação de formato e `Cache-Control: no-store`) e RPC `public.preview_checkout_cart` como wrapper invoker da função privada de leitura `private.preview_checkout_cart`, criada pela migração `supabase/preview_checkout_cart.sql`. Não há coleta de endereço ou cartão.
+
+- O navegador envia **apenas ID do produto e quantidade**. Nome/preço fornecidos via localStorage nunca determinam o subtotal calculado pelo servidor.
+- Produtos demonstrativos, não publicados ou adultos são classificados como indisponíveis; dados de produtos adultos não são retornados.
+- Se houver múltiplas variantes ativas, a prévia exige seleção de variante em funcionalidade futura, em vez de escolher automaticamente uma cor/tamanho.
+- A conferência **não reserva estoque, não cria pedidos, não consulta bancos nem aciona um gateway**. O botão de pagamento permanece desativado.
+- Frete e condições finais ainda não são calculados. Uma prévia não garante disponibilidade futura; a futura criação de pedidos precisará repetir validação e reservar estoque atomicamente.
+- A revisão do checkout foi testada com transação revertida: preço do banco, quantidade, estoque insuficiente, produto demonstrativo, duplicidade, bloqueio +18 e ausência de mutações.

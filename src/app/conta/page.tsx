@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { UserRound, LogOut, Heart, ShieldCheck, LockKeyhole } from 'lucide-react';
+import { UserRound, LogOut, Heart, ShieldCheck, LockKeyhole, Eye } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { signOutAction } from '@/app/actions';
@@ -19,6 +19,7 @@ export default async function AccountPage(){
  <div className="account-card"><Heart/><div><strong>Meus pedidos</strong><p>Disponível quando a loja iniciar as vendas.</p></div></div>
  {adult.enabled?<div className="account-card"><LockKeyhole/><div><strong>Acesso à seção restrita +18</strong><p>{adult.verified?'Sua maioridade está verificada.':'O conteúdo permanece bloqueado até a confirmação da maioridade por procedimento confiável.'}</p><Link href="/adulto" className="text-link">{adult.verified?'Abrir área restrita':'Solicitar ou acompanhar verificação'}</Link></div></div>:null}
  {(role==='admin'||role==='staff')?<Link className="hero-button" href="/admin"><ShieldCheck size={17}/> Abrir administração</Link>:null}
+ {role==='admin'?<div className="account-card"><Eye size={28}/><div><strong>Prévia interna do catálogo +18</strong><p>Disponível como administrador para gerenciar produtos. Não substitui a comprovação independente de maioridade.</p><Link href="/admin/adulto" className="text-link">Abrir prévia administrativa</Link></div></div>:null}
  <form action={signOutAction}><button className="logout-button" type="submit"><LogOut size={18}/> Sair da conta</button></form>
  </div>;
 }

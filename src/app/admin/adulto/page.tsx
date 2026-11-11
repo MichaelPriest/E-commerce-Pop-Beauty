@@ -38,7 +38,7 @@ export default async function AdultAdminPreview(){
  return <div className="container admin-workspace admin-adult-preview">
   <div className="admin-top"><div>
    <div className="section-kicker">VISUALIZAÇÃO INTERNA • POPÊ BEAUTY</div>
-   <h1><Eye size={29} inline/> Catálogo reservado +18</h1>
+   <h1><Eye size={29}/> Catálogo reservado +18</h1>
    <p>Prévia para administração de produtos, separada da loja pública.</p>
   </div>
    <Link href="/admin/produtos" className="admin-primary"><PackagePlus size={18}/> Gerenciar produtos</Link>

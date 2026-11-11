@@ -1,7 +1,8 @@
 'use client';
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {ShieldCheck,ShieldAlert,Settings,LockKeyhole,CheckCircle2,XCircle,RefreshCcw,ExternalLink,ToggleLeft,ToggleRight} from 'lucide-react';
+import {ShieldCheck,ShieldAlert,Settings,LockKeyhole,CheckCircle2,XCircle,RefreshCcw,ExternalLink,ToggleLeft,ToggleRight,Eye} from 'lucide-react';
+import Link from 'next/link';
 import {createClient} from '@/lib/supabase/browser';
 type RequestItem={
  user_id:string;status:string;requested_at:string;reviewed_at:string|null;
@@ -68,6 +69,7 @@ export function SettingsManager({enabled,requests,currentUserId}:Props){
    </div>
    <div className="settings-tip"><ShieldCheck size={18}/><span>Proteção em duas camadas: configuração administrativa e maioridade verificada pelo banco. Apenas informar a data de nascimento ou marcar “tenho 18 anos” não libera o conteúdo.</span></div>
    <p className="settings-disclaimer">O botão controla a disponibilidade técnica. Para oferecer produtos restritos, organize um procedimento de aferição de idade confiável, documentado e compatível com as orientações da ANPD. O sistema não valida documentos automaticamente.</p>
+   <Link href="/admin/adulto" className="admin-outline"><Eye size={17}/> Abrir prévia administrativa +18</Link>
   </section>
   <section className="settings-card">
    <div className="settings-card-head"><div className="settings-icon"><ShieldCheck size={25}/></div><div><h2>Verificações de maioridade</h2><p>Solicitações recentes: {requests.length} · Aguardando análise: {pending.length}</p></div></div>

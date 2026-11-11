@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@/lib/supabase/server';
-import {fiscalChecklist,type FiscalIssuer,type FiscalRecipient,
+import {fiscalChecklist,fiscalAmountReconciliation,type FiscalIssuer,type FiscalRecipient,
  type FiscalItem,type FiscalTax} from '@/lib/fiscal/readiness-core';
 
 export const runtime='nodejs';
@@ -63,6 +63,7 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   sku:x.sku,quantity:x.quantity,priceCents:x.unit_price_cents,
   tax:x.fiscal_classification as FiscalTax|null
  }));
+ const reconciliation=fiscalAmountReconciliation(prepared,o.data.total_cents);
  const model=draft.data?.fiscal_model==='65'?'65':'55';
  const issues=fiscalChecklist({
   issuer:issuer.data as FiscalIssuer|null,
@@ -78,7 +79,8 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   document_status:'not_submitted',
   ready_for_transmission:false,
   mandatory_review_by_accountant:true,
-  missing_basic_fields:issues,
+  missing_basic_fields:[...issues,...reconciliation.issues],
+  amount_reconciliation:{...reconciliation,requires_manual_allocation:reconciliation.difference_cents!==0},
   fiscal_model:model,
   operation_nature:draft.data?.operation_nature??null,
   notes:draft.data?.review_notes??null,
@@ -87,7 +89,7 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   order:{
    id:o.data.id,origin:o.data.origin,channel:o.data.channel,
    status:o.data.status,created_at:o.data.created_at,
-   items_total_cents:items.reduce((sum,x)=>sum+x.line_total_cents,0),
+   items_total_cents:reconciliation.items_total_cents,
    order_total_cents:o.data.total_cents,
    delivery_address:o.data.shipping_address_snapshot
   },

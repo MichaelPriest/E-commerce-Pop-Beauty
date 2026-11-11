@@ -791,3 +791,11 @@ A exportação JSON de preparação fiscal informa `amount_reconciliation`, com 
 ### 22.3. Romaneio interno por seleção de pedidos
 
 Em `/admin/logistica`, o administrador pode selecionar até **30 pedidos administrativos** no filtro atual e gerar `/admin/logistica/romaneio?pedidos=<ids>`. O romaneio apresenta pedidos, status, quantidades de SKUs, volumes previstos, transportadora e rastreio já cadastrados, além de campos manuais de conferência. A rota valida UUIDs, duplicatas, total máximo, autenticação admin e a correspondência exata de todos os pedidos consultados. A consulta é exclusivamente de leitura e não movimenta estoque, não registra envio, não contrata frete, não emite PLP e não constitui documento fiscal. Volumes são estimativas administrativas (padrão 1 se não houver preparação). Testes: `tests/logistics-internal-manifest.test.mjs`.
+
+### 22.4. Medidas de cada volume (preparação interna)
+
+Na tela `/admin/logistica`, abra **Volumes** no pedido para acessar `/admin/logistica/volumes/[id]`. A quantidade prevista deve ser cadastrada anteriormente na central fiscal (`internal_package_preparations`). Para cada volume é possível salvar **peso bruto em gramas, altura, largura, comprimento em cm (até duas casas) e observações**, por meio da RPC `save_internal_package_volume`.
+
+A tabela `internal_package_volumes` tem chave composta `(order_id, volume_number)`, RLS de leitura só para `admin` e nenhuma permissão direta de escrita para o cliente. A RPC verifica o perfil, o pedido manual, a quantidade prevista e os limites das medidas. A edição só é permitida em pedidos `paid` ou `packing`, antes do despacho. O banco foi migrado em 11/11/2026; a migração versionada é `supabase/internal_package_volumes_v1.sql`.
+
+**Limitações:** esse cadastro não contrata transporte, não consulta transportadora, não gera etiqueta postal e não confirma despacho. Se a quantidade prevista de volumes for reduzida, volumes excedentes já cadastrados não são apagados automaticamente: o painel exibe apenas os números previstos e dados antigos devem ser revisados antes de qualquer integração postal. Testes: `tests/logistics-volume-dimensions.test.mjs`.

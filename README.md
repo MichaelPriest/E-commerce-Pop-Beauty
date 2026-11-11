@@ -1,226 +1,618 @@
 # Popê Beauty 💖
 
-E-commerce de maquiagem e beleza, desenvolvido com **Next.js 16**, **TypeScript**, **Supabase** e **Vercel**.
+> Plataforma de e-commerce de beleza, maquiagem e catálogo reservado +18, desenvolvida com **Next.js, React, TypeScript, Supabase e Vercel**.  
+> **Situação: aplicação publicada, mas NÃO liberada para vendas online reais.**  
+> **Documentação revisada em:** 11/11/2026 · **Ambiente:** [Popê Beauty](https://e-commerce-pope-beauty.vercel.app) · **Branch de publicação:** `main`.
 
-## Status da primeira versão
-- Vitrine responsiva, categorias, busca e detalhes de produtos.
-- Carrinho demonstrativo local (sem checkout, sem pagamento, sem reserva de estoque).
-- Cadastro e login preparados com Supabase Auth (e-mail/senha).
-- Área de cliente e painel administrativo com autorização por banco de dados.
-- SQL inicial de catálogo, variações, estoque, pedidos, movimentações e listagens de marketplaces.
-- Painel **/admin/produtos**: cadastro, edição, fotos, preços, custo, variações, SKU/EAN e ativação do catálogo.
-- Painel **/admin/estoque**: saldo por SKU, lotes, validade, estoque mínimo e entrada/saída auditada pelo banco.
-- Shopee, Mercado Livre, frete, etiquetas e pagamentos **não estão conectados**.
+Este é o **documento principal do projeto**. Reúne recursos, URLs, arquitetura, tabelas, regras de negócio, configuração, homologação, segurança, limitações, operações e próximos passos. A implementação em código e no banco é a fonte de verdade quando existir divergência; nunca habilite recursos de produção somente com base na presença de uma tela.
 
-**Os produtos e preços exibidos sem Supabase são ilustrativos, não ofertas comerciais.**
+## 1. Visão geral e status
 
-## Desenvolvimento
+### 1.1. Painel executivo
+
+| Área | Situação em 11/11/2026 | Observações |
+| --- | --- | --- |
+| Hospedagem e build | ✅ Publicado, último deploy consultado: `READY` | Site em Vercel, Next.js 16 |
+| Vitrine e produtos | ✅ Funcional | Produtos ilustrativos podem aparecer; não são ofertas reais |
+| Supabase Auth e contas | ✅ Implementados | Confirmar SMTP, recuperação e URLs de redirecionamento em ambiente real |
+| Administração e sidebar | ✅ Implementadas | Acesso restrito a `admin`; `staff` não administra |
+| Produtos, variações, fotos e estoque | ✅ Funcional | Lotes, validade, saldo reservado, movimentações e auditoria |
+| Catálogo +18 | ⚠️ Restrito | Imagens privadas; maioridade exige verificação independente |
+| Endereços, CEP e máscaras | ✅ Implementados | ViaCEP → BrasilAPI; máscara de CEP/telefone, componentes CPF/CNPJ |
+| Carrinho e revisão de preços | ✅ Prévia | Preços e estoque revistos no banco; carrinho no navegador |
+| Reservas de checkout | 🧪 Só administrador | Reserva de 15 minutos com expiração por Supabase Cron |
+| Checkout público/compra real | ❌ Bloqueado | Não ativar antes de frete, pagamentos e condições comerciais |
+| Gateways de pagamento | 🧪 Catálogo com 10 provedores | Nenhum selecionado para produção |
+| Mercado Pago Checkout Pro | 🧪 Código TEST preparado | Geração bloqueada sem conta TEST validada e autorização explícita |
+| Webhook Mercado Pago | 🧪 Código TEST preparado | HMAC, consulta à API, deduplicação e auditoria; **não dá baixa** |
+| Frete Melhor Envio | 🧪 Cálculo sandbox preparado | Sem token, CEP de origem e dimensões, não há cotações |
+| E-mails de pedidos | ⚠️ Fila e templates prontos | Envio SMTP não operacional sem `SMTP_PASSWORD` |
+| Shopee / Mercado Livre | ⚠️ Vínculos cadastrais | OAuth, pedidos e estoque automáticos não implementados |
+| Emissão fiscal, políticas e checkout comercial | ❌ Pendentes | Necessários antes da abertura ao público |
+
+### 1.2. Estado observado no banco e na infraestrutura
+
+Consulta realizada em 11/11/2026:
+
+- **1 produto comum ativo** e **1 produto adulto ativo** no banco; a existência de produto adulto ativo não equivale à disponibilidade pública dessa seção.
+- **2 variações (SKUs)** cadastradas; **0 especificações de embalagem/peso** preenchidas.
+- **CEP de origem do frete ausente**.
+- **0 candidatos de gateway** selecionados para homologação.
+- **0 preparações de pagamento** e **0 eventos de webhook** registrados.
+- `store_settings.checkout_reservations_enabled = false`.
+- Supabase Cron `pope-checkout-expiry-every-minute` com programação `* * * * *` e `active=true`.
+- Variáveis de ambiente verificadas na Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` e `SMTP_FROM_EMAIL`.
+- **Não estavam cadastradas** `SMTP_PASSWORD`, `MP_TEST_ACCESS_TOKEN`, `MP_TEST_SELLER_ID`, `MP_TEST_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` ou `MELHOR_ENVIO_SANDBOX_TOKEN`. As chaves de ativação TEST também não constavam.
+
+> Estes números representam um **retrato de 11/11/2026**, não um monitor em tempo real. As credenciais jamais devem ser copiadas para esta documentação.
+
+## 2. Repositório, stack e arquitetura
+
+- **Repositório:** [MichaelPriest/E-commerce-Pop-Beauty](https://github.com/MichaelPriest/E-commerce-Pop-Beauty)
+- **Produção:** https://e-commerce-pope-beauty.vercel.app
+- **Next.js:** 16.4.6, App Router e Functions `src/app/api`.
+- **React/React DOM:** 19.3.1.
+- **TypeScript:** 5.9.3.
+- **Banco/Auth/Storage:** Supabase PostgreSQL + Supabase Auth + RLS.
+- **Bibliotecas:** `@supabase/ssr@0.12.7`, `@supabase/supabase-js@2.119.0`, `lucide-react@1.71.0`, `nodemailer@10.5.0` e `react-imask@7.6.1`.
+- **Hospedagem:** Vercel (deploy associado a `main`).
+- **Provedores externos preparados:** ViaCEP, BrasilAPI, Melhor Envio sandbox e gateways em comparação.
+
+### 2.1. Fluxos principais
+
+```text
+CLIENTE / VISITANTE
+  Vitrine → Produto → Carrinho (localStorage)
+                     ↓
+              /checkout (prévia)
+                     ↓
+       RPC preview_checkout_cart
+         preço, produto, variantes,
+            lotes e estoque
+                     ↓
+  Visitante/cliente: compra BLOQUEADA
+  Administrador: endereço → reserva TEST de 15 min
+                     ↓
+                 orders (store_api)
+                     ↓
+          sandbox_payment_attempts
+                     ↓
+       Mercado Pago TEST (se habilitado)
+                     ↓
+    Webhook assinado + consulta ao provedor
+                     ↓
+         payment_webhook_receipts
+     (auditoria, NÃO confirma pagamento)
+
+ADMINISTRAÇÃO
+  Cadastro de produtos → SKUs → lotes → estoque
+  Pedidos manuais → operações/expedição → e-mails em fila
+  Gateways e Frete → configuração/simulações sandbox
+  Usuários → permissões → auditoria
+```
+
+### 2.2. Estrutura do repositório
+
+```text
+src/
+  app/
+    admin/           Painel, catálogo, usuários, pedidos, relatórios,
+                     logística, frete, gateways, pagamentos e auditoria
+    api/             Checkout, integrações e webhooks protegidos
+    conta/           Minha conta, endereços e reservas
+    carrinho/        Carrinho local
+    checkout/        Conferência e reserva TEST
+    entrar/          Autenticação
+    esqueci-senha/   Recuperação
+    redefinir-senha/ Troca de senha
+    adulto/          Fluxo público restrito da seção +18
+  components/        Sidebar, componentes de formulários e checkout
+  hooks/             Consulta automática de CEP
+  lib/               Serviços, clientes Supabase, gateways, segurança
+  types/             Tipos de domínio
+supabase/
+  *.sql              Esquemas, migrations e endurecimento de segurança
+  email-templates/   Templates e assuntos do Supabase Auth
+emails/pedidos/      Cinco e-mails transacionais de pedidos
+public/              Logo e favicon
+```
+
+## 3. Desenvolvimento local e deploy
+
+### 3.1. Pré-requisitos
+
+- Node.js compatível com Next.js 16 (recomendado Node 22).
+- npm.
+- Projeto Supabase dedicado, já estruturado com as migrations.
+- Variáveis públicas de conexão configuradas.
+- Ambiente de teste separado para integrações externas.
+
+### 3.2. Comandos
+
 ```bash
 npm install
 cp .env.example .env.local
 npm run dev
+npm run typecheck
+npm run build
+npm run start
 ```
 
-## Configuração Supabase
-1. Crie **um projeto dedicado** à Popê Beauty, para não compartilhar dados com outros sistemas.
-2. Execute `supabase/schema.sql` e depois `supabase/catalog_admin.sql` no SQL Editor do projeto dedicado. Na organização Popê Beauty, as duas etapas já foram aplicadas.
-3. No painel Supabase, configure **Authentication > URL Configuration** com o endereço definitivo da Vercel e o callback `https://SEU-DOMINIO/auth/callback`. Use o callback local `http://localhost:3000/auth/callback` para desenvolvimento.
-4. Configure as variáveis `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` localmente e na Vercel (Development/Preview/Production conforme necessário).
-5. Crie seu usuário pela interface `/entrar`; em seguida, no SQL Editor do **mesmo** projeto, atribua manualmente `role='admin'` ao seu registro em `public.profiles`, usando o ID/ e-mail do usuário recém-cadastrado.
-6. Recarregue `/admin` para abrir o painel. Nunca use metadados editáveis pelo cliente para definir permissões.
+`npm run dev` atende localmente em `http://localhost:3000`.  
+`npm run typecheck` executa `tsc --noEmit`.  
+`npm run build` compila o Next.js.  
+`npm run start` inicia o build de produção.
 
-**Atenção:** não publicar `service_role`, `sb_secret`, tokens dos marketplaces ou senhas no repositório, em variáveis `NEXT_PUBLIC_*` ou no navegador. APIs de integração externas deverão utilizar endpoints e segredos exclusivos no servidor.
+**Atenção ao controle de dependências:** revisar e manter o arquivo de lock versionado para instalações reprodutíveis; o repositório consultado não apresentava um lockfile. Executar testes antes de atualizar dependências.
 
-## Implantação Vercel
-Importe ou conecte o repositório `MichaelPriest/E-commerce-Pop-Beauty` na Vercel com framework Next.js. Configure as duas variáveis públicas acima antes de ativar o login. O projeto também pode exibir a vitrine demonstrativa sem Supabase.
+### 3.3. Supabase Auth: URLs
 
-## Próximas etapas
-- Cadastro administrativo de produtos, imagens, SKUs, lotes e validade.
-- Sincronização transacional de estoque, filas de eventos, reprocessamento, reconciliação e histórico.
-- OAuth homologado de Shopee e Mercado Livre (sem presumir autorização de API).
-- Gateway de pagamento, carrinho persistente, checkout com cotação logística e geração de etiquetas.
-- Endereços, pedidos reais, LGPD, política comercial e testes de segurança.
+Na configuração de autenticação do projeto Supabase:
 
-Este projeto foi inicialmente preparado para implantação, sem habilitar compras reais.
+- Site URL: `https://e-commerce-pope-beauty.vercel.app`.
+- Redirect de confirmação: `https://e-commerce-pope-beauty.vercel.app/auth/callback`.
+- Redirect de recuperação: `https://e-commerce-pope-beauty.vercel.app/auth/callback?next=/redefinir-senha`.
+- Se necessário em desenvolvimento: `http://localhost:3000/auth/callback` e `http://localhost:3000/auth/callback?next=/redefinir-senha`.
 
-## Operação administrativa atual
+Fluxo: `/entrar` → `/esqueci-senha` → callback Auth (PKCE/OTP, conforme template) → `/redefinir-senha`.
 
-Após entrar com sua conta administradora, acesse `/admin/produtos` para cadastrar o catálogo. Ao criar um produto, informe pelo menos um SKU e o saldo inicial (opcional); as alterações de estoque utilizam a função SQL transacional `adjust_stock` com lote e justificativa. Variações adicionais começam com saldo zero e podem ser abastecidas em `/admin/estoque`.
+As regras de senha do frontend exigem complexidade e 12+ caracteres, mas **as políticas do Supabase Auth devem ser configuradas no servidor**. Verificar também a proteção de senha vazada nas recomendações de segurança do projeto.
 
-A loja é **uma vitrine em implantação**: mesmo um produto publicado ainda não pode ser comprado, e o estoque **não sincroniza** com os marketplaces. Não cadastre informações financeiras sensíveis em campos públicos.
+### 3.4. Vercel
 
-## Seção bem-estar íntimo +18 (segurança)
+1. Conectar o GitHub e importar o projeto com framework Next.js.
+2. Confirmar branch de produção `main` e domínio definitivo.
+3. Cadastrar variáveis em **Project → Settings → Environment Variables** com escopo apropriado.
+4. Após alteração de variáveis de ambiente, publicar novamente para atualizar as Functions.
+5. Verificar build, rotas serverless, logs e fluxos em contas de teste.
 
-A opção **/admin/configuracoes** habilita ou desabilita globalmente a seção. Por padrão está **desligada**. O banco aplica políticas RLS que impedem a leitura de produtos e variações adultos por qualquer visitante ou cliente que não tenha prova de maioridade aprovada e válida; as imagens usam um bucket privado `adult-products` servido apenas por rota autenticada e sem cache público. Clientes só podem solicitar análise; apenas administradores autorizados podem aprovar após conferir prova de idade confiável fora do site. Nenhum documento ou dado de nascimento é persistido nesta etapa. A aquisição ainda está **desabilitada**.
+**Não usar** `NEXT_PUBLIC_` para tokens secretos, senhas, chaves de serviço ou certificados. Não criar documentação contendo valores secretos.
 
-O cadastro de produtos escolhe a categoria `Sex Shop +18` para identificar automaticamente itens adultos. Nunca use imagens públicas ou URL externa para produtos adultos. Os arquivos desta seção são carregados separadamente no bucket privado.
+## 4. Variáveis de ambiente
 
-**Importante:** aprovação manual depende de procedimento confiável de verificação de idade e titularidade; a mera marcação no painel sem conferência real **não atende** a esse requisito. Para escala, integrar provedor especializado, auditar o processo e rever a adequação à ANPD/ECA Digital antes de comercializar.
+A lista abaixo contém **somente nomes/valores de habilitação**, nunca credenciais reais. `Sensível` = configurar como secret/sensitive no servidor da Vercel.
 
-**Supabase Free:** a detecção de senhas vazadas exige Pro. A tela de cadastro passou a sugerir e validar 12+ caracteres com maiúsculas, minúsculas, números e símbolos, mas isso é apenas controle de interface. Configure também a política de senhas no provedor Supabase Auth para fiscalização no servidor.
+| Variável | Uso | Tipo / situação |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase | Pública; configurada |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave publicável do Supabase | Pública; configurada |
+| `SUPABASE_SERVICE_ROLE_KEY` | Gravação da auditoria de webhooks após verificação | **Sensível; ausente** em 11/11 |
+| `SMTP_HOST` | Servidor SMTP dos pedidos | Servidor; configurada |
+| `SMTP_PORT` | Porta SMTP | Servidor; configurada |
+| `SMTP_USER` | Usuário SMTP | Servidor; configurada |
+| `SMTP_FROM_EMAIL` | Remetente dos pedidos | Servidor; configurada |
+| `SMTP_PASSWORD` | Senha de aplicativo ou credencial SMTP | **Sensível; ausente** em 11/11 |
+| `MELHOR_ENVIO_SANDBOX_TOKEN` | Cotação de frete em homologação | **Sensível; ausente** |
+| `MP_TEST_ACCESS_TOKEN` | Credencial do vendedor de testes Mercado Pago | **Sensível; ausente** |
+| `MP_TEST_SELLER_ID` | ID numérico do vendedor TEST | Configuração de teste; ausente |
+| `MP_TEST_PREFERENCE_CREATION_ENABLED` | Liberação explícita da geração de preferências TEST | Ausente; valor permitido: `verified-test-account-only` |
+| `MP_TEST_WEBHOOK_SECRET` | HMAC das notificações Mercado Pago TEST | **Sensível; ausente** |
+| `MP_TEST_WEBHOOK_ENABLED` | Liberação explícita do webhook TEST | Ausente; valor permitido: `verified-test-account-only` |
 
-## Prévia administrativa do catálogo adulto
+### 4.1. Variáveis de gateways opcionais para avaliação
 
-Acesse `/admin/adulto` com a conta que possua `role='admin'`. O painel mostra os produtos +18 (publicados ou em rascunho), imagens do bucket privado, preço e saldo do estoque. A funcionalidade de gestão funciona mesmo com a seção pública desativada.
+| Provedor | Nomes |
+| --- | --- |
+| Mercado Pago | `MP_TEST_ACCESS_TOKEN` |
+| PagBank | `PAGBANK_SANDBOX_TOKEN` |
+| Pagar.me | `PAGARME_TEST_SECRET_KEY` |
+| Asaas | `ASAAS_SANDBOX_API_KEY` |
+| Stripe | `STRIPE_TEST_SECRET_KEY` |
+| Efí Bank | `EFI_SANDBOX_CLIENT_ID`, `EFI_SANDBOX_CLIENT_SECRET`, `EFI_SANDBOX_CERT_BASE64` |
+| PayPal | `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET` |
+| Cielo | `CIELO_SANDBOX_MERCHANT_ID`, `CIELO_SANDBOX_MERCHANT_KEY` |
+| Iugu | `IUGU_TEST_API_TOKEN` |
+| InfinitePay | Sem variáveis de sandbox; **não chamar a API durante testes sem proteção apropriada** |
 
-**Atenção:** é uma autorização administrativa, não uma comprovação de idade. A loja pública `/adulto` ainda exige prova independente de maioridade. A solicitação de maioridade do administrador permanece pendente até revisão independente; autoaprovação continua proibida. A regra RLS impede contas `staff` não verificadas de consultar itens adultos, mesmo que possam ler o catálogo não adulto.
+As variáveis opcionais habilitam apenas verificações que o código implementa. **Presença de variável não garante autorização, conectividade ou homologação.**
 
-## Operações administrativas da loja (sem gateway)
-- `/admin/pedidos`: pedidos internos com até 30 SKUs, preço do catálogo, reserva atômica, confirmação manual de recebimento com referência e transições auditadas.
-- `/admin/clientes`: listagem dos perfis e pedidos relacionados, sem expor tabelas de autenticação.
-- `/admin/logistica`: separação, expedição com transportadora/código de rastreio e baixa de lote por validade mais próxima (FEFO).
-- `/admin/marketplaces`: associação manual de SKUs a anúncios de Shopee e Mercado Livre. O vínculo é apenas cadastral: sem tokens, sem importação, sem sincronismo.
-- `/admin/financeiro`: acompanhamento de confirmações administrativas, sem conciliação automática, checkout, taxas ou transferências.
+## 5. Mapa de telas e funcionalidades
 
-A criação de pedido manual não chama provedor de pagamento e não permite produto adulto. Ela reserva estoque até cancelamento ou expedição. Pagamento só pode ser marcado com anotação de referência pelo administrador. O fluxo atual não substitui um gateway, OMS completo ou ERP. Não acione ações de pagamento e expedição sem as respectivas operações terem ocorrido.
+### 5.1. Vitrine, conta e checkout
 
-## Recuperação de acesso e troca de senha por e-mail (Supabase Auth)
+| Caminho | Função |
+| --- | --- |
+| `/` | Vitrine, categorias, destaques e busca |
+| `/produto/[slug]` | Detalhes de produtos comuns |
+| `/carrinho` | Carrinho local com quantidades e link para conferência |
+| `/checkout` | Validação de preços/estoque; reserva TEST somente para admin |
+| `/entrar` | Cadastro/login Supabase |
+| `/esqueci-senha` | Solicitação de redefinição de senha |
+| `/redefinir-senha` | Nova senha a partir do fluxo Auth |
+| `/conta` | Dados e histórico do titular, inclusive cancelamento de reserva TEST |
+| `/conta/enderecos` | Endereços do titular, endereço principal, busca de CEP |
+| `/adulto` | Seção +18 com restrição de maioridade |
+| `/adulto/produto/[slug]` | Detalhes de produto restrito, quando autorizado |
 
-- `/entrar`: inclui **Esqueceu sua senha?**.
-- `/esqueci-senha`: solicita `auth.resetPasswordForEmail` por e-mail, com mensagem genérica para não revelar se o usuário existe.
-- `/auth/callback?next=/redefinir-senha`: faz troca de código PKCE por sessão no servidor e encaminha para nova senha. O callback também aceita OTP `token_hash` com tipo `recovery` caso um template próprio seja configurado.
-- `/redefinir-senha`: confirma sessão com `auth.getUser`, valida 12–72 caracteres (maiúscula, minúscula, número e símbolo), compara confirmação, atualiza via `auth.updateUser`, encerra sessão de recuperação e envia para o login. Não salva nem transmite senhas em tabelas de aplicação.
+### 5.2. Administração
 
-**Configuração obrigatória no Supabase Dashboard:** Authentication → URL Configuration, com Site URL `https://e-commerce-pope-beauty.vercel.app` e Redirect URLs adicionais, *exatamente*:
-`https://e-commerce-pope-beauty.vercel.app/auth/callback?next=/redefinir-senha`
-e `https://e-commerce-pope-beauty.vercel.app/auth/callback` (já usada na confirmação de cadastro).
+Todas as rotas `/admin/*` são para perfil `admin` verificado no banco.
 
-Se executar localmente, também permita `http://localhost:3000/auth/callback?next=/redefinir-senha` e `http://localhost:3000/auth/callback` conforme necessário. O e-mail padrão do Supabase normalmente contém `{{ .ConfirmationURL }}`, que incorpora o redirectTo. Se usar template próprio, ajuste-o para respeitar `{{ .RedirectTo }}` e o fluxo de verificação. Teste links no **mesmo navegador** que fez a solicitação (PKCE).
+| Caminho | O que faz |
+| --- | --- |
+| `/admin` | Dashboard e atalhos |
+| `/admin/produtos` | Produtos, fotos, categorias, preços, variações, SKUs e EAN |
+| `/admin/estoque` | Saldos, lotes, validades, movimentações e alertas |
+| `/admin/pedidos` | Pedidos internos, criação e alterações de status |
+| `/admin/clientes` | Clientes e relacionamentos com pedidos comerciais |
+| `/admin/logistica` | Separação, expedição, rastreio e baixa FEFO |
+| `/admin/frete` | CEP de origem, peso/medidas e cotação sandbox |
+| `/admin/financeiro` | Indicadores de pedidos com confirmação administrativa |
+| `/admin/relatorios` | Evolução mensal, CSV e alertas de estoque |
+| `/admin/marketplaces` | Associação cadastral com anúncios externos |
+| `/admin/notificacoes` | Fila de e-mails de pedidos; reprocessamento |
+| `/admin/gateways` | Comparação de dez provedores, credenciais e preferências |
+| `/admin/pagamentos` | Preparação de pagamentos TEST, links TEST e auditoria de webhooks |
+| `/admin/reservas` | Reservas de homologação de checkout |
+| `/admin/usuarios` | Diretório e alteração de permissões |
+| `/admin/usuarios-online` | Presença recente / usuários com atividade |
+| `/admin/auditoria` | Auditoria de perfis e configuração +18 |
+| `/admin/adulto` | Prévia interna de catálogo +18 |
+| `/admin/configuracoes` | Configurações administrativas |
 
-**Operação:** sem provedor SMTP próprio, o Supabase pode impor limitações ao envio de e-mails e destinatários. Verificar em Authentication → SMTP Settings quando houver bloqueio no envio. O recurso nativo de detecção de senhas vazadas requer plano Pro; configure também a política mínima diretamente em Authentication → Providers → Email, pois a validação da tela não substitui a regra do servidor.
+A sidebar inclui grupos, pesquisa/atalhos, ícones, destaque da seção, recolhimento no desktop e navegação móvel. O cabeçalho identifica a conta conectada e oferece ação de sair.
 
-## E-mails automáticos dos pedidos (SMTP no servidor)
-A partir da migração `supabase/order_notifications.sql`:
-- Criação ou alteração de status de pedidos com **cliente vinculado** gera uma notificação transacional na tabela `order_notifications` (criação, pagamento confirmado manualmente, enviado, entregue e cancelado).
-- A tabela é protegida por RLS. Uma notificação por evento, com fila `pending → sending → sent/failed`, 5 tentativas máximas por processamento e backoff progressivo. Sem destinatário (balcão), não há e-mail. Produtos adultos são excluídos.
-- Os módulos `/admin/pedidos` e `/admin/logistica` enviam ações a `/api/admin/order-operations`. O backend confirma autenticação e perfil de administrador, executa a operação via RPC e tenta enviar a notificação recém-gerada. Mensagens não enviadas permanecem na fila sem invalidar pedidos.
-- Em `/admin/notificacoes`, visualizar filas, histórico, status, e-mail de destino e usar **Processar fila**, **Enviar** ou **Reenviar** para itens com falha.
-- O remetente de contato é `popebeauty.e@gmail.com`; os HTMLs vêm de `emails/pedidos/*.html` e são incluídos no build pelo `outputFileTracingIncludes` do Next.js.
+## 6. Identidade, sessões e permissões
 
-### Configuração SMTP da Vercel (não confundir com o SMTP do Supabase Auth)
-No painel do projeto Vercel, em **Settings → Environment Variables**, configure exclusivamente em **Production**:
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=popebeauty.e@gmail.com
-SMTP_FROM_EMAIL=popebeauty.e@gmail.com
-SMTP_PASSWORD=<senha-de-aplicativo-Google-colada-apenas-no-painel-Vercel>
-```
-A senha `SMTP_PASSWORD` deve ser uma **secret/sensitive variable**, e nunca enviada no chat, enviada a GitHub ou colocada em `NEXT_PUBLIC_`. Após configurar, **publique novamente** para as Functions enxergarem a variável.
+- O Supabase Auth controla o login, a recuperação e as sessões.
+- O papel da aplicação é consultado em `public.profiles.role`, não em `user_metadata`.
+- Papéis: `customer`, `staff` e `admin`. `staff` é cadastral; **não concede acesso ao Admin nesta versão**.
+- `/admin/usuarios` consulta usuários, e-mail confirmado e último login; somente administradores autorizados podem alterar o perfil de **outra pessoa**.
+- A alteração de papéis bloqueia autoelevação/autoalteração, usuário inexistente e promoção a admin sem e-mail confirmado.
+- `/admin/auditoria` mantém eventos de alterações de papel e liga/desliga da seção adulta (histórico desde a implantação, não retroativo).
+- `/admin/usuarios-online` usa heartbeat e janela aproximada de 3 minutos, atualização de 60 segundos e visão recente de 24h. **Não substitui a lista de sessões reais do Supabase Auth** nem implica revogação de sessões.
+- A presença não depende de IP/GPS/histórico de navegação. RLS limita a leitura a titulares ou administradores.
+- Mudanças de perfil e eventos internos seguem controles de permissão no PostgreSQL, e as funções privilegiadas ficam no schema privado com validação explícita.
 
-O e-mail de confirmação e recuperação continua sendo enviado pelo SMTP do **Supabase Auth**; os pedidos são enviados pelo backend **Vercel**, que necessita das próprias credenciais (a senha não é compartilhada automaticamente).
+### 6.1. Senhas e e-mails do Auth
 
-Para garantir segurança de transporte, as Functions fazem STARTTLS em 587 (ou TLS em 465) e não permitem alteração de host/destinatários via request. A tabela de destinatários é preenchida apenas pelo gatilho do banco a partir de clientes cadastrados.
+Templates em `supabase/email-templates/` para confirmação de cadastro, redefinição de senha, link mágico, convite, atualização de e-mail, reautenticação e notificações de mudanças de credenciais/MFA. Eles são **arquivos de referência**: precisam ser configurados no Supabase Auth quando pertinente; a existência dos HTMLs no GitHub não significa que foram publicados no Auth.
 
-### Limitações operacionais
-- O envio é acionado **imediatamente após ações no painel**, com fila persistente. Operações por API externa/SQL geram fila, mas exigem o botão **Processar fila**; não há agendamento em segundo plano nesta fase.
-- Uma falha ou timeout na resposta do SMTP após aceitar uma mensagem pode exigir conciliação e causar reenvio. Não há garantia absoluta de entrega exatamente uma vez em e-mails SMTP; conferir o status antes de reenviar.
-- O campo `sent` registra aceitação pelo servidor SMTP, não leitura/entrega final ao destinatário.
-- Ainda não há email para compras públicas porque o checkout está desabilitado.
+Verificar `Authentication → URL Configuration`, `SMTP Settings`, limite de envio, política de senhas e medidas contra credenciais vazadas.
 
-## Admin V2 — sidebar e atividade de usuários
-- Todas as páginas `/admin/*` utilizam sidebar lateral com atalhos por grupo, ícones, recolhimento no desktop, gaveta móvel e destaque de rota ativa.
-- Cabeçalho contém conta autenticada (nome e e-mail), acesso à página `/conta`, botão **Sair**, atalhos rápidos e indicador aproximado de usuários com atividade recente.
-- `/admin/usuarios-online` lista usuário, endereço de e-mail, papel, atividade de sessão (janela de 3 minutos), último sinal e sessões recentes nas últimas 24 horas. Atualiza a cada 60 segundos.
-- A migração `supabase/user_session_presence.sql` cria tabela RLS e `supabase/user_presence_admin_identity.sql` permite identificar o usuário. O `SessionPresence` envia heartbeat em páginas autenticadas. `signOutAction` encerra a presença antes de encerrar a sessão Auth.
-- **Limitação**: o indicador de presença é aproximado, NÃO equivale a listar sessões Supabase Auth com garantia de revogação. Fechamento de aba não gera logout imediato; após 3 minutos sem heartbeat a sessão deixa de ser considerada ativa. Nenhum IP, GPS ou histórico de páginas é coletado.
-- Só administradores autenticados podem listar outros usuários; outros usuários veem exclusivamente suas próprias sessões pela RLS. Escrita é restrita a funções privadas, vinculadas ao `session_id` do JWT.
+## 7. Catálogo, fotos, estoque e +18
 
-## Gestão de usuários e segurança administrativa
+### 7.1. Catálogo comum
 
-- `/admin/usuarios`: diretório de contas com nome, e-mail confirmado, último login e papel (Cliente/Equipe/Administrador). Somente administradores podem mudar perfis, e a alteração de outra conta exige confirmação explícita.
-- `/admin/auditoria`: histórico RLS somente para administradores de mudanças de papel e habilitação/desabilitação da seção +18. Eventos anteriores à implantação não são retroativos.
-- Proteções no banco `supabase/admin_user_access_audit.sql`: não é possível alterar a própria permissão, promover conta sem e-mail confirmado ou promover UUID inexistente. O papel é consultado diretamente em `public.profiles` nas autorizações; nunca confiamos em `user_metadata`.
-- **Equipe (staff)**: papel cadastral reservado para permissões futuras; atualmente os módulos `/admin/*` são exclusivos de administrador. Não há convites e nem criação automática de contas pela administração.
-- `/admin/relatorios`: série histórica de 12 meses, métricas por mês de criação de pedidos, exportação CSV, alertas de estoque mínimo, vencidos e vencendo em 30 dias. Agregações SQL com privilégios do invocador `supabase/admin_operational_reports.sql`.
-- Valores confirmados em relatórios correspondem ao estado **administrativamente registrado** do pedido, não a conciliação bancária. Não devem ser tratados como receita recebida efetivamente.
+- Produtos com categoria, nome, descrição, preço em **centavos**, custo, ativo/inativo, SKU/EAN e imagens.
+- Variantes associadas ao produto, com saldo por SKU.
+- Estoque inclui `on_hand`, `reserved`, lotes, validade e estoque mínimo.
+- Ajustes de estoque exigem registro de movimentação e justificativa.
+- Expedição aplica baixa de lotes pelo critério FEFO (*first expired, first out*).
+- Em páginas sem catálogo conectado, demonstrações/itens ilustrativos **não são compráveis**.
+- Não publicar links externos de imagens para produtos adultos.
 
-## Central de gateways para escolha futura
-Acesse `/admin/gateways`. Dez opções para avaliação: Mercado Pago, PagBank, Pagar.me, Asaas, Stripe, Efí, PayPal, Cielo, Iugu e InfinitePay. Nenhuma opção foi ativada para cobranças reais.
+### 7.2. Seção adulta +18
 
-- O esquema `supabase/payment_gateway_evaluation.sql` permite incluir/excluir da comparação, escolher um único **candidato de homologação**, registrar observações e guardar auditoria; não armazena segredos.
-- As credenciais devem ficar exclusivamente nas variáveis de ambiente Vercel. Os nomes são exibidos por provedor; os valores nunca são expostos ao browser.
-- Existe checagem de autenticação sem cobrança para Mercado Pago, Pagar.me, Asaas, Stripe e PayPal (somente chaves de teste e consulta/leitura; PayPal obtém token OAuth sandbox).
-- PagBank, Efí, Cielo e Iugu aguardam configuração e validação específica do fluxo de testes. InfinitePay não possui sandbox e não será contatada nesta fase.
-- **Não há checkout público, webhooks financeiros, aprovação de pagamento automática nem seleção de produção.** Para finalizar a escolha, será necessário integrar cobrança, conciliação, estornos e verificar encargos e condições contratuais.
+- Categoria reservada, telas e imagens segregadas, armazenamento privado em `adult-products`.
+- Prévia por `/admin/adulto` é exclusivamente administrativa; **não comprova maioridade do administrador**.
+- Visitantes e clientes comuns não podem acessar imagens/detalhes adultos sem autorização apropriada; RLS é a proteção principal.
+- Solicitações de maioridade dependem de análise adequada, independente e auditável; **autoaprovação não é permitida**.
+- O cadastro de documento/data de nascimento não é uma funcionalidade pública de verificação implantada nesta versão; não guardar documentos sem política apropriada.
+- **A comercialização de produtos +18 está desabilitada**, inclusive no checkout de testes. Avaliar exigências legais, idade e privacidade antes de qualquer abertura.
 
-Variáveis opcionais de sandbox: `MP_TEST_ACCESS_TOKEN`, `PAGBANK_SANDBOX_TOKEN`, `PAGARME_TEST_SECRET_KEY`, `ASAAS_SANDBOX_API_KEY`, `STRIPE_TEST_SECRET_KEY`, `EFI_SANDBOX_CLIENT_ID`, `EFI_SANDBOX_CLIENT_SECRET`, `EFI_SANDBOX_CERT_BASE64`, `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`, `CIELO_SANDBOX_MERCHANT_ID`, `CIELO_SANDBOX_MERCHANT_KEY`, `IUGU_TEST_API_TOKEN`. Nunca use `NEXT_PUBLIC_` com chaves secretas.
+## 8. Carrinho, endereços e reservas
 
-## Checkout: validação de preços e estoque sem cobrança
+### 8.1. Carrinho e preços
 
-A loja possui `/checkout`, uma **prévia de conferência**, vinculada à página `/carrinho`. A conferência calcula o subtotal com preços efetivos no PostgreSQL e verifica publicação do produto, variantes ativas, estoque reservado e lotes ainda válidos. Usa `/api/checkout/preview` (POST com verificação de origem, validação de formato e `Cache-Control: no-store`) e RPC `public.preview_checkout_cart` como wrapper invoker da função privada de leitura `private.preview_checkout_cart`, criada pela migração `supabase/preview_checkout_cart.sql`. Não há coleta de endereço ou cartão.
+O carrinho usa armazenamento local (`pope-cart`) somente para itens/quantidades. A prévia em `POST /api/checkout/preview` envia apenas IDs e quantidades à RPC `preview_checkout_cart`; **o valor válido é recalculado no PostgreSQL**, não aceito do navegador. O cálculo bloqueia produtos inativos, demonstrativos, adultos, sem estoque ou que exijam seleção de variação.
 
-- O navegador envia **apenas ID do produto e quantidade**. Nome/preço fornecidos via localStorage nunca determinam o subtotal calculado pelo servidor.
-- Produtos demonstrativos, não publicados ou adultos são classificados como indisponíveis; dados de produtos adultos não são retornados.
-- Se houver múltiplas variantes ativas, a prévia exige seleção de variante em funcionalidade futura, em vez de escolher automaticamente uma cor/tamanho.
-- A conferência **não reserva estoque, não cria pedidos, não consulta bancos nem aciona um gateway**. O botão de pagamento permanece desativado.
-- Frete e condições finais ainda não são calculados. Uma prévia não garante disponibilidade futura; a futura criação de pedidos precisará repetir validação e reservar estoque atomicamente.
-- A revisão do checkout foi testada com transação revertida: preço do banco, quantidade, estoque insuficiente, produto demonstrativo, duplicidade, bloqueio +18 e ausência de mutações.
+O checkout de cliente **não tem botão de pagar ativo**. Frete, descontos, emissão fiscal, pagamento e total definitivo precisam de integração adicional.
 
-## Endereços de entrega e reservas de checkout em HOMOLOGAÇÃO
+### 8.2. Endereços e CEP
 
-- Em `/conta/enderecos`, usuários autenticados podem cadastrar, alterar, excluir logicamente e definir um endereço principal. Números de telefone e CEP são normalizados; dados completos são protegidos por RLS, visíveis somente ao titular, e alteráveis apenas via RPC com `auth.uid()`.
-- Em `/checkout`, o administrador (e somente ele, neste estágio) pode **simular reserva temporária de estoque real** para um carrinho de produtos publicados, não adultos, com uma única variação. A ação pede endereço previamente cadastrado; não aceita endereço arbitrário de outro titular.
-- A migração `supabase/checkout_addresses_reservations.sql` adiciona `customer_addresses`, `orders.checkout_key`, `reservation_expires_at`, `shipping_address_snapshot`, RPCs `save_customer_address`, `archive_customer_address`, `create_checkout_order`, `cancel_checkout_order` e expirador privado.
-- O estoque é reservado por 15 minutos e liberado automaticamente por um **Supabase Cron**, agendado de minuto em minuto. O processo é idempotente; por usuário há no máximo uma reserva pendente e cinco reservas iniciadas a cada 24h. O limite por pedido de teste é de 10 produtos e 30 unidades.
-- Os preços e saldos são revalidados dentro da transação de criação de reserva; alterações parciais são revertidas em caso de erro. Nunca é possível reservar produtos adultos, inativos, demonstrativos ou sem saldo válido.
-- O pedido de homologação tem `origin='store_api'` e status `pending`. Nunca é marcado pago automaticamente, nenhum e-mail de pedido é enviado, nem frete é cotado; o cliente pode cancelar a reserva em `/conta`. Administradores visualizam as reservas em `/admin/reservas`.
-- **Checkout público permanece bloqueado** com `store_settings.checkout_reservations_enabled=false`; a função só permite teste com sessão de administrador. Não altere a flag para true até concluir processamento de pagamentos, webhooks seguros, frete, antifraude e termos de venda.
-- Nenhuma chave de gateway, cartão, Pix ou endereço é transmitido para provedor de pagamento. Não há cobrança em qualquer etapa deste fluxo.
+- `customer_addresses`: proprietário, destinatário, telefone, CEP, logradouro, número, complemento, bairro, cidade, UF e endereço principal.
+- RLS + RPC protegem a leitura e gravação por titular. Limite de 10 endereços ativos.
+- `react-imask` implementa máscaras de CEP `00000-000` e telefones de 10/11 dígitos; CPF/CNPJ são componentes reutilizáveis ainda não conectados a formulários de documentos.
+- `GET /api/postal-code/[cep]` exige login, valida oito números, chama **ViaCEP** e, como alternativa, **BrasilAPI**.
+- Busca automática após digitação, preenchendo logradouro/bairro/cidade/UF quando disponíveis. O cliente confere número, complemento e dados antes de salvar.
+- A consulta externa de CEP não realiza geolocalização nem substitui validação de entrega.
 
-### Separação das reservas de teste e financeiro
-Reservas de homologação com `origin='store_api'` são listadas somente em `/admin/reservas` e `/conta` do titular. Pedidos comerciais manuais são exibidos em `/admin/pedidos`, `/admin/logistica`, relatórios e financeiro. A migração `supabase/exclude_checkout_test_from_financial_metrics.sql` exclui `store_api` das agregações mensais. A sidebar também exclui essas reservas do contador de pedidos pendentes. Assim, reservas de teste não distorcem receita prevista nem quantidade de pedidos de clientes.
+### 8.3. Reserva TEST
 
-## Plugins de CEP e máscaras nos formulários
-- `react-imask@7.6.1` em `src/components/forms/masked-fields.tsx` aplica máscaras sem alterar os valores normalizados enviados ao Supabase: CEP `00000-000`, telefones de 10/11 dígitos, além de componentes reutilizáveis para CPF e CNPJ (estes não coletam dados nesta versão).
-- Endereços em `/conta/enderecos`: o CEP de oito números inicia consulta automática após 500 ms, com botão de tentativa manual. O servidor consulta ViaCEP e, se falhar ou não encontrar o CEP, tenta a BrasilAPI. Rua, bairro, cidade e UF são preenchidos quando disponíveis; número e complemento permanecem para digitação manual. O usuário deve conferir antes de salvar.
-- Área `/admin/frete`: origem e destino com máscara de CEP, pesquisa automática de cidade/UF e mensagens de erros. A cotação permanece restrita ao sandbox e depende do token.
-- A consulta pública de CEP no Next.js **exige login**, valida oito dígitos, não armazena o endereço consultado e não aceita URL arbitrária enviada pelo usuário. Dados obtidos do serviço externo não substituem validações do Supabase no cadastro.
+- Somente **administrador autenticado**, desde que `store_settings.checkout_reservations_enabled=false`.
+- `POST /api/checkout/test-reservation` chama `create_checkout_order` e exige endereço cadastrado, itens públicos e saldo.
+- Reserva de **15 minutos** com `checkout_key` para idempotência.
+- Máximo de 10 produtos/30 unidades por reserva, 1 reserva pendente por cliente e 5 reservas de teste por 24 horas.
+- O banco bloqueia produtos adultos, duplicados, sem saldo, sem variante única, expirados e valores acima dos limites de homologação.
+- `private.expire_checkout_orders` cancela e libera estoque por `pg_cron` a cada minuto.
+- Titular pode cancelar via `cancel_checkout_order`; cancelamento/expiração libera reserva.
+- `orders.origin='store_api'` identifica pedidos TEST; **não entram no financeiro, relatórios comerciais ou fila de e-mails de pedidos**.
+- Estas reservas **não são vendas nem geram obrigação de entrega**. O preço é de itens, sem frete.
 
-## Preparação multi-gateway de pagamentos e frete no checkout (homologação)
-- `supabase/sandbox_payment_attempts.sql` cria um **ledger administrativo de preparações** `sandbox_payment_attempts` (somente `sandbox`, estados `draft/expired/cancelled`), chaves de idempotência únicas por pedido, referência de gateway e valores extraídos diretamente de uma reserva válida. Não cria Pix nem recebe/captura cartões; não altera `orders.status` para pago.
-- Também prepara `payment_webhook_receipts` para futura deduplicação de webhooks, sem endpoint público nem payload salvo. **Não registre webhooks como autenticados antes de implementar verificação criptográfica específica do provedor.**
-- A RPC `plan_sandbox_payment_attempt` só aceita administradores, pedidos `store_api` pendentes e não expirados e gateways com sandbox documentado. O banco limita a um draft por reserva; selecionar outro provedor requer cancelar a reserva e refazer o teste.
-- A RPC e o ledger foram testados com transação revertida: idempotência, valor calculado no servidor, tentativas inválidas, bloqueio de alteração direta, cancelamento e liberação do estoque.
-- `/admin/pagamentos` mostra preparações, reservas elegíveis e seleção de gateway para homologação — sem **nenhuma transação bancária**.
-- No `/checkout`, administradores podem solicitar uma cotação ao endpoint já existente `/api/admin/shipping/quote`, somente quando o token de Melhor Envio sandbox e CEP de origem estiverem configurados. A cotação não é incluída no subtotal nem gravada na reserva: valores reais precisam ser novamente validados antes da cobrança.
-- Corrigido o dashboard: a lista de produtos não aplica mais o filtro `origin` inexistente; pedidos de teste são excluídos dos indicadores comerciais.
+Não definir `checkout_reservations_enabled=true` até existir checkout comercial seguro, gateway homologado, cálculo de frete, antifraude, estornos e regras de venda.
 
-## Checkout Pro real com VENDEDOR DE TESTE (desativado até credenciais)
+## 9. Frete e embalagens — sandbox
 
-A API privada `POST /api/admin/payments/mercadopago/test-checkout` permite ao **administrador** gerar uma preferência Checkout Pro de testes, a partir de um `sandbox_payment_attempts` do Mercado Pago ligado a uma reserva ativa. O recurso fica **bloqueado por padrão** e não envia dados de cartão. Não é uma venda na Popê Beauty e não atualiza o status financeiro.
+### 9.1. Dados físicos
 
-Variáveis **somente no servidor** Vercel, com valores exclusivos do painel Teste:
-- `MP_TEST_ACCESS_TOKEN`: token obtido na aba **Teste** do Mercado Pago Developers. O prefixo `APP_USR-` também existe em produção e, sozinho, não distingue ambientes.
-- `MP_TEST_SELLER_ID`: ID numérico do usuário vendedor **de teste**, confirmado na aba de contas de teste.
-- `MP_TEST_PREFERENCE_CREATION_ENABLED=verified-test-account-only`: habilitação manual do módulo, **somente** após confirmar os dois campos acima.
+Em `/admin/frete`, configurar:
+1. `shipping_origin_settings.origin_postal_code` — CEP real de postagem da loja.
+2. `variant_shipping_specs` — peso em gramas e altura/largura/comprimento em centímetros por SKU.
+3. Credencial do **Melhor Envio sandbox** em `MELHOR_ENVIO_SANDBOX_TOKEN`.
+4. CEP de destino para simulação.
 
-Antes de POST ao Mercado Pago, o servidor valida via `GET /users/me` que `id` corresponde a `MP_TEST_SELLER_ID`, o `nickname` começa com `TEST` e o país é `MLB`. O servidor gera a preferência com produtos e preços do banco, limita a validade à reserva e valida `collector_id` e o domínio do `init_point` retornado. A primeira geração passa por RPC atômica `begin_mp_test_checkout`; novas tentativas são negadas para evitar criação múltipla, inclusive após falha de rede. A RPC `finish_mp_test_checkout` grava o ID/link **somente** em preparação administrativa. Nunca marca pagamento aprovado.
+A API `POST /api/admin/shipping/quote` valida sessão admin, dados da variante e do catálogo, e consulta somente a rota de **cálculo de frete** da sandbox. Não compra etiquetas, não agenda coleta e não registra preço como devido pelo comprador.
 
-**Para testar na página externa:** entre SOMENTE com usuário de teste **comprador**. A API de produção do Mercado Pago é compartilhada com contas de teste; não existe domínio sandbox separado para Checkout Pro. A interface não redireciona automaticamente.
+A prévia `/checkout` pode exibir essa simulação somente para admin. Os resultados de sandbox **não são oferta comercial** e não compõem o total da reserva. Sem origem, dimensões e token, os testes ficam bloqueados.
 
-Ainda pendentes: webhook assinado, consulta autoritativa dos pagamentos no provedor, conciliação dos valores finais com frete, pagamentos reais e estorno. Sem esses componentes, pedidos de teste serão encerrados após 15 minutos independentemente do que ocorrer externamente.
+### 9.2. Faltando para produção
 
+Cotação real confirmada no fechamento do pedido, embalagem consolidada, modalidade contratada, prazo e custo válidos, compra/geração de etiquetas, rastreamento, cancelamento de etiqueta e conciliação da despesa logística. Verificar Correios/Jadlog e condições de postagem conforme integração selecionada.
 
-## Webhook Mercado Pago — testes, assinatura e trilha de auditoria
+## 10. Gateways de pagamento
 
-A rota `POST /api/webhooks/mercadopago/test` foi implementada para **eventos de teste somente** e fica totalmente desativada por padrão. A URL deve ser usada apenas na configuração de Webhooks da aplicação de TESTE do Mercado Pago.
+### 10.1. Comparação
 
-Variáveis secretas no **servidor da Vercel** (nunca `NEXT_PUBLIC_`, nunca em GitHub ou conversas):
-- `MP_TEST_WEBHOOK_SECRET`: chave de assinatura do webhook da aplicação de testes.
-- `MP_TEST_ACCESS_TOKEN` e `MP_TEST_SELLER_ID`: credencial TEST e ID numérico do vendedor de testes, verificados por `GET /users/me`.
-- `SUPABASE_SERVICE_ROLE_KEY`: chave de serviço mantida exclusivamente no servidor, para gravar a auditoria depois de validar assinatura e recurso; NÃO deve ser exposta no cliente.
-- `MP_TEST_WEBHOOK_ENABLED=verified-test-account-only`: habilitação manual, após verificar as chaves e separar o ambiente de testes.
+A central `/admin/gateways` registra **10 alternativas**:
 
-A requisição é rejeitada se faltar qualquer variável acima. Depois de habilitada, a rota:
-1. Limita o corpo a 16 KiB, exige JSON, os identificadores em query e body equivalentes, o tópico `payment`, evento em modo TEST.
-2. Valida `x-signature` HMAC-SHA256 em comparação de tempo constante sobre `id:<data.id>;request-id:<x-request-id>;ts:<ts>;` com tolerância de cinco minutos. Não salva o segredo nem a assinatura.
-3. Autentica o vendedor TEST pelo token, compara seu ID, consulta `GET /v1/payments/{id}` e exige `collector_id` idêntico ao vendedor, `live_mode=false` e moeda BRL.
-4. Cruza `external_reference=pope-sandbox:<id da tentativa>` com uma preparação de pagamento TEST e compara o subtotal em centavos. Se a reserva já venceu ou foi cancelada, registra a divergência, nunca libera o pedido.
-5. Registra apenas **metadados sanitizados** em `payment_webhook_receipts` (`provider, external_event_id` único), com hash SHA-256 do JSON, status consultado no MP, valor, identidade do vendedor e vínculo com a tentativa de teste. Não guarda payload, dados do comprador ou cartão.
+| Gateway | Integração projetada | Estado |
+| --- | --- | --- |
+| Mercado Pago | Checkout Pro / Orders | TEST parcialmente implementado |
+| PagBank | Checkout / links | Catalogado; integração comercial pendente |
+| Pagar.me | Checkout V5 / links | Catalogado; autenticação de teste prevista |
+| Asaas | Links e cobranças | Catalogado; autenticação de teste prevista |
+| Stripe | Checkout Sessions | Catalogado; autenticação de teste prevista |
+| Efí Bank | Pix / cobranças | Catalogado; depende de OAuth/certificado |
+| PayPal | Checkout / Orders | Catalogado; teste de autenticação previsto |
+| Cielo | API E-commerce | Catalogado; integração específica pendente |
+| Iugu | API de cobranças | Catalogado; confirmar condições de sandbox |
+| InfinitePay | Checkout Integrado | Catalogado; **não possui sandbox da modalidade indicada** |
 
-O painel `/admin/pagamentos` contém uma auditoria somente para administradores, com os últimos 100 eventos. Nenhuma rota faz `UPDATE orders.status='paid'`, captura, estorno ou envio de e-mail. Eventos com `approved` no provedor não representam receita da loja: são apenas informativos até a homologação do fluxo real de frete, pagamento, conciliação e estornos.
+O banco guarda preferências de avaliação, candidato de homologação, notas comerciais e auditoria. O cadastro de um provedor ou uma seleção de candidato **NÃO ativa cobrança**. Os provedores sem teste remoto implementado mostram apenas documentação e variáveis necessárias.
 
-**Referências do provedor:** [Webhooks Mercado Pago](https://www.mercadopago.com.br/developers/pt/docs/subscriptions/additional-content/your-integrations/notifications/webhooks) e [Consultar pagamentos](https://www.mercadopago.com.br/developers/pt/reference/online-payments/checkout-pro-preferences/get-payment/get).
+### 10.2. Preparações TEST no banco
 
-**Limite atual:** nenhuma credencial de TEST nem chave de serviço foi configurada na Vercel, portanto não é possível verificar a entrega de um webhook real de homologação. O endpoint continua fechado (`503`) até a configuração explícita.
+`sandbox_payment_attempts` é o registro administrativo de tentativas, com:
+
+- vínculo com reserva TEST e gateway;
+- subtotal em centavos lido do pedido;
+- `idempotency_key` única por pedido;
+- estado `draft`, `cancelled` ou `expired`;
+- controle de geração de preferência `not_started` → `preparing` → `ready`;
+- URL/ID do Checkout Pro gerados para conta TEST, quando houver configuração.
+
+Uma única preparação ativa por reserva. Cancelamento/expiração encerra o registro. Não há captura financeira nem marcação de pedido como pago.
+
+### 10.3. Mercado Pago Checkout Pro TEST
+
+A rota `POST /api/admin/payments/mercadopago/test-checkout` só pode gerar preferência se:
+
+1. o usuário é admin;
+2. a reserva está pendente, consistente e com validade suficiente;
+3. `MP_TEST_ACCESS_TOKEN` e `MP_TEST_SELLER_ID` identificam **o mesmo vendedor TEST** (consulta `GET /users/me`, identificador, nickname `TEST...` e país `MLB`);
+4. `MP_TEST_PREFERENCE_CREATION_ENABLED=verified-test-account-only`.
+
+O prefixo `APP_USR-` **não identifica sozinho** credenciais de testes: também ocorre em produção. Não configurar token de vendedor real como TEST.
+
+O servidor cria a preferência com preços e itens do pedido, confere o vendedor retornado e o domínio do link. Uma vez iniciada a geração, o sistema **não repete automaticamente** a chamada em caso de falha/timeout, para evitar duplicidades. Reconciliar manualmente ocorrências com estado `preparing` antes de qualquer retomada.
+
+**Importante:** Checkout Pro TEST pode usar endpoints compartilhados com produção pelo provedor. Somente uma **conta compradora TEST** deve abrir links de homologação. O painel não efetua redirecionamento automático.
+
+## 11. Webhooks Mercado Pago TEST e conciliação de auditoria
+
+### 11.1. Endpoint
+
+`POST /api/webhooks/mercadopago/test` — **não é um webhook de produção**.
+
+Fica bloqueado (`503`) até o servidor possuir:
+
+- `MP_TEST_WEBHOOK_SECRET`;
+- `MP_TEST_ACCESS_TOKEN` e `MP_TEST_SELLER_ID`;
+- `SUPABASE_SERVICE_ROLE_KEY`;
+- `MP_TEST_WEBHOOK_ENABLED=verified-test-account-only`.
+
+### 11.2. Proteções
+
+1. Exige `application/json`, query `data.id` e `type`; valida a correspondência do ID de pagamento entre corpo e URL.
+2. Confere cabeçalhos `x-signature` / `x-request-id` com HMAC-SHA256, comparação em tempo constante e janela de até 5 minutos para timestamp.
+3. Aceita para processamento apenas o tipo `payment` e eventos declarados TEST (`live_mode=false`).
+4. Autentica vendedor TEST via API e consulta o pagamento na **API oficial** em `GET /v1/payments/{id}`.
+5. Exige `collector_id` igual à conta TEST e moeda BRL.
+6. Verifica `external_reference=pope-sandbox:<attempt_id>`, subtotal, pedido e validade da reserva.
+7. Salva evento deduplicado por `(provider, external_event_id)` em `payment_webhook_receipts`; não armazena JSON integral, documentos, dados de cartão ou credenciais.
+8. Mostra histórico de auditoria em `/admin/pagamentos`, incluindo status do provedor e relação com a reserva.
+
+**Regra essencial:** mesmo se o Mercado Pago retornar `approved`, a aplicação **NÃO altera `orders.status` para `paid`**, não movimenta estoque para expedição, não emite nota nem envia e-mail de pagamento confirmado. O estado `matched` é uma **conferência de auditoria**, não liquidação financeira.
+
+### 11.3. Limitações a resolver
+
+O fluxo ainda não foi validado ponta a ponta com eventos reais de TEST; faltam credenciais, simulação de retornos aprovados/recusados/estornados, processamento financeiro oficial, cálculo final de frete, webhooks produtivos, reconciliação e reprocessamento assistido de incidentes. A integração não deve ser habilitada para vendedores/compradores reais nesta etapa.
+
+## 12. Pedidos internos, faturamento operacional e notificações
+
+### 12.1. Pedidos internos
+
+`/admin/pedidos` permite registrar pedidos administrativos com estoque reservado, itens e preços atuais. Mudanças de status são executadas por RPCs e rotas protegidas; a logística controla separação, transporte, rastreio e baixa FEFO.
+
+O `/admin/financeiro` considera **confirmação administrativa de recebimento**, não pagamento bancário conciliado. `/admin/relatorios` oferece evolução mensal, exportação CSV e alertas operacionais. Reservas TEST `store_api` são excluídas desses indicadores.
+
+Vínculos em `/admin/marketplaces` são apenas cadastrais; **não existe sincronização Shopee/Mercado Livre em tempo real**.
+
+### 12.2. E-mails dos pedidos
+
+Templates HTML:
+- `emails/pedidos/01-pedido-registrado.html`;
+- `emails/pedidos/02-pagamento-confirmado.html`;
+- `emails/pedidos/03-pedido-enviado.html`;
+- `emails/pedidos/04-pedido-entregue.html`;
+- `emails/pedidos/05-pedido-cancelado.html`.
+
+Os eventos de pedidos internos com cliente vinculado e e-mail válido entram em `order_notifications`, com proteção RLS, deduplicação por evento, controle de tentativas e status de fila. O servidor envia via Nodemailer a partir da rota administrativa após a transição; `/admin/notificacoes` permite inspecionar/processar a fila e reenvios permitidos.
+
+- E-mails de pedidos **não** são templates do Supabase Auth; a configuração SMTP é independente.
+- Balcão sem cliente, pedidos de homologação `store_api` e produtos adultos não entram nesse disparo.
+- `sent` significa **aceitação pelo SMTP**, não leitura ou confirmação de entrega.
+- Falhas de SMTP não revertem operações administrativas já concluídas.
+- Processamento agendado da fila de mensagens **não está implantado**; ações manuais permitem reprocessar mensagens.
+- `SMTP_PASSWORD` ainda não estava configurada em 11/11/2026; **nenhuma entrega SMTP de pedido foi confirmada**.
+
+### 12.3. SMTP
+
+Em Vercel Production, configurar `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_FROM_EMAIL` e a variável sensível `SMTP_PASSWORD`. Para Gmail, usar senha de aplicativo quando elegível. Não expor a senha em arquivos, chats, logs ou frontend. Publicar novamente e realizar teste com destinatário autorizado.
+
+O Supabase Auth possui SMTP separado para confirmação de cadastro e recuperação; configurar/validar ambos os sistemas independentemente.
+
+## 13. Modelo de dados e migrations
+
+### 13.1. Tabelas principais
+
+| Grupo | Tabelas |
+| --- | --- |
+| Identidade/segurança | `profiles`, `user_session_presence`, `admin_audit_events` |
+| Catálogo | `categories`, `products`, `variants` |
+| Estoque | `inventory`, `inventory_lots`, `stock_movements` |
+| Vendas internas | `orders`, `order_items`, `order_events`, `order_notifications` |
+| Checkout TEST | `customer_addresses`, `sandbox_payment_attempts`, `payment_webhook_receipts` |
+| Frete | `shipping_origin_settings`, `variant_shipping_specs` |
+| Pagamentos | `payment_gateway_settings`, `payment_gateway_audit` |
+| Marketplaces | `marketplace_listings` |
+| Adulto | `age_verification_requests`, `age_verifications`, `store_settings` |
+
+### 13.2. Arquivos SQL existentes
+
+A pasta `supabase/` contém os seguintes scripts; alguns são **correções incrementais** e devem ser aplicados na sequência de dependências, sem reaplicar indiscriminadamente migrations já presentes.
+
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `schema.sql` | Estrutura inicial |
+| `catalog_admin.sql` | Administração do catálogo |
+| `adult_catalog.sql` | Catálogo +18 e restrições |
+| `age_review_self_approval_guard.sql` | Bloqueio de autoaprovação etária |
+| `adult_admin_preview_policies.sql` | Prévia administrativa reservada |
+| `operations_orders_logistics.sql` | Pedidos, logística, estoque |
+| `ops_security_hardening.sql` | Segurança dos fluxos operacionais |
+| `user_session_presence.sql` | Registro de atividade da sessão |
+| `user_presence_admin_identity.sql` | Consulta administrativa da presença |
+| `order_notifications.sql` | Fila e eventos de e-mails |
+| `order_notifications_security.sql` | Proteção das RPCs de notificações |
+| `admin_user_access_audit.sql` | Diretório, perfis e auditoria |
+| `admin_operational_reports.sql` | Indicadores mensais e alertas |
+| `payment_gateway_evaluation.sql` | Configuração dos dez gateways |
+| `payment_gateway_fk_index.sql` | Índice de referência na configuração |
+| `preview_checkout_cart.sql` | Prévia de preço e estoque |
+| `preview_checkout_cart_uuid_selection_fix.sql` | Correção da seleção de UUID |
+| `checkout_addresses_reservations.sql` | Endereços, reservas, expiração e Cron |
+| `exclude_checkout_test_from_financial_metrics.sql` | Exclui TEST dos relatórios financeiros |
+| `shipping_sandbox_setup.sql` | CEP da loja e especificações por SKU |
+| `sandbox_payment_attempts.sql` | Preparações multi-gateway e inbox de webhooks |
+| `mercado_pago_test_preference.sql` | Criação única de preferência TEST |
+| `mercado_pago_test_preference_domain_fix.sql` | Restrição de domínio do checkout TEST |
+| `mercado_pago_test_webhook_audit.sql` | Campos de auditoria Mercado Pago |
+
+Para implantações novas, **não executar manualmente todos em ordem alfabética**. Planejar sequência validada, backup, homologação e versão de schema; alguns scripts esperam objetos criados por outros ou reimplementam funções corrigidas por migrations posteriores.
+
+### 13.3. RLS e funções
+
+- Tabelas expostas em `public` devem manter RLS ativo.
+- Funções de escrita privilegiada são implementadas no schema `private`, com autorização explícita e wrappers `SECURITY INVOKER` quando necessárias.
+- Clientes não podem alterar dados de outros titulares, forçar confirmação financeira, ativar gateway ou aprovar idade por conta própria.
+- `service_role` nunca é disponibilizada no navegador.
+- Auditoria TEST não deve ser interpretada como comprovação de recebimento financeiro.
+
+## 14. APIs relevantes
+
+| Método | Rota | Acesso/efeito |
+| --- | --- | --- |
+| POST | `/api/checkout/preview` | Conferência de preços, saldo e lotes, sem mutação |
+| POST | `/api/checkout/test-reservation` | Reserva TEST, guardada por login e autorização no banco |
+| GET | `/api/postal-code/[cep]` | Consulta CEP ViaCEP/BrasilAPI; login obrigatório |
+| POST | `/api/admin/shipping/quote` | Frete sandbox; apenas administrador |
+| POST | `/api/admin/gateways/test` | Checagem de alguns gateways em sandbox; apenas admin |
+| POST | `/api/admin/payments/mercadopago/test-checkout` | Preferência TEST MP, bloqueada sem credenciais |
+| POST | `/api/webhooks/mercadopago/test` | Webhook assinado TEST, bloqueado por padrão |
+| POST | `/api/admin/order-operations` | Criação/transição de pedido administrativo |
+| POST | `/api/admin/order-notifications` | Processar/reprocessar fila de e-mails |
+| GET | `/api/adult-image/[filename]` | Imagem de produto restrito mediante autorização |
+
+**Não publicar** endpoints de produção de cobrança/webhook copiando rotas de TEST sem um projeto completo de segurança e homologação por provedor.
+
+## 15. Testes já realizados e testes ainda necessários
+
+### 15.1. Validação existente
+
+Testes transacionais temporários, revertidos com `ROLLBACK`, verificaram:
+
+- cálculo de preço por banco e rejeição de produtos demonstrativos/adultos;
+- estoque insuficiente, variantes inválidas e duplicidade de itens;
+- salvamento e isolamento de endereços entre titulares;
+- reserva de 15 minutos, idempotência e expiração com liberação de saldo;
+- bloqueio de checkout público e de alterações de pagamento por clientes;
+- exclusão de reservas TEST de relatórios, e-mails e financeiro;
+- registro de preparação sandbox e impedimento de duplicidade;
+- início/finalização únicos da preferência MP e rejeição de domínio inválido;
+- RLS da auditoria e bloqueio de gravações diretas;
+- deploys Vercel anteriores concluídos com `READY`.
+
+**Limite dos testes:** validações SQL e compilação não substituem fluxo real de navegador, integração externa ou carga em produção. Não há garantia de entregas SMTP ou webhooks TEST recebidos sem credenciais e teste ponta a ponta. Uma suíte automatizada versionada ainda deve ser criada.
+
+### 15.2. Roteiro de homologação
+
+- [ ] Criar catálogo real completo, fotografias, estoque, peso e dimensões.
+- [ ] Confirmar cadastro, login, recuperação de senha e links de e-mail em dispositivos diferentes.
+- [ ] Validar CEP e máscara com endereços reais autorizados; testar falha de ViaCEP e fallback.
+- [ ] Testar concorrência de reservas e expiração na presença de múltiplos usuários.
+- [ ] Adicionar credenciais **exclusivamente TEST** para MP e habilitar geração de preferência em ambiente controlado.
+- [ ] Testar cenário de pagamento aprovado, pendente, recusado, cancelado, estornado, duplicado e webhook fora de ordem.
+- [ ] Confirmar HMAC contra eventos de teste reais e validar assinatura, idempotência e identificador do vendedor.
+- [ ] Revisar falhas de timeout (`preparing`), reenvio e conciliação com o provedor.
+- [ ] Cotar frete real por CEP, embalagem, transportadora e prazo; revalidar antes de cobrar.
+- [ ] Configurar SMTP e confirmar entrega real de e-mails de pedidos e Auth.
+- [ ] Validar fluxo completo de estoque/expedição/etiquetas e estornos.
+- [ ] Executar testes de autorização, vazamento de dados, logs e backup/restauração.
+- [ ] Conferir documentação fiscal, termos, política de privacidade e obrigações comerciais.
+- [ ] Realizar teste ponta a ponta de compra real **em ambiente autorizado e controlado**, após homologação de todos os componentes.
+
+## 16. Pendências para liberar produção
+
+### Impedimentos críticos
+
+1. **Checkout público real:** endereço, variante, frete, total final, disponibilidade em transação e criação de pedido comercial.
+2. **Gateway:** escolher ao menos um fornecedor, credenciais de produção seguras, criação de cobranças reais, assinatura dos webhooks, conciliação financeira, estornos e chargebacks.
+3. **Frete:** CEP de origem, dimensões e pesos reais, cotação em produção, contratação, emissão/cancelamento de etiqueta e rastreio.
+4. **Notificações:** `SMTP_PASSWORD`, SMTP Auth, testes de envio e monitoramento de falhas.
+5. **Emissão fiscal:** integrar processo fiscal apropriado à natureza da operação (NFC-e/NF-e conforme validação tributária).
+6. **Catálogo e políticas:** produtos/fotos/preços reais, contato, empresa identificada, termos, entrega, trocas, devoluções, arrependimento, privacidade/LGPD.
+7. **Segurança e operação:** revisar advisor Supabase, política de senhas, controle de credenciais, CI/testes, logs, alertas, backups, recuperação de incidentes e antifraude.
+
+**Não habilitar** `checkout_reservations_enabled` ao público nem inserir chaves de vendedor real nos campos `MP_TEST_*` para "acelerar" a abertura.
+
+### Melhorias posteriores ao lançamento
+
+Sincronização completa Shopee e Mercado Livre, múltiplos gateways produtivos, fidelidade, cupons avançados, marketing, automações de estoque, dashboard financeiro ampliado e otimizações de conversão.
+
+## 17. Operação segura e troubleshooting
+
+| Situação | O que verificar |
+| --- | --- |
+| Login e recuperação de senha falham | URLs Auth, sessão, callback e SMTP do Supabase |
+| E-mail de pedido não é enviado | `SMTP_PASSWORD` ausente, rede SMTP, destinatário, fila em `/admin/notificacoes` |
+| Carrinho não confirma item | Produto real ativo, UUID, uma variante ativa, estoque/lotes válidos |
+| Reserva TEST não aparece | Login como admin, endereço salvo, flag de checkout público desativada, limites e cron |
+| Reserva expirada permanece pendente por instantes | `cron.job` e logs de `pope-checkout-expiry-every-minute` |
+| Frete retorna indisponível | `MELHOR_ENVIO_SANDBOX_TOKEN`, CEP de origem, peso/medidas e CEP destino |
+| Gateway sem teste | Credenciais TEST próprias, provedor escolhido e método implementado |
+| Mercado Pago TEST bloqueado | Token TEST, ID TEST, nickname vendedor TEST e flag de habilitação |
+| Estado `preparing` no Mercado Pago | Não repetir criação. Investigar a preferência externa e conciliar manualmente |
+| Webhook MP retorna `503` | Variáveis de testes e chave de serviço não configuradas ou consulta externa falhou |
+| Webhook MP retorna `401` | Assinatura HMAC, timestamp, `x-request-id` e `data.id` |
+| Evento MP não aparece no painel | Teste da assinatura, vendedor, moeda, ID, consulta e insert em `payment_webhook_receipts` |
+| Usuário comum acessa área admin | Revisar `profiles.role`, RLS, middleware e RPCs; tratar como incidente |
+| Evento aparece como `matched` | **Não equivale a pagamento conciliado ou pedido liberado** |
+
+## 18. Referências técnicas
+
+- [Next.js](https://nextjs.org/docs)
+- [Supabase Auth](https://supabase.com/docs/guides/auth)
+- [Segurança e RLS no Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security)
+- [Supabase Cron](https://supabase.com/docs/guides/cron)
+- [Vercel](https://vercel.com/docs)
+- [Mercado Pago — documentação](https://www.mercadopago.com.br/developers/pt)
+- [Melhor Envio — documentação](https://docs.melhorenvio.com.br)
+- [ViaCEP](https://viacep.com.br)
+- [BrasilAPI](https://brasilapi.com.br)
+- [react-imask](https://imask.js.org)
+
+---
+
+**Regra de liberação:** o produto está disponível para desenvolvimento e homologação, **não** para venda. A produção comercial exige aprovação conjunta de checkout, pagamentos, frete, segurança, comunicação, documentação fiscal e operação de atendimento.

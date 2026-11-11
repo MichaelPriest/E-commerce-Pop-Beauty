@@ -1,7 +1,7 @@
 'use client';
 import {useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
-import {createClient} from '@/lib/supabase/client';
+import {createClient} from '@/lib/supabase/browser';
 
 type RecordVolume={volume_number:number;weight_g:number;height_cm:number;
  width_cm:number;length_cm:number;contents_note:string|null};

@@ -563,3 +563,37 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-admin-shell.is-collapsed .pope-admin-merchant-check,
  .pope-admin-shell.is-collapsed .pope-admin-footer-link span{display:initial}
 }
+
+
+/* Popê Admin — permissões, trilha de auditoria e relatórios */
+.pope-admin-filter-count{font-size:12px;color:#92758b;font-weight:700;margin-left:auto}
+.pope-admin-confirm-state{display:inline-flex;align-items:center;border-radius:99px;padding:7px 11px;font-weight:800;font-size:11px;background:#fff3d7;color:#936719;white-space:nowrap}
+.pope-admin-confirm-state.confirmed{background:#e7f9ef;color:#167e50}
+.pope-admin-user-summary{border:1px solid #f1d8e7;background:#fff8fc;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:5px}
+.pope-admin-user-summary strong{font-size:14px;color:#682767}
+.pope-admin-user-summary small{font-size:12px;color:#917a8d;overflow-wrap:anywhere}
+.pope-admin-user-summary span{font-size:11px;color:#9b7791}
+.pope-admin-role-description{font-size:12px;line-height:1.6;color:#775971;border-radius:10px;padding:12px 14px;background:#f8f4ff;margin:8px 0}
+.pope-report-card{background:#fff;border:1px solid #f0d4e4;border-radius:18px;padding:22px;margin-bottom:22px;box-shadow:0 5px 21px #9335760b}
+.pope-report-heading{display:flex;justify-content:space-between;align-items:start;gap:18px;flex-wrap:wrap;margin-bottom:19px}
+.pope-report-heading h2{display:flex;align-items:center;gap:10px;font:900 20px Nunito,sans-serif;color:#692367;margin:0 0 7px}
+.pope-report-heading h2 svg{color:#e32b92}
+.pope-report-heading p{color:#987d92;font-size:12px;line-height:1.55;margin:0}
+.pope-report-filters{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:9px}
+.pope-report-filters select{min-height:40px;background:#fff9fc;border:1px solid #f0d3e5;color:#633d69;padding:9px 13px;border-radius:10px;font:700 12px 'DM Sans',sans-serif;max-width:270px}
+.pope-report-chart{display:flex;align-items:stretch;gap:14px;min-height:290px;padding:17px 13px 0;background:linear-gradient(180deg,#fffafd,#fff);border:1px solid #f6e5ee;border-radius:15px;overflow-x:auto}
+.pope-report-column{display:flex;flex-direction:column;min-width:65px;flex:1;align-items:stretch}
+.pope-report-column-plot{height:230px;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:6px}
+.pope-report-column-value{font-size:10px;font-weight:800;color:#824979;text-align:center;white-space:nowrap}
+.pope-report-bar-track{height:194px;width:100%;max-width:55px;display:flex;align-items:flex-end}
+.pope-report-bar{display:block;width:100%;min-height:2px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#ff5ab3,#e72593);box-shadow:0 6px 20px #df389030}
+.pope-report-column-label{text-align:center;padding:9px 2px;color:#8c7084;font-size:11px;font-weight:800}
+.pope-report-totals{display:flex;flex-wrap:wrap;gap:18px;align-items:center;color:#94788b;font-size:11px;margin-top:14px}
+.pope-report-totals span{display:inline-flex;align-items:center;gap:7px}
+.pope-report-alert-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 19px}
+.pope-report-alert-stats>div{background:#fff5fa;border:1px solid #f3ddec;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.pope-report-alert-stats strong{color:#783178;font-size:25px;font-weight:900}
+.pope-report-alert-stats span{color:#916e87;font-size:11px}
+.pope-report-danger{color:#bc2b67;font-weight:900}
+@media(max-width:800px){.pope-report-card{padding:15px}.pope-report-alert-stats{grid-template-columns:1fr}.pope-report-chart{gap:9px;padding:13px 7px 0}.pope-report-column{min-width:55px}.pope-report-column-value{font-size:9px}}
+@media(max-width:500px){.pope-report-filters{width:100%;justify-content:stretch}.pope-report-filters select{flex:1;min-width:115px}.pope-report-filters button{width:100%}}

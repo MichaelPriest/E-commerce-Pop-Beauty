@@ -125,3 +125,12 @@ Para garantir segurança de transporte, as Functions fazem STARTTLS em 587 (ou T
 - A migração `supabase/user_session_presence.sql` cria tabela RLS e `supabase/user_presence_admin_identity.sql` permite identificar o usuário. O `SessionPresence` envia heartbeat em páginas autenticadas. `signOutAction` encerra a presença antes de encerrar a sessão Auth.
 - **Limitação**: o indicador de presença é aproximado, NÃO equivale a listar sessões Supabase Auth com garantia de revogação. Fechamento de aba não gera logout imediato; após 3 minutos sem heartbeat a sessão deixa de ser considerada ativa. Nenhum IP, GPS ou histórico de páginas é coletado.
 - Só administradores autenticados podem listar outros usuários; outros usuários veem exclusivamente suas próprias sessões pela RLS. Escrita é restrita a funções privadas, vinculadas ao `session_id` do JWT.
+
+## Gestão de usuários e segurança administrativa
+
+- `/admin/usuarios`: diretório de contas com nome, e-mail confirmado, último login e papel (Cliente/Equipe/Administrador). Somente administradores podem mudar perfis, e a alteração de outra conta exige confirmação explícita.
+- `/admin/auditoria`: histórico RLS somente para administradores de mudanças de papel e habilitação/desabilitação da seção +18. Eventos anteriores à implantação não são retroativos.
+- Proteções no banco `supabase/admin_user_access_audit.sql`: não é possível alterar a própria permissão, promover conta sem e-mail confirmado ou promover UUID inexistente. O papel é consultado diretamente em `public.profiles` nas autorizações; nunca confiamos em `user_metadata`.
+- **Equipe (staff)**: papel cadastral reservado para permissões futuras; atualmente os módulos `/admin/*` são exclusivos de administrador. Não há convites e nem criação automática de contas pela administração.
+- `/admin/relatorios`: série histórica de 12 meses, métricas por mês de criação de pedidos, exportação CSV, alertas de estoque mínimo, vencidos e vencendo em 30 dias. Agregações SQL com privilégios do invocador `supabase/admin_operational_reports.sql`.
+- Valores confirmados em relatórios correspondem ao estado **administrativamente registrado** do pedido, não a conciliação bancária. Não devem ser tratados como receita recebida efetivamente.

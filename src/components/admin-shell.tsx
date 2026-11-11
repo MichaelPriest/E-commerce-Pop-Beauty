@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -50,9 +50,12 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity,count:onlineCount},
    {href:'/admin/logistica',label:'Logística',icon:Truck},
    {href:'/admin/financeiro',label:'Financeiro',icon:CreditCard},
+   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},
    {href:'/admin/marketplaces',label:'Marketplaces',icon:Store}
   ]},
   {title:'Sistema',items:[
+   {href:'/admin/usuarios',label:'Usuários e permissões',icon:UserCog},
+   {href:'/admin/auditoria',label:'Auditoria',icon:History},
    {href:'/admin/configuracoes',label:'Configurações',icon:Settings}
   ]}
  ],[onlineCount,pendingOrders,pendingNotifications]);
@@ -64,7 +67,9 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/produtos',label:'Cadastrar produto',icon:PackagePlus},
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},
-  {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity}
+  {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity},
+  {href:'/admin/usuarios',label:'Permissões',icon:UserCog},
+  {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3}
  ];
  const quickResults=shortcuts.filter(item=>item.label.toLocaleLowerCase('pt-BR')
   .includes(quickFilter.toLocaleLowerCase('pt-BR')));

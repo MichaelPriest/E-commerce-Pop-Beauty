@@ -39,8 +39,10 @@ export async function POST(request:NextRequest){
  const event=body as Record<string,unknown>;
  const bodyData=event.data&&typeof event.data==='object'&&!Array.isArray(event.data)?
   event.data as Record<string,unknown>:null;
- const resourceId=typeof bodyData?.id==='string'?bodyData.id:
-  Number.isSafeInteger(bodyData?.id)?String(bodyData.id):'';
+ const sourcePaymentId=bodyData?.id;
+ const resourceId=typeof sourcePaymentId==='string'?sourcePaymentId:
+  typeof sourcePaymentId==='number'&&Number.isSafeInteger(sourcePaymentId)?
+   String(sourcePaymentId):'';
  if(resourceId.toLowerCase()!==ids[0].toLowerCase())return fail(400);
  if(types[0]!==event.type)return fail(400);
  // A integração é apenas para PAYMENT; outros tópicos assinados não mudam a loja.

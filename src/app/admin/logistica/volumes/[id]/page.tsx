@@ -7,6 +7,7 @@ import {VolumeEditor} from './volume-editor';
 import {DeliveryAddressEditor} from './delivery-address-editor';
 import {ShipmentProviderEditor} from './provider-editor';
 import {ShippingWorkflowPanel,type WorkflowRequestRow,type WorkflowEventRow} from './workflow-panel';
+import {ShippingProviderEvidence,type VerifiedShippingDocument,type VerifiedTrackingEvent} from './provider-evidence';
 import type {ProviderDraft} from '@/lib/shipping/provider-adapters';
 
 export const dynamic='force-dynamic';
@@ -56,9 +57,9 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    .select('id,request_id,event_type,created_at')
    .eq('order_id',id).order('created_at',{ascending:false}).limit(50),
   sb.from('shipment_provider_documents')
-   .select('id').eq('order_id',id).limit(100),
+   .select('id,request_id,document_type,provider_document_id,verified_at,created_at').eq('order_id',id).order('created_at',{ascending:false}).limit(100),
   sb.from('shipment_tracking_provider_events')
-   .select('id').eq('order_id',id).limit(100)
+   .select('id,request_id,provider,provider_event_id,carrier_status,description,occurred_at,received_at').eq('order_id',id).order('occurred_at',{ascending:false}).limit(100)
  ]);
  if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error)
   throw new Error('Não foi possível carregar as solicitações logísticas.');
@@ -114,6 +115,11 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    events={(internalEvents.data??[]) as WorkflowEventRow[]}
    documentsCount={providerDocs.data?.length??0}
    trackingCount={providerTracking.data?.length??0}/>
+
+  <ShippingProviderEvidence
+   documents={(providerDocs.data??[]) as VerifiedShippingDocument[]}
+   tracking={(providerTracking.data??[]) as VerifiedTrackingEvent[]}
+   downloadEnabled={Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())}/>
 
   <DeliveryAddressEditor orderId={id} editable={editable}
    initial={order.data.shipping_address_snapshot as ShippingDestination|null}/>

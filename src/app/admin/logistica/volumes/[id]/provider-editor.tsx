@@ -3,6 +3,7 @@ import {useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {createClient} from '@/lib/supabase/browser';
 import {formatBRL} from '@/lib/products';
+import {sandboxQuoteReferenceStatus,SANDBOX_QUOTE_STATUS_LABELS} from '@/lib/shipping/quote-history';
 import {isShippingProvider,PROVIDERS,type ProviderDraft,
  type ShippingProvider} from '@/lib/shipping/provider-adapters';
 
@@ -181,16 +182,16 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
       <thead><tr><th>Consultada em</th><th>Serviço</th><th>Valor teste</th>
        <th>Prazo teste</th><th>Referência</th></tr></thead>
       <tbody>{history.map(entry=>{
-       const replaced=intent?.intent_key!==entry.intent_key;
-       const expired=Date.parse(entry.reference_expires_at)<=Date.now();
+       const status=sandboxQuoteReferenceStatus(
+        entry.intent_key,entry.reference_expires_at,intent?.intent_key??null
+       );
        return <tr key={entry.id}>
         <td><strong>{new Date(entry.quoted_at).toLocaleString('pt-BR')}</strong>
          <small>#{entry.id.slice(0,8).toUpperCase()}</small></td>
         <td>{entry.carrier_name} · {entry.service_name}</td>
         <td>{formatBRL(entry.price_cents)}</td>
         <td>{entry.delivery_days} dias</td>
-        <td>{replaced?'Intenção substituída':expired?'Referência vencida':
-         'Na janela de referência — exige revalidação'}
+        <td>{SANDBOX_QUOTE_STATUS_LABELS[status]}
          <small>Até {new Date(entry.reference_expires_at).toLocaleString('pt-BR')}</small>
         </td>
        </tr>;

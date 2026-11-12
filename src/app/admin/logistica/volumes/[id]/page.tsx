@@ -69,8 +69,9 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    <h1><Package size={27}/> Medidas e conferência da remessa</h1>
    <p>Pedido #{id.slice(0,8).toUpperCase()} · Status: {order.data.status}</p>
   </div><Link className="admin-outline" href="/admin/logistica"><ArrowLeft size={16}/> Logística</Link></div>
-  <p className="ops-info">Cadastro administrativo para futura integração logística.
-   Não realiza cotação, compra, impressão de etiqueta postal ou despacho.</p>
+  <p className="ops-info">Conferência de logística e cotações de sandbox (quando habilitadas).
+   Não compra frete, não imprime etiqueta postal oficial e não despacha mercadorias.
+   Etiquetas internas podem ser impressas apenas para identificação de volumes.</p>
 
   <section className="ops-form-card">
    <h2><ClipboardCheck size={19}/> Conferência pré-envio</h2>

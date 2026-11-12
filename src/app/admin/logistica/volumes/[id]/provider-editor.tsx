@@ -2,26 +2,34 @@
 import {useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import {createClient} from '@/lib/supabase/browser';
+import {formatBRL} from '@/lib/products';
 import {isShippingProvider,PROVIDERS,type ProviderDraft,
  type ShippingProvider} from '@/lib/shipping/provider-adapters';
 
 type IntentSummary={intent_key:string;provider:string;service_code:string;draft_revision:number;updated_at:string};
+type SandboxQuote={service_id:string;service:string;carrier:string;price_cents:number;delivery_days:number};
 type Props={
  orderId:string;editable:boolean;draft:ProviderDraft|null;
- structurallyReady:boolean;intent:IntentSummary|null;
+ structurallyReady:boolean;intent:IntentSummary|null;sandboxAvailable:boolean;
 };
-export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady,intent}:Props){
+export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady,intent,sandboxAvailable}:Props){
  const router=useRouter();
  const [provider,setProvider]=useState<ShippingProvider|string>(draft?.provider??'');
  const [serviceCode,setServiceCode]=useState(draft?.service_code??'');
  const [notes,setNotes]=useState(draft?.operator_notes??'');
  const [busy,setBusy]=useState(false);
  const [staging,setStaging]=useState(false);
+ const [quoting,setQuoting]=useState(false);
+ const [quotes,setQuotes]=useState<SandboxQuote[]>([]);
+ const [quoteNotice,setQuoteNotice]=useState('');
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const descriptor=isShippingProvider(provider)?PROVIDERS[provider]:null;
  const savedMatchesForm=Boolean(draft&&provider===draft.provider&&
    serviceCode.trim()===(draft.service_code??'')&&notes.trim()===(draft.operator_notes??''));
  const canStage=editable&&structurallyReady&&savedMatchesForm&&Boolean(draft?.service_code);
+ const canQuote=canStage&&sandboxAvailable&&Boolean(intent)&&provider==='melhor_envio'&&
+  intent?.provider==='melhor_envio'&&intent?.service_code===draft?.service_code&&
+  intent?.draft_revision===draft?.revision&&/^\\d{1,8}$/.test(serviceCode.trim());
  const intentProviderChanged=Boolean(intent&&draft&&(
   intent.provider!==draft.provider||intent.service_code!==draft.service_code||
   intent.draft_revision!==draft.revision));
@@ -59,6 +67,21 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
    router.refresh();
   }catch(e){setError(e instanceof Error?e.message:'Falha ao registrar intenção interna.');}
   finally{setStaging(false);}
+ }
+ async function simulateOrderQuote(){
+  if(!canQuote||!intent||busy||staging||quoting)return;
+  setQuoting(true);setError('');setQuoteNotice('');setQuotes([]);
+  try{
+   const response=await fetch('/api/admin/shipping/order-quote/'+orderId,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({intent_key:intent.intent_key})
+   });
+   const body=await response.json();
+   if(!response.ok)throw new Error(body.error??'Falha na cotação de homologação.');
+   setQuotes(body.quotes??[]);
+   setQuoteNotice(body.notice??'Consulta de homologação concluída.');
+  }catch(e){setError(e instanceof Error?e.message:'Não foi possível consultar a sandbox.');}
+  finally{setQuoting(false);}
  }
  return <section className="ops-form-card">
   <h2>Transportadora e preparação de integração</h2>
@@ -118,6 +141,28 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
     endereço, volumes e transportadora salvos, incluindo serviço de referência.
     Não compra frete, não cria etiqueta oficial, não emite PLP nem rastreamento.
     Dados alterados exigem novo registro e conferência.</p>
+   <div className="admin-form-footer">
+    <button type="button" className="admin-outline" disabled={!canQuote||busy||staging||quoting}
+     onClick={()=>void simulateOrderQuote()}>
+     {quoting?'Consultando sandbox...':'Simular cotação por volumes (Melhor Envio)'}
+    </button>
+   </div>
+   {!sandboxAvailable?<p className="admin-help">Token de sandbox ainda não configurado.
+    A cotação por pedido permanece bloqueada até configurar MELHOR_ENVIO_SANDBOX_TOKEN
+    no servidor. Nenhuma chave é necessária para preparar a intenção interna.</p>:null}
+   {provider==='correios'?<p className="admin-help">Cotações dos Correios exigirão
+    contrato e credenciais para API Preço/Prazo. Este fluxo permanece desativado.</p>:null}
+   {quoteNotice?<p className="form-success" role="status">{quoteNotice}</p>:null}
+   {quotes.length?<div className="ops-table-scroll"><table className="ops-table">
+    <thead><tr><th>Transportadora</th><th>Serviço (sandbox)</th><th>Valor simulado</th><th>Prazo</th></tr></thead>
+    <tbody>{quotes.map(item=><tr key={item.service_id}>
+     <td>{item.carrier}</td><td>{item.service}</td>
+     <td>{formatBRL(item.price_cents)}</td><td>{item.delivery_days} dias</td>
+    </tr>)}</tbody>
+   </table></div>:null}
+   {quotes.length?<p className="admin-help">Valor retornado somente pela sandbox;
+    não foi armazenado, cobrado ou usado no checkout. Nenhuma etiqueta foi gerada.
+    É obrigatório recotar antes de uma futura compra real.</p>:null}
    {!editable?<p className="admin-help">Pedido fora da etapa de separação. Alterações bloqueadas.</p>:null}
   </form>
  </section>;

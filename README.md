@@ -12,7 +12,7 @@ Este é o **documento principal do projeto**. Reúne recursos, URLs, arquitetura
 
 | Área | Situação em 11/11/2026 | Observações |
 | --- | --- | --- |
-| Hospedagem e build | ✅ Publicado, último deploy consultado: `READY` | Site em Vercel, Next.js 16 |
+| Hospedagem e build | ⚠️ Site publicado; commits mais recentes ainda não implantados | Vercel Hobby atingiu limite diário de deploy em 11/11; verificar retomada antes de considerar a versão atual publicada |
 | Vitrine e produtos | ✅ Funcional | Produtos ilustrativos podem aparecer; não são ofertas reais |
 | Supabase Auth e contas | ✅ Implementados | Confirmar SMTP, recuperação e URLs de redirecionamento em ambiente real |
 | Administração e sidebar | ✅ Implementadas | Acesso restrito a `admin`; `staff` não administra |
@@ -827,3 +827,13 @@ Novos testes em `tests/shipping-provider-adapters.test.mjs` cobrem os campos de 
 **Etapas futuras (credenciais somente ao final):** validar dados completos do remetente, CPF/CNPJ, documentação fiscal, contrato e serviços habilitados; obter cotações reais/sandbox; modelar carrinho e operação de compra com chave de idempotência transacional; guardar IDs e etiquetas oficiais de modo privado; tratar cancelamento/estornos/PLP e conciliar rastreamento com eventos autenticados. O identificador do rascunho **não** é uma chave de compra aprovada.
 
 **Teste operacional pendente:** na inspeção do banco de 11/11/2026 não existiam pedidos administrativos com status `paid` ou `packing`; não foi alterado status de pedidos para fabricar dados de teste.
+
+### 22.7. Qualidade, CI e estado da implantação
+
+O fluxo de build passou a rodar `npm run test && next build`. A primeira execução dessa validação identificou **1 teste fiscal falhando entre 83**: quando item/total era inválido, a função `fiscalAmountReconciliation` ainda criava uma diferença aparente. A regra foi corrigida em `src/lib/fiscal/readiness-core.ts`: dados inválidos, somas com overflow ou ausência de itens geram `items_total_cents=null` e `difference_cents=null`, além das pendências. Os testes correspondentes foram reforçados.
+
+A pipeline **`.github/workflows/ci.yml`** foi adicionada com `contents: read`, versões de Actions fixadas por commit SHA, Node.js 22, `npm ci --ignore-scripts`, `npm test` e `npm run typecheck`; não acessa credenciais de bancos, pagamento ou frete.
+
+**Restrição temporária (11/11/2026):** a Vercel retornou HTTP **402 `api-deployments-free-per-day`** por exceder o limite diário de 100 deployments no plano Hobby. O commit de correção fiscal e o pipeline foram enviados ao GitHub, porém **ainda não se confirmou um novo deploy READY destes commits**, nem o resultado da pipeline GitHub Actions. O último deploy READY pré-limite continua como referência operacional; após o limite ser liberado ou o plano ser ajustado pelo responsável, é obrigatório conferir o SHA implantado, os testes e o build antes de homologar a atualização.
+
+A revisão de segurança do Supabase confirmou RLS da tabela `shipment_provider_drafts` e ausência de acesso anônimo/leitura ou escrita direta indevida. Restam alertas independentes: **Leaked Password Protection desativado** e tabela privada `marketplace_token_vault` com RLS sem policy explícita, cuja intenção de isolamento precisa ser verificada. Nenhum desses alertas justifica afrouxar as políticas atuais.

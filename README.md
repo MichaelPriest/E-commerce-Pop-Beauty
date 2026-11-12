@@ -888,3 +888,30 @@ O histórico dos 12 resultados mais recentes aparece em `/admin/logistica/volume
 **Sem compras, pagamentos ou etiquetas reais:** não há chamadas de API para carrinho, checkout, geração de etiqueta, pré-postagem, rastreio ou nota fiscal; histórico não altera checkout, faturamento, contas, estoque nem status do pedido. O módulo Correios continua aguardando contrato/homologação. A credencial `MELHOR_ENVIO_SANDBOX_TOKEN` permanece opcional e exclusivamente no servidor; sem ela, consultas externas ficam desativadas.
 
 **Pendências futuras:** retenção documentada/automática de históricos, prova de origem do resultado apenas pelo backend confiável, comparação de preço e seguro por serviço, cotação por integração real, idempotência de compra com identificação do parceiro, validação fiscal, confirmação humana, armazenamento privado de etiquetas, cancelamentos e eventos de rastreamento.
+
+### 22.11. Solicitações administrativas, documentos privados e ocorrências
+
+A estrutura `supabase/shipment_workflow_and_private_documents_v1.sql` cria:
+- `shipment_workflow_requests`: uma solicitação `label_preparation` por par **pedido/intent_key**, com UUID único de requisição, fingerprint da intenção, provedor, usuário e estado **somente** `prepared_internal` ou `voided_internal`. Nenhum desses estados representa compra, pré-postagem, etiqueta emitida ou rastreio.
+- `shipment_internal_events`: histórico administrativo somente de criação/descarte e conferências `address_reviewed`, `packages_reviewed`, `fiscal_pending` e `carrier_pending`. Não é linha do tempo de eventos do transportador.
+- `shipment_provider_documents`: metadados reservados para futuras **etiquetas oficiais**, comprovantes de postagem e manifestos do provedor, com caminho privado, SHA-256, documento e identificador conferidos. Não há rota de upload nem gravação por navegador nesta etapa.
+- `shipment_tracking_provider_events`: estrutura futura para evento autenticado do provedor, com `provider_event_id` único, status/descrição, carimbo de ocorrência e recebimento. **Não há webhook, assinatura verificada ou inserção pelo cliente**; não exibir esses registros como reais sem integração e validação.
+- Bucket privado `pope-shipping-private`, `public=false`, limite **8 MiB** por PDF e MIME `application/pdf`. As políticas existentes de `storage.objects` referem-se a outros buckets. O novo bucket não tem políticas de leitura/escrita direta por `anon` ou `authenticated`. A função de recuperação privada por URL temporária **ainda não foi exposta**; futuramente exigirá autorização por pedido, tipo de documento e expiração mínima, sem expor service role no cliente.
+
+As RPCs `prepare_shipment_workflow_request(order_id,intent_key)`, `void_internal_shipment_request(request_id)` e `log_internal_shipment_review(request_id,review_type)` verificam **admin** no banco, revogam execução para `anon` e não fornecem INSERT/UPDATE direto ao cliente nas tabelas. Criar uma solicitação exige revalidar `stage_internal_label_intent` de forma transacional; chamadas repetidas com os mesmos dados preservam a solicitação e não duplicam eventos. Descartar é idempotente, gera trilha `order_events` e **não** envia cancelamento aos Correios/Melhor Envio. Uma solicitação descartada não pode ser reaberta para a mesma versão de intenção. Revisões internas não alteram automaticamente status do pedido, estoque ou financeiro.
+
+Na administração, `/admin/remessas/solicitacoes` lista solicitações, versões e documentos vinculados sem apresentar falsos despachos. `/admin/logistica/volumes/[id]` exibe o painel **Solicitações, documentos e ocorrências**, com preparação de solicitação, descarte com confirmação, quatro tipos fechados de conferência e histórico. Todas as páginas são protegidas por `requireAdmin()`.
+
+A validação de caminhos PDF foi normalizada pela migração `supabase/shipment_documents_path_regex_v2.sql`. Testes de estrutura, permissões, eventos e bloqueios estão em `tests/shipment-workflow-private-documents.test.mjs`.
+
+**Atenção:** a implementação cria o cofre e a infraestrutura de metadados, **não armazena nenhuma etiqueta oficial neste momento**. Inserções futuras exigem adaptador de transportadora homologado, validação de assinatura/autenticidade das respostas, confirmação fiscal e autorização, além de acesso restrito do servidor ao Storage.
+
+### 22.12. Etiquetas internas por volume (não postais)
+
+Para pedidos administrativos completos na conferência de volumes, a tela `/admin/logistica/volumes/[id]` oferece **Imprimir etiquetas internas por volume (10 × 15 cm)**. A página `/admin/logistica/etiquetas-internas/[id]` valida o admin e o mesmo checklist do preparo: status elegível, CEP de origem/destino, nome, endereço completo e todos os volumes previstos com peso e dimensões válidos. Se houver pendências, a impressão é bloqueada.
+
+Cada volume recebe uma página de **100 × 150 mm**, com pedido, posição `1 de N`, destinatário/endereço, peso bruto, dimensões e marca da Popê Beauty. Há avisos impressos em destaque: **ETIQUETA INTERNA — NÃO VÁLIDA PARA POSTAGEM** e indicação de que não é PAC, SEDEX, PLP, NF-e nem etiqueta de transportadora. **Nenhum código de rastreamento fictício ou código de barras postal é gerado.** O botão usa a impressão local do navegador; não grava PDFs no Storage e não representa contratação de frete.
+
+Essas páginas contêm dados pessoais do destinatário e ficam restritas ao admin. Os papéis impressos devem ser protegidos e descartados conforme as políticas de privacidade da loja. Testes: `tests/shipment-internal-labels.test.mjs`.
+
+**Restante para operação postal oficial:** conectar contratos/credenciais somente após definição dos provedores; calcular serviços com respostas válidas; obter autorização fiscal/financeira; executar compra com idempotência real; persistir etiquetas e comprovantes fornecidos oficialmente no bucket privado; implementar cancelamento/devolução junto ao parceiro; verificar e conciliar eventos de rastreamento assinados/autenticados; liberar acesso aos documentos por URL temporária sob autorização.

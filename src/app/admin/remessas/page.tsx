@@ -19,17 +19,20 @@ export default async function ShipmentsPage(){
  if(orders.error||origin.error)throw new Error('Não foi possível carregar a fila de remessas.');
  const list=orders.data??[];
  const ids=list.map(o=>o.id);
- const [preps,volumeRows,drafts]=ids.length?await Promise.all([
+ const [preps,volumeRows,drafts,intents]=ids.length?await Promise.all([
   sb.from('internal_package_preparations').select('order_id,volumes').in('order_id',ids),
   sb.from('internal_package_volumes')
    .select('order_id,volume_number,weight_g,height_cm,width_cm,length_cm,contents_note').in('order_id',ids),
   sb.from('shipment_provider_drafts')
-   .select('order_id,provider,service_code,revision').in('order_id',ids)
- ]):[{data:[],error:null},{data:[],error:null},{data:[],error:null}];
- if(preps.error||volumeRows.error||drafts.error)
+   .select('order_id,provider,service_code,revision').in('order_id',ids),
+  sb.from('internal_label_intents')
+   .select('order_id,intent_key,draft_revision,updated_at').in('order_id',ids)
+ ]):[{data:[],error:null},{data:[],error:null},{data:[],error:null},{data:[],error:null}];
+ if(preps.error||volumeRows.error||drafts.error||intents.error)
   throw new Error('Não foi possível conferir as informações das remessas.');
  const prepByOrder=new Map((preps.data??[]).map(x=>[x.order_id,x]));
  const draftByOrder=new Map((drafts.data??[]).map(x=>[x.order_id,x]));
+ const intentByOrder=new Map((intents.data??[]).map(x=>[x.order_id,x]));
  const rows=list.map(order=>{
   const volumes:PreparedVolume[]=(volumeRows.data??[])
    .filter(x=>x.order_id===order.id)
@@ -44,10 +47,12 @@ export default async function ShipmentsPage(){
    destination:order.shipping_address_snapshot as ShippingDestination|null,
    plannedVolumes:prepByOrder.get(order.id)?.volumes??null,volumes
   });
-  return {order,check,draft:draftByOrder.get(order.id)??null};
+  return {order,check,draft:draftByOrder.get(order.id)??null,
+   intent:intentByOrder.get(order.id)??null};
  });
  const ready=rows.filter(r=>r.check.complete_for_manual_review).length;
  const configured=rows.filter(r=>r.draft).length;
+ const intentsRecorded=rows.filter(r=>r.intent).length;
  return <div className="container admin-workspace">
   <div className="admin-top">
    <div><div className="section-kicker">POPÊ BEAUTY • EXPEDIÇÃO</div>
@@ -59,15 +64,16 @@ export default async function ShipmentsPage(){
    <div><Package/><small>Pedidos em preparação</small><strong>{rows.length}</strong></div>
    <div><ClipboardCheck/><small>Dados internos completos</small><strong>{ready}</strong></div>
    <div><Truck/><small>Integrador selecionado</small><strong>{configured}</strong></div>
-   <div><ShieldCheck/><small>Etiquetas oficiais geradas</small><strong>0</strong></div>
+   <div><ShieldCheck/><small>Intenções internas registradas</small><strong>{intentsRecorded}</strong></div>
   </div>
   <p className="ops-info"><ShieldCheck size={17}/> Somente conferência interna.
-   A seleção de Correios ou Melhor Envio não aciona APIs, não compra frete, não cria PLP ou rastreio.</p>
+   A seleção de Correios ou Melhor Envio não aciona APIs, não compra frete, não cria PLP ou rastreio.
+   Intenções registradas podem estar desatualizadas após alterações; revalide antes de qualquer etapa futura.</p>
   <div className="ops-table-scroll">
    <table className="ops-table">
     <thead><tr><th>Pedido</th><th>Etapa</th><th>Volumes</th><th>Dados</th>
-     <th>Integração</th><th>Pendências</th><th>Operação</th></tr></thead>
-    <tbody>{rows.map(({order,check,draft})=><tr key={order.id}>
+     <th>Integração</th><th>Intenção interna</th><th>Pendências</th><th>Operação</th></tr></thead>
+    <tbody>{rows.map(({order,check,draft,intent})=><tr key={order.id}>
      <td><strong>#{order.id.slice(0,8).toUpperCase()}</strong>
       <small>{dateTimeBR(order.created_at)}</small></td>
      <td>{order.status==='paid'?'Pago (manual)':'Em separação'}</td>
@@ -78,6 +84,8 @@ export default async function ShipmentsPage(){
      <td>{draft&&isShippingProvider(draft.provider)?
       <><strong>{PROVIDERS[draft.provider].label}</strong><small>Rascunho v{draft.revision}</small></>:
       'Não selecionado'}</td>
+     <td>{intent?<><strong>#{intent.intent_key.slice(0,8).toUpperCase()}</strong>
+      <small>Verificar versão e dados atuais</small></>:'Não registrada'}</td>
      <td>{check.issues.length?check.issues.slice(0,2).join(' · ')+
       (check.issues.length>2?' · +'+(check.issues.length-2):''):
       'Sem pendências estruturais'}</td>

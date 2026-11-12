@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {Package,Truck,ShieldCheck,ClipboardCheck,ArrowLeft,History,ClipboardList,FileLock2} from 'lucide-react';
+import {Package,Truck,ShieldCheck,ClipboardCheck,ArrowLeft,History,ClipboardList,FileLock2,ShieldAlert} from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {dateTimeBR} from '@/types/operations';
 import {checkShipmentPreparation,type PreparedVolume,
@@ -59,6 +59,8 @@ export default async function ShipmentsPage(){
     <h1><Truck size={29}/> Central de remessas</h1>
     <p>Fila de preparação de pedidos internos, dados físicos e preferências de transportadoras.</p>
    </div><div className="admin-adult-controls">
+    <Link className="admin-outline" href="/admin/remessas/cancelamentos">
+     <ShieldAlert size={16}/> Revisões de cancelamento</Link>
     <Link className="admin-outline" href="/admin/remessas/evidencias">
      <FileLock2 size={16}/> Documentos e rastreio</Link>
     <Link className="admin-outline" href="/admin/remessas/solicitacoes">

@@ -29,7 +29,7 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
  const canStage=editable&&structurallyReady&&savedMatchesForm&&Boolean(draft?.service_code);
  const canQuote=canStage&&sandboxAvailable&&Boolean(intent)&&provider==='melhor_envio'&&
   intent?.provider==='melhor_envio'&&intent?.service_code===draft?.service_code&&
-  intent?.draft_revision===draft?.revision&&/^\\d{1,8}$/.test(serviceCode.trim());
+  intent?.draft_revision===draft?.revision&&/^\d{1,8}$/.test(serviceCode.trim());
  const intentProviderChanged=Boolean(intent&&draft&&(
   intent.provider!==draft.provider||intent.service_code!==draft.service_code||
   intent.draft_revision!==draft.revision));

@@ -62,7 +62,9 @@ test('endpoint de cotação está isolado na sandbox e exige admin, intenção e
  assert.doesNotMatch(route,/api\/v2\/me\/cart/);
  assert.match(route,/shipment_purchased:false/);
  assert.match(route,/label_generated:false/);
- assert.match(route,/quote_saved:false/);
+ assert.match(route,/quote_saved:!!snapshot/);
+ assert.match(route,/record_shipment_sandbox_quote/);
+ assert.match(route,/reference_expires_at|quote_expires_at/);
 });
 test('botão de cotação só fica disponível com rascunho, intenção e sandbox',()=>{
  const editor=read('src/app/admin/logistica/volumes/[id]/provider-editor.tsx');

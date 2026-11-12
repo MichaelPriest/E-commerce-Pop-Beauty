@@ -22,6 +22,9 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
  const savedMatchesForm=Boolean(draft&&provider===draft.provider&&
    serviceCode.trim()===(draft.service_code??'')&&notes.trim()===(draft.operator_notes??''));
  const canStage=editable&&structurallyReady&&savedMatchesForm&&Boolean(draft?.service_code);
+ const intentProviderChanged=Boolean(intent&&draft&&(
+  intent.provider!==draft.provider||intent.service_code!==draft.service_code||
+  intent.draft_revision!==draft.revision));
  async function submit(event:FormEvent){
   event.preventDefault();
   if(busy||!editable)return;
@@ -92,7 +95,10 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
     Não há etiqueta, contrato, postagem ou rastreamento gerado.</p>:null}
    {intent?<p className="admin-help">Intenção interna registrada: <strong>{intent.intent_key.slice(0,8).toUpperCase()}</strong>
     {' · '}Integrador: {intent.provider} {' · '}Versão de origem: {intent.draft_revision}.
-    Revalide se endereço, volumes, serviço ou origem tiverem sido alterados.</p>:null}
+    Revalide se endereço, volumes, serviço, itens ou origem tiverem sido alterados.</p>:null}
+   {intentProviderChanged?<p className="form-error" role="status">
+    A transportadora ou o serviço mudou após o registro da intenção.
+    Registre novamente quando concluir a conferência.</p>:null}
    {error?<p className="form-error" role="alert">{error}</p>:null}
    {notice?<p className="form-success" role="status">{notice}</p>:null}
    <div className="admin-form-footer">

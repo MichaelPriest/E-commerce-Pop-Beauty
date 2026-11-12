@@ -59,6 +59,8 @@ export default async function ShipmentsPage(){
     <h1><Truck size={29}/> Central de remessas</h1>
     <p>Fila de preparação de pedidos internos, dados físicos e preferências de transportadoras.</p>
    </div><div className="admin-adult-controls">
+    <Link className="admin-outline" href="/admin/remessas/precontratacao">
+     <ClipboardCheck size={16}/> Pré-contratação de frete</Link>
     <Link className="admin-outline" href="/admin/remessas/cancelamentos">
      <ShieldAlert size={16}/> Revisões de cancelamento</Link>
     <Link className="admin-outline" href="/admin/remessas/evidencias">

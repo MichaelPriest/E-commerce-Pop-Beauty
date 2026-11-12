@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {notFound} from 'next/navigation';
-import {ArrowLeft,Package,ClipboardCheck,AlertTriangle,FileDown} from 'lucide-react';
+import {ArrowLeft,Package,ClipboardCheck,AlertTriangle,FileDown,Printer} from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {checkShipmentPreparation,type PreparedVolume,type ShippingDestination} from '@/lib/shipping/shipment-preparation';
 import {VolumeEditor} from './volume-editor';
@@ -87,6 +87,9 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
     <a className="admin-primary" href={'/api/admin/shipping/preparation/'+id}>
      <FileDown size={17}/> Exportar preparação da remessa (JSON)
     </a>
+    <Link className="admin-outline" href={'/admin/logistica/etiquetas-internas/'+id}>
+     <Printer size={17}/> Imprimir etiquetas internas por volume (10 × 15 cm)
+    </Link>
     <p className="admin-help">O JSON contém dados pessoais do destinatário. Armazene com proteção adequada.
      Ainda será necessária conferência fiscal e aprovação da transportadora; não é etiqueta oficial.</p>
    </div>:<div>

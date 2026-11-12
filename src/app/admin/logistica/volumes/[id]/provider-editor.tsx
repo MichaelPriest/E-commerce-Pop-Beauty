@@ -5,18 +5,23 @@ import {createClient} from '@/lib/supabase/browser';
 import {isShippingProvider,PROVIDERS,type ProviderDraft,
  type ShippingProvider} from '@/lib/shipping/provider-adapters';
 
+type IntentSummary={intent_key:string;provider:string;service_code:string;draft_revision:number;updated_at:string};
 type Props={
  orderId:string;editable:boolean;draft:ProviderDraft|null;
- structurallyReady:boolean;
+ structurallyReady:boolean;intent:IntentSummary|null;
 };
-export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady}:Props){
+export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady,intent}:Props){
  const router=useRouter();
  const [provider,setProvider]=useState<ShippingProvider|string>(draft?.provider??'');
  const [serviceCode,setServiceCode]=useState(draft?.service_code??'');
  const [notes,setNotes]=useState(draft?.operator_notes??'');
  const [busy,setBusy]=useState(false);
+ const [staging,setStaging]=useState(false);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
  const descriptor=isShippingProvider(provider)?PROVIDERS[provider]:null;
+ const savedMatchesForm=Boolean(draft&&provider===draft.provider&&
+   serviceCode.trim()===(draft.service_code??'')&&notes.trim()===(draft.operator_notes??''));
+ const canStage=editable&&structurallyReady&&savedMatchesForm&&Boolean(draft?.service_code);
  async function submit(event:FormEvent){
   event.preventDefault();
   if(busy||!editable)return;
@@ -36,6 +41,21 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
    router.refresh();
   }catch(e){setError(e instanceof Error?e.message:'Erro ao salvar transportadora.');}
   finally{setBusy(false);}
+ }
+ async function stageIntent(){
+  if(!canStage||busy||staging)return;
+  setStaging(true);setError('');setNotice('');
+  try{
+   const {data,error:rpcError}=await createClient().rpc('stage_internal_label_intent',{
+    p_order_id:orderId
+   });
+   if(rpcError)throw rpcError;
+   setNotice(data?.changed?
+    'Nova intenção interna registrada. Nenhuma etiqueta foi gerada.':
+    'Intenção já registrada para os mesmos dados; nenhuma duplicação realizada.');
+   router.refresh();
+  }catch(e){setError(e instanceof Error?e.message:'Falha ao registrar intenção interna.');}
+  finally{setStaging(false);}
  }
  return <section className="ops-form-card">
   <h2>Transportadora e preparação de integração</h2>
@@ -70,6 +90,9 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
    </div>:null}
    {draft?<p className="admin-help">Rascunho salvo: versão {draft.revision}.
     Não há etiqueta, contrato, postagem ou rastreamento gerado.</p>:null}
+   {intent?<p className="admin-help">Intenção interna registrada: <strong>{intent.intent_key.slice(0,8).toUpperCase()}</strong>
+    {' · '}Integrador: {intent.provider} {' · '}Versão de origem: {intent.draft_revision}.
+    Revalide se endereço, volumes, serviço ou origem tiverem sido alterados.</p>:null}
    {error?<p className="form-error" role="alert">{error}</p>:null}
    {notice?<p className="form-success" role="status">{notice}</p>:null}
    <div className="admin-form-footer">
@@ -79,6 +102,16 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
     {structurallyReady?<a href={'/api/admin/shipping/preparation/'+orderId}
      className="admin-outline">Exportar pacote de preparação (JSON)</a>:null}
    </div>
+   <div className="admin-form-footer">
+    <button type="button" className="admin-outline" onClick={()=>void stageIntent()}
+     disabled={!canStage||busy||staging}>
+     {staging?'Registrando...':'Registrar intenção interna de etiqueta'}
+    </button>
+   </div>
+   <p className="admin-help">Esta intenção é apenas um controle interno versionado. Requer
+    endereço, volumes e transportadora salvos, incluindo serviço de referência.
+    Não compra frete, não cria etiqueta oficial, não emite PLP nem rastreamento.
+    Dados alterados exigem novo registro e conferência.</p>
    {!editable?<p className="admin-help">Pedido fora da etapa de separação. Alterações bloqueadas.</p>:null}
   </form>
  </section>;

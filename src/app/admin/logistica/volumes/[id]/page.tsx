@@ -8,6 +8,7 @@ import {DeliveryAddressEditor} from './delivery-address-editor';
 import {ShipmentProviderEditor} from './provider-editor';
 import {ShippingWorkflowPanel,type WorkflowRequestRow,type WorkflowEventRow} from './workflow-panel';
 import {ShippingProviderEvidence,type VerifiedShippingDocument,type VerifiedTrackingEvent} from './provider-evidence';
+import {CancellationReviewPanel,type CancellationReviewRow} from './cancellation-review-panel';
 import type {ProviderDraft} from '@/lib/shipping/provider-adapters';
 
 export const dynamic='force-dynamic';
@@ -49,7 +50,7 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   destination:order.data.shipping_address_snapshot as ShippingDestination|null,
   plannedVolumes:prep.data?.volumes??null,volumes:rows
  });
- const [workflowRequests,internalEvents,providerDocs,providerTracking]=await Promise.all([
+ const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews]=await Promise.all([
   sb.from('shipment_workflow_requests')
    .select('id,intent_key,request_key,provider,status,created_at,voided_at')
    .eq('order_id',id).order('created_at',{ascending:false}).limit(30),
@@ -59,9 +60,12 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   sb.from('shipment_provider_documents')
    .select('id,request_id,document_type,provider_document_id,verified_at,created_at').eq('order_id',id).order('created_at',{ascending:false}).limit(100),
   sb.from('shipment_tracking_provider_events')
-   .select('id,request_id,provider,provider_event_id,carrier_status,description,occurred_at,received_at').eq('order_id',id).order('occurred_at',{ascending:false}).limit(100)
+   .select('id,request_id,provider,provider_event_id,carrier_status,description,occurred_at,received_at').eq('order_id',id).order('occurred_at',{ascending:false}).limit(100),
+  sb.from('shipment_cancellation_reviews')
+   .select('id,request_id,reason_code,status,requested_at,dismissed_at')
+   .eq('order_id',id).order('requested_at',{ascending:false}).limit(30)
  ]);
- if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error)
+ if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error)
   throw new Error('Não foi possível carregar as solicitações logísticas.');
  const editable=['paid','packing'].includes(order.data.status);
  return <div className="container admin-workspace pope-fiscal-area">
@@ -121,6 +125,16 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    documents={(providerDocs.data??[]) as VerifiedShippingDocument[]}
    tracking={(providerTracking.data??[]) as VerifiedTrackingEvent[]}
    downloadEnabled={Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())}/>
+
+  <CancellationReviewPanel
+   requestId={workflowRequests.data?.find(x=>x.intent_key===labelIntent.data?.intent_key&&
+    x.status==='prepared_internal')?.id??null}
+   hasProviderEvidence={Boolean(workflowRequests.data?.some(x=>
+    x.intent_key===labelIntent.data?.intent_key&&x.status==='prepared_internal'&&
+    ((providerDocs.data??[]).some(d=>d.request_id===x.id)||
+     (providerTracking.data??[]).some(t=>t.request_id===x.id))))}
+   reviews={(cancellationReviews.data??[]) as CancellationReviewRow[]}/>
+
 
   <DeliveryAddressEditor orderId={id} editable={editable}
    initial={order.data.shipping_address_snapshot as ShippingDestination|null}/>

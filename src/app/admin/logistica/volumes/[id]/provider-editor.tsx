@@ -8,11 +8,17 @@ import {isShippingProvider,PROVIDERS,type ProviderDraft,
 
 type IntentSummary={intent_key:string;provider:string;service_code:string;draft_revision:number;updated_at:string};
 type SandboxQuote={service_id:string;service:string;carrier:string;price_cents:number;delivery_days:number};
+type QuoteHistory={
+ id:string;intent_key:string;service_id:string;service_name:string;
+ carrier_name:string;price_cents:number;delivery_days:number;
+ quoted_at:string;reference_expires_at:string;
+};
 type Props={
  orderId:string;editable:boolean;draft:ProviderDraft|null;
  structurallyReady:boolean;intent:IntentSummary|null;sandboxAvailable:boolean;
+ history:QuoteHistory[];
 };
-export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady,intent,sandboxAvailable}:Props){
+export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady,intent,sandboxAvailable,history}:Props){
  const router=useRouter();
  const [provider,setProvider]=useState<ShippingProvider|string>(draft?.provider??'');
  const [serviceCode,setServiceCode]=useState(draft?.service_code??'');
@@ -79,7 +85,9 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
    const body=await response.json();
    if(!response.ok)throw new Error(body.error??'Falha na cotação de homologação.');
    setQuotes(body.quotes??[]);
-   setQuoteNotice(body.notice??'Consulta de homologação concluída.');
+   setQuoteNotice((body.notice??'Consulta de homologação concluída.')+
+    (body.quote_saved?' O resultado foi salvo no histórico.':' Nenhum resultado válido foi salvo.'));
+   router.refresh();
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível consultar a sandbox.');}
   finally{setQuoting(false);}
  }
@@ -163,6 +171,32 @@ export function ShipmentProviderEditor({orderId,editable,draft,structurallyReady
    {quotes.length?<p className="admin-help">Valor retornado somente pela sandbox;
     não foi armazenado, cobrado ou usado no checkout. Nenhuma etiqueta foi gerada.
     É obrigatório recotar antes de uma futura compra real.</p>:null}
+   <section className="ops-form-card">
+    <h3>Histórico de cotações (sandbox)</h3>
+    <p className="admin-help">Registros apenas administrativos. O prazo de referência interno de 15 minutos
+     não garante disponibilidade, preço ou contratação do frete. Mesmo dentro dessa janela,
+     mudanças no pedido podem tornar a consulta obsoleta.</p>
+    {history.length?<div className="ops-table-scroll">
+     <table className="ops-table">
+      <thead><tr><th>Consultada em</th><th>Serviço</th><th>Valor teste</th>
+       <th>Prazo teste</th><th>Referência</th></tr></thead>
+      <tbody>{history.map(entry=>{
+       const replaced=intent?.intent_key!==entry.intent_key;
+       const expired=Date.parse(entry.reference_expires_at)<=Date.now();
+       return <tr key={entry.id}>
+        <td><strong>{new Date(entry.quoted_at).toLocaleString('pt-BR')}</strong>
+         <small>#{entry.id.slice(0,8).toUpperCase()}</small></td>
+        <td>{entry.carrier_name} · {entry.service_name}</td>
+        <td>{formatBRL(entry.price_cents)}</td>
+        <td>{entry.delivery_days} dias</td>
+        <td>{replaced?'Intenção substituída':expired?'Referência vencida':
+         'Na janela de referência — exige revalidação'}
+         <small>Até {new Date(entry.reference_expires_at).toLocaleString('pt-BR')}</small>
+        </td>
+       </tr>;
+      })}</tbody>
+     </table></div>:<p className="admin-help">Nenhuma cotação registrada para este pedido.</p>}
+   </section>
    {!editable?<p className="admin-help">Pedido fora da etapa de separação. Alterações bloqueadas.</p>:null}
   </form>
  </section>;

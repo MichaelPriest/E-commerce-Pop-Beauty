@@ -6,6 +6,7 @@ import {checkShipmentPreparation,type PreparedVolume,type ShippingDestination} f
 import {VolumeEditor} from './volume-editor';
 import {DeliveryAddressEditor} from './delivery-address-editor';
 import {ShipmentProviderEditor} from './provider-editor';
+import {ShippingWorkflowPanel,type WorkflowRequestRow,type WorkflowEventRow} from './workflow-panel';
 import type {ProviderDraft} from '@/lib/shipping/provider-adapters';
 
 export const dynamic='force-dynamic';
@@ -47,6 +48,20 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   destination:order.data.shipping_address_snapshot as ShippingDestination|null,
   plannedVolumes:prep.data?.volumes??null,volumes:rows
  });
+ const [workflowRequests,internalEvents,providerDocs,providerTracking]=await Promise.all([
+  sb.from('shipment_workflow_requests')
+   .select('id,intent_key,request_key,provider,status,created_at,voided_at')
+   .eq('order_id',id).order('created_at',{ascending:false}).limit(30),
+  sb.from('shipment_internal_events')
+   .select('id,request_id,event_type,created_at')
+   .eq('order_id',id).order('created_at',{ascending:false}).limit(50),
+  sb.from('shipment_provider_documents')
+   .select('id').eq('order_id',id).limit(100),
+  sb.from('shipment_tracking_provider_events')
+   .select('id').eq('order_id',id).limit(100)
+ ]);
+ if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error)
+  throw new Error('Não foi possível carregar as solicitações logísticas.');
  const editable=['paid','packing'].includes(order.data.status);
  return <div className="container admin-workspace pope-fiscal-area">
   <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div>
@@ -89,6 +104,13 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    intent={labelIntent.data??null}
    history={quoteHistory.data??[]}
    sandboxAvailable={Boolean(process.env.MELHOR_ENVIO_SANDBOX_TOKEN?.trim())}/>
+
+  <ShippingWorkflowPanel orderId={id} editable={editable}
+   intentKey={labelIntent.data?.intent_key??null}
+   requests={(workflowRequests.data??[]) as WorkflowRequestRow[]}
+   events={(internalEvents.data??[]) as WorkflowEventRow[]}
+   documentsCount={providerDocs.data?.length??0}
+   trackingCount={providerTracking.data?.length??0}/>
 
   <DeliveryAddressEditor orderId={id} editable={editable}
    initial={order.data.shipping_address_snapshot as ShippingDestination|null}/>

@@ -14,7 +14,7 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
  const {id}=await params;
  if(!uuid.test(id))notFound();
  const sb=await requireAdmin();
- const [order,prep,volumes,shippingOrigin,providerDraft]=await Promise.all([
+ const [order,prep,volumes,shippingOrigin,providerDraft,labelIntent]=await Promise.all([
   sb.from('orders').select('id,origin,status,created_at,shipping_address_snapshot')
    .eq('id',id).eq('origin','admin_manual').maybeSingle(),
   sb.from('internal_package_preparations')
@@ -26,10 +26,13 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    .select('origin_postal_code').eq('id',1).maybeSingle(),
   sb.from('shipment_provider_drafts')
    .select('order_id,provider,service_code,operator_notes,revision,draft_token')
+   .eq('order_id',id).maybeSingle(),
+  sb.from('internal_label_intents')
+   .select('intent_key,provider,service_code,draft_revision,updated_at')
    .eq('order_id',id).maybeSingle()
  ]);
  if(order.error||!order.data)notFound();
- if(prep.error||volumes.error||shippingOrigin.error||providerDraft.error)
+ if(prep.error||volumes.error||shippingOrigin.error||providerDraft.error||labelIntent.error)
   throw new Error('Não foi possível consultar a preparação dos volumes.');
  const rows:PreparedVolume[]=(volumes.data??[]).map(v=>({
   ...v,height_cm:Number(v.height_cm),width_cm:Number(v.width_cm),
@@ -79,7 +82,8 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
 
   <ShipmentProviderEditor orderId={id} editable={editable}
    structurallyReady={review.complete_for_manual_review}
-   draft={providerDraft.data as ProviderDraft|null}/>
+   draft={providerDraft.data as ProviderDraft|null}
+   intent={labelIntent.data??null}/>
 
   <DeliveryAddressEditor orderId={id} editable={editable}
    initial={order.data.shipping_address_snapshot as ShippingDestination|null}/>

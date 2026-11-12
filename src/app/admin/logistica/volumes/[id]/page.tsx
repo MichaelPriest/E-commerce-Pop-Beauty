@@ -83,7 +83,8 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   <ShipmentProviderEditor orderId={id} editable={editable}
    structurallyReady={review.complete_for_manual_review}
    draft={providerDraft.data as ProviderDraft|null}
-   intent={labelIntent.data??null}/>
+   intent={labelIntent.data??null}
+   sandboxAvailable={Boolean(process.env.MELHOR_ENVIO_SANDBOX_TOKEN?.trim())}/>
 
   <DeliveryAddressEditor orderId={id} editable={editable}
    initial={order.data.shipping_address_snapshot as ShippingDestination|null}/>

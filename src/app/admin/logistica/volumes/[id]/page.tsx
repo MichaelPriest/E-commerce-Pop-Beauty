@@ -10,6 +10,7 @@ import {ShippingWorkflowPanel,type WorkflowRequestRow,type WorkflowEventRow} fro
 import {ShippingProviderEvidence,type VerifiedShippingDocument,type VerifiedTrackingEvent} from './provider-evidence';
 import {CancellationReviewPanel,type CancellationReviewRow} from './cancellation-review-panel';
 import {ShipmentPurchasePreflight,type PurchasePreflightRow} from './preflight-panel';
+import {PurchaseGuardPanel,type PurchaseGuardRow} from './purchase-guard-panel';
 import type {ProviderDraft} from '@/lib/shipping/provider-adapters';
 
 export const dynamic='force-dynamic';
@@ -51,7 +52,7 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   destination:order.data.shipping_address_snapshot as ShippingDestination|null,
   plannedVolumes:prep.data?.volumes??null,volumes:rows
  });
- const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews,preflights]=await Promise.all([
+ const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews,preflights,purchaseGuard]=await Promise.all([
   sb.from('shipment_workflow_requests')
    .select('id,intent_key,source_fingerprint,request_key,provider,status,created_at,voided_at')
    .eq('order_id',id).order('created_at',{ascending:false}).limit(30),
@@ -67,9 +68,12 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    .eq('order_id',id).order('requested_at',{ascending:false}).limit(30),
   sb.from('shipment_purchase_preflights')
    .select('id,request_id,intent_key,source_fingerprint,review_key,recipient_checked,packages_checked,payment_checked,fiscal_checked,carrier_terms_checked,checklist_complete_internal,review_notes,reviewed_at')
-   .eq('order_id',id).order('reviewed_at',{ascending:false}).limit(30)
+   .eq('order_id',id).order('reviewed_at',{ascending:false}).limit(30),
+  sb.from('shipment_purchase_guards')
+   .select('guard_key,guard_revision,request_id,intent_key,source_fingerprint,preflight_review_key,provider,status,updated_at')
+   .eq('order_id',id).maybeSingle()
  ]);
- if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error||preflights.error)
+ if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error||preflights.error||purchaseGuard.error)
   throw new Error('Não foi possível carregar as solicitações logísticas.');
  const activeRequest=(workflowRequests.data??[]).find(request=>
   request.status==='prepared_internal'&&request.intent_key===labelIntent.data?.intent_key
@@ -147,6 +151,17 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    hasProviderEvidence={providerEvidenceForCurrent}
    hasCancellationPending={pendingCancellationForCurrent}
    previous={currentPreflight as PurchasePreflightRow|null}/>
+
+  <PurchaseGuardPanel key={purchaseGuard.data?.guard_key??'guard-new'}
+   requestId={activeRequest?.id??null}
+   preflightKey={currentPreflight?.review_key??null}
+   preflightComplete={currentPreflight?.checklist_complete_internal===true}
+   intentCurrent={Boolean(activeRequest&&
+    activeRequest.source_fingerprint===labelIntent.data?.source_fingerprint)}
+   editable={editable}
+   hasProviderEvidence={providerEvidenceForCurrent}
+   hasCancellationPending={pendingCancellationForCurrent}
+   guard={purchaseGuard.data as PurchaseGuardRow|null}/>
 
   <ShippingProviderEvidence
    documents={(providerDocs.data??[]) as VerifiedShippingDocument[]}

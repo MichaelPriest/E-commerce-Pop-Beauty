@@ -110,12 +110,32 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     {status:502,headers});
   const raw=await response.json() as unknown;
   const quotes=parseOrderSandboxQuotes(raw,intent.service_code);
+  let snapshot:Record<string,unknown>|null=null;
+  if(quotes.length){
+   // A escrita usa uma RPC administrativa que recalcula a intenção em transação,
+   // bloqueando snapshots de serviço, endereço ou pacotes alterados durante a consulta.
+   const first=quotes[0];
+   const {data,error:saveError}=await sb.rpc('record_shipment_sandbox_quote',{
+    p_order_id:id,p_intent_key:intentKey,
+    p_service_id:first.service_id,p_service_name:first.service,
+    p_carrier_name:first.carrier,p_price_cents:first.price_cents,
+    p_delivery_days:first.delivery_days
+   });
+   if(saveError||!data?.saved)
+    return NextResponse.json({
+     error:'A cotação retornou, mas o histórico não foi registrado. Confira a intenção e tente novamente.',
+     shipment_purchased:false,label_generated:false
+    },{status:409,headers});
+   snapshot=data as Record<string,unknown>;
+  }
   return NextResponse.json({
    sandbox:true,provider:'melhor_envio',order_id:id,intent_key:intentKey,
    consulted_at:new Date().toISOString(),packages_count:volumes.length,
    quotes,quotation_only:true,provider_request_performed:true,
    shipment_purchased:false,label_generated:false,tracking_created:false,
-   ready_for_label_purchase:false,quote_saved:false,
+   ready_for_label_purchase:false,quote_saved:!!snapshot,
+   quote_snapshot_id:snapshot?.snapshot_id??null,
+   quote_expires_at:snapshot?.expires_at??null,
    notice:quotes.length?
     'Cotação recebida do sandbox. Revalidar valores, serviço, seguro e regras antes de contratar.':
     'Sandbox não retornou um valor válido para o serviço selecionado. Confira o ID do serviço.'

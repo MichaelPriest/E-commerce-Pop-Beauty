@@ -9,6 +9,7 @@ import {ShipmentProviderEditor} from './provider-editor';
 import {ShippingWorkflowPanel,type WorkflowRequestRow,type WorkflowEventRow} from './workflow-panel';
 import {ShippingProviderEvidence,type VerifiedShippingDocument,type VerifiedTrackingEvent} from './provider-evidence';
 import {CancellationReviewPanel,type CancellationReviewRow} from './cancellation-review-panel';
+import {ShipmentPurchasePreflight,type PurchasePreflightRow} from './preflight-panel';
 import type {ProviderDraft} from '@/lib/shipping/provider-adapters';
 
 export const dynamic='force-dynamic';
@@ -31,7 +32,7 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    .select('order_id,provider,service_code,operator_notes,revision,draft_token')
    .eq('order_id',id).maybeSingle(),
   sb.from('internal_label_intents')
-   .select('intent_key,provider,service_code,draft_revision,updated_at')
+   .select('intent_key,provider,service_code,draft_revision,source_fingerprint,updated_at')
    .eq('order_id',id).maybeSingle(),
   sb.from('shipment_sandbox_quote_snapshots')
    .select('id,intent_key,service_id,service_name,carrier_name,price_cents,delivery_days,quoted_at,reference_expires_at')
@@ -50,9 +51,9 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   destination:order.data.shipping_address_snapshot as ShippingDestination|null,
   plannedVolumes:prep.data?.volumes??null,volumes:rows
  });
- const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews]=await Promise.all([
+ const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews,preflights]=await Promise.all([
   sb.from('shipment_workflow_requests')
-   .select('id,intent_key,request_key,provider,status,created_at,voided_at')
+   .select('id,intent_key,source_fingerprint,request_key,provider,status,created_at,voided_at')
    .eq('order_id',id).order('created_at',{ascending:false}).limit(30),
   sb.from('shipment_internal_events')
    .select('id,request_id,event_type,created_at')
@@ -63,10 +64,27 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    .select('id,request_id,provider,provider_event_id,carrier_status,description,occurred_at,received_at').eq('order_id',id).order('occurred_at',{ascending:false}).limit(100),
   sb.from('shipment_cancellation_reviews')
    .select('id,request_id,reason_code,status,requested_at,dismissed_at')
-   .eq('order_id',id).order('requested_at',{ascending:false}).limit(30)
+   .eq('order_id',id).order('requested_at',{ascending:false}).limit(30),
+  sb.from('shipment_purchase_preflights')
+   .select('id,request_id,intent_key,source_fingerprint,review_key,recipient_checked,packages_checked,payment_checked,fiscal_checked,carrier_terms_checked,checklist_complete_internal,review_notes,reviewed_at')
+   .eq('order_id',id).order('reviewed_at',{ascending:false}).limit(30)
  ]);
- if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error)
+ if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error||preflights.error)
   throw new Error('Não foi possível carregar as solicitações logísticas.');
+ const activeRequest=(workflowRequests.data??[]).find(request=>
+  request.status==='prepared_internal'&&request.intent_key===labelIntent.data?.intent_key
+ )??null;
+ const currentPreflight=(preflights.data??[]).find(review=>
+  review.request_id===activeRequest?.id
+ )??null;
+ const providerEvidenceForCurrent=Boolean(activeRequest&&(
+  (providerDocs.data??[]).some(doc=>doc.request_id===activeRequest.id)||
+  (providerTracking.data??[]).some(event=>event.request_id===activeRequest.id)
+ ));
+ const pendingCancellationForCurrent=Boolean(activeRequest&&
+  (cancellationReviews.data??[]).some(review=>
+   review.request_id===activeRequest.id&&review.status==='pending_internal_review'
+  ));
  const editable=['paid','packing'].includes(order.data.status);
  return <div className="container admin-workspace pope-fiscal-area">
   <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div>
@@ -120,6 +138,15 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    events={(internalEvents.data??[]) as WorkflowEventRow[]}
    documentsCount={providerDocs.data?.length??0}
    trackingCount={providerTracking.data?.length??0}/>
+
+  <ShipmentPurchasePreflight key={currentPreflight?.review_key??activeRequest?.id??'none'}
+   requestId={activeRequest?.id??null}
+   editable={editable}
+   intentCurrent={Boolean(activeRequest&&
+    activeRequest.source_fingerprint===labelIntent.data?.source_fingerprint)}
+   hasProviderEvidence={providerEvidenceForCurrent}
+   hasCancellationPending={pendingCancellationForCurrent}
+   previous={currentPreflight as PurchasePreflightRow|null}/>
 
   <ShippingProviderEvidence
    documents={(providerDocs.data??[]) as VerifiedShippingDocument[]}

@@ -44,6 +44,14 @@ test('origem, destinatário, serviço e volumes são avaliados no banco',()=>{
  assert.match(hardening,/coalesce\(v_address->>'phone',''\)/);
  assert.match(hardening,/coalesce\(v_address->>'postal_code',''\)/);
 });
+test('fingerprint também inclui mercadorias, total e notas de embalagem',()=>{
+ const sql=read('supabase/internal_label_intent_fingerprint_items_v3.sql');
+ assert.match(sql,/from public\.order_items/);
+ assert.match(sql,/'order_total_cents'/);
+ assert.match(sql,/'packing_notes'/);
+ assert.match(sql,/'items'/);
+ assert.match(sql,/v_items_count<1/);
+});
 test('painel só registra intenção quando revisão e rascunho salvos',()=>{
  const editor=read('src/app/admin/logistica/volumes/[id]/provider-editor.tsx');
  assert.match(editor,/structurallyReady&&savedMatchesForm&&Boolean\(draft\?\.service_code\)/);

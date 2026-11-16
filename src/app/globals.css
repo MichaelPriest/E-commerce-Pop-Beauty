@@ -1013,3 +1013,39 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  display:inline-flex;align-items:center;gap:5px;overflow-wrap:anywhere}
 .pope-oc-order-link:hover{text-decoration:underline;color:#a54878}
 .pope-oc-order-link:focus-visible{outline:2px solid #b56891;outline-offset:3px;border-radius:4px}
+
+/* Categorias de dois níveis na vitrine e administração */
+.pope-category-tile{min-width:0;display:flex;flex-direction:column;gap:8px}
+.pope-category-tile>.category{width:100%;min-width:0;text-decoration:none}
+.pope-subcategory-nav{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pope-subcategory-nav a{font-size:.76rem;font-weight:700;color:#713759;
+ background:#fff5fa;border:1px solid #eccddb;border-radius:999px;
+ padding:6px 10px;text-decoration:none;line-height:1.4;max-width:100%}
+.pope-subcategory-nav a:hover{background:#f8dfed;border-color:#c78daf}
+.pope-subcategory-nav a:focus-visible{outline:2px solid #a94b7d;outline-offset:2px}
+.pope-category-admin .admin-top{align-items:center;flex-wrap:wrap}
+.pope-category-checkbox{display:flex;gap:9px;align-items:center;font-size:.86rem;
+ color:#674763;font-weight:650}
+.pope-category-checkbox input{width:17px;height:17px;accent-color:#9d4774}
+.pope-category-tree{display:grid;gap:14px}
+.pope-category-group{border:1px solid #ebd7e4;border-radius:16px;background:#fff;
+ overflow:hidden}
+.pope-category-main,.pope-category-child{display:flex;align-items:center;
+ flex-wrap:wrap;gap:12px;padding:14px 17px}
+.pope-category-main{background:#fff9fc}
+.pope-category-child{border-top:1px solid #f1e5ed;padding-left:38px}
+.pope-category-name{display:flex;align-items:center;gap:10px;flex:1 1 190px;
+ min-width:0;color:#75375c}
+.pope-category-name>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.pope-category-name strong{font-size:.96rem;line-height:1.3;overflow-wrap:anywhere}
+.pope-category-name small{font-size:.75rem;color:#826677;overflow-wrap:anywhere}
+.pope-category-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.pope-category-actions .admin-outline{padding:7px 10px;min-height:36px;
+ font-size:.78rem;display:inline-flex;align-items:center;gap:5px}
+.pope-category-admin .admin-modal .admin-form-check{display:flex;align-items:center;gap:9px}
+@media(max-width:640px){
+ .pope-category-main,.pope-category-child{padding:13px}
+ .pope-category-child{padding-left:23px}
+ .pope-category-actions{width:100%}
+ .pope-category-actions .admin-outline{flex:1 1 auto;justify-content:center}
+}

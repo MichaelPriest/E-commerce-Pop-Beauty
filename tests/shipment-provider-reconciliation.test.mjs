@@ -72,7 +72,7 @@ test('RPCs exigem papel admin, negam anon e registram somente revisões internas
  assert.match(sql,/review_requested_internal/);
  assert.match(sql,/review_archived_internal/);
  assert.match(sql,/state='archived_internal'/);
- assert.match(sql,/Nenhuma compra/);
+ assert.match(sql,/SEM CHAMADA EXTERNA/);
 });
 test('congelamento do checklist, chave e descarte evita criar segundo plano',()=>{
  const sql=read('supabase/shipment_operation_plan_freeze_workflow_v2.sql');

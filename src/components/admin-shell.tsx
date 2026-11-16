@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -42,6 +42,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   ]},
   {title:'Catálogo',items:[
    {href:'/admin/produtos',label:'Produtos',icon:PackageSearch},
+   {href:'/admin/categorias',label:'Categorias e subcategorias',icon:FolderTree},
    {href:'/admin/estoque',label:'Estoque e lotes',icon:Boxes},
    {href:'/admin/adulto',label:'Prévia reservada +18',icon:Eye}
   ]},
@@ -72,6 +73,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
  const shortcuts:NavItem[]=[
   {href:'/admin/pedidos',label:'Novo pedido',icon:ShoppingBag},
   {href:'/admin/produtos',label:'Cadastrar produto',icon:PackagePlus},
+  {href:'/admin/categorias',label:'Cadastrar categorias',icon:FolderTree},
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},
   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity},

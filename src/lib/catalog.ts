@@ -136,3 +136,33 @@ export async function getProductBySlug(slug:string):Promise<{product:Product|nul
  const products=await attachAvailability(sb,[mapRow(data as unknown as Record<string,unknown>)]);
  return {product:products[0]??null,demo:false};
 }
+
+
+export type CatalogVariant={
+ product_id:string;variant_id:string;sku:string;name:string;
+ shade:string|null;available:boolean
+};
+export type ProductGalleryPhoto={id:string;url:string;alt:string};
+export async function getProductDetailExtras(productId:string):
+ Promise<{variants:CatalogVariant[];gallery:ProductGalleryPhoto[]}>{
+ if(!isSupabaseConfigured()||
+  !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(productId))
+  return {variants:[],gallery:[]};
+ const sb=await createClient();
+ const [variantResult,galleryResult]=await Promise.all([
+  sb.rpc('catalog_variant_availability',{p_product_ids:[productId]}),
+  sb.from('product_gallery_images').select('id,storage_path,alt_text')
+   .eq('product_id',productId).order('sort_order',{ascending:true})
+   .order('created_at',{ascending:true}).limit(8)
+ ]);
+ if(variantResult.error)console.error('Variações indisponíveis:',variantResult.error.code);
+ if(galleryResult.error)console.error('Galeria indisponível:',galleryResult.error.code);
+ return {
+  variants:variantResult.error?[]:((variantResult.data??[]) as CatalogVariant[]),
+  gallery:galleryResult.error?[]:(galleryResult.data??[]).map(img=>({
+   id:img.id,
+   url:sb.storage.from('product-images').getPublicUrl(img.storage_path).data.publicUrl,
+   alt:img.alt_text||'Foto adicional do produto'
+  }))
+ };
+}

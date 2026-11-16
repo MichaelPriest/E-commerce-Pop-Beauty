@@ -1,5 +1,5 @@
 'use client';
-import {useState,type ChangeEvent} from 'react';
+import {useEffect,useState,type ChangeEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -10,21 +10,34 @@ import {productImageSrc} from '@/lib/products';
 
 export type GalleryPhoto={
  id:string;storage_path:string;alt_text:string;sort_order:number;
- created_at:string;url:string
+ created_at:string;url:string;variant_id:string|null
 };
+type GalleryVariant={id:string;sku:string;name:string;shade:string|null;active:boolean};
 type Props={
  product:{id:string;name:string;slug:string;image_url:string|null;active:boolean};
- photos:GalleryPhoto[]
+ photos:GalleryPhoto[];variants:GalleryVariant[];initialVariantId:string
 };
-export function GalleryManager({product,photos}:Props){
+export function GalleryManager({product,photos,variants,initialVariantId}:Props){
  const router=useRouter();
  const [files,setFiles]=useState<File[]>([]);
+ const [uploadVariantId,setUploadVariantId]=useState(initialVariantId);
+ const [assigned,setAssigned]=useState<Record<string,string>>(
+  Object.fromEntries(photos.map(p=>[p.id,p.variant_id??'']))
+ );
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState(''),[message,setMessage]=useState('');
  const [alt,setAlt]=useState<Record<string,string>>(
   Object.fromEntries(photos.map(x=>[x.id,x.alt_text]))
  );
+ useEffect(()=>{
+  setAssigned(Object.fromEntries(photos.map(p=>[p.id,p.variant_id??''])));
+ },[photos]);
  const remaining=Math.max(0,8-photos.length);
+ const variantLabel=(id:string|null)=>id?
+  variants.find(v=>v.id===id)?.shade||
+  variants.find(v=>v.id===id)?.name||'SKU não localizado':'Foto geral';
+ const optionLabel=(v:GalleryVariant)=>
+  (v.shade||v.name)+' · '+v.sku+(v.active?'':' (inativa)');
  const cover=productImageSrc(product.image_url);
  async function upload(){
   if(busy||!files.length)return;
@@ -47,7 +60,8 @@ export function GalleryManager({product,photos}:Props){
     if(uploadError)throw uploadError;
     const {error:dbError}=await sb.from('product_gallery_images').insert({
      product_id:product.id,storage_path,alt_text:file.name.replace(/\.[^.]+$/,'')
-      .slice(0,160),sort_order:photos.length+succeeded
+      .slice(0,160),sort_order:photos.length+succeeded,
+     variant_id:uploadVariantId||null
     });
     if(dbError){
      await sb.storage.from('product-images').remove([storage_path]);
@@ -67,11 +81,16 @@ export function GalleryManager({product,photos}:Props){
   if(busy)return;
   setBusy(true);setError('');setMessage('');
   const value=(alt[photo.id]??'').trim().slice(0,160);
+  const selected=assigned[photo.id]??'';
+  if(selected&&!variants.some(v=>v.id===selected)){
+   setError('Escolha uma variação válida deste produto.');setBusy(false);return;
+  }
   try{
    const {error:rpcError}=await createClient().from('product_gallery_images')
-    .update({alt_text:value}).eq('id',photo.id).eq('product_id',product.id);
+    .update({alt_text:value,variant_id:selected||null})
+    .eq('id',photo.id).eq('product_id',product.id);
    if(rpcError)throw rpcError;
-   setMessage('Descrição da foto atualizada.');router.refresh();
+   setMessage('Descrição e vínculo da foto atualizados.');router.refresh();
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível salvar a descrição.');}
   finally{setBusy(false);}
  }
@@ -120,7 +139,8 @@ export function GalleryManager({product,photos}:Props){
    <div>
     <div className="section-kicker">POPÊ BEAUTY • CATÁLOGO</div>
     <h1><Camera size={27}/> Fotos do produto</h1>
-    <p>{product.name} · Até oito fotos adicionais além da capa.</p>
+    <p>{product.name} · Até oito fotos adicionais além da capa,
+     com associação opcional a uma cor ou SKU.</p>
    </div>
    <Link className="admin-outline" href="/admin/produtos">
     <ArrowLeft size={16}/> Voltar aos produtos</Link>
@@ -142,11 +162,20 @@ export function GalleryManager({product,photos}:Props){
   </div>
   <section className="ops-form-card">
    <h2><ImagePlus size={20}/> Fotos adicionais ({photos.length}/8)</h2>
-   <p className="admin-help">Use imagens nítidas e originais do produto,
-    mostrando cores, embalagem, textura e detalhes. JPG, PNG ou WebP, até 5 MB cada.
-    As imagens adicionadas aqui são públicas. Para produtos +18, utilize exclusivamente
-    o cadastro privado já existente.</p>
+   <p className="admin-help">Use imagens nítidas do produto e selecione a cor
+    correspondente antes de enviar. As fotos gerais aparecem em todas as cores;
+    fotos vinculadas a um SKU aparecem quando o cliente seleciona essa variação.
+    JPG, PNG ou WebP, até 5 MB cada. Este módulo não aceita fotos +18.</p>
    <div className="pope-gallery-upload">
+    <label>Exibir novas fotos para
+     <select value={uploadVariantId}
+      onChange={e=>setUploadVariantId(e.target.value)} disabled={busy}>
+      <option value="">Todas as cores (foto geral)</option>
+      {variants.map(variant=><option key={variant.id} value={variant.id}>
+       {optionLabel(variant)}
+      </option>)}
+     </select>
+    </label>
     <label>Selecionar fotos
      <input type="file" multiple accept="image/jpeg,image/png,image/webp"
       disabled={busy||remaining===0} onChange={choose}/>
@@ -165,17 +194,27 @@ export function GalleryManager({product,photos}:Props){
     {photos.map((photo,index)=><article key={photo.id} className="pope-gallery-card">
      <div className="pope-gallery-image">
       <img src={photo.url} alt={photo.alt_text||'Foto adicional'} loading="lazy"/>
-      <span>Foto {index+2}</span>
+      <span>Foto {index+2} · {variantLabel(photo.variant_id)}</span>
      </div>
      <label>Descrição da foto
       <input value={alt[photo.id]??''} maxLength={160}
        onChange={e=>setAlt(x=>({...x,[photo.id]:e.target.value}))}
        disabled={busy}/>
      </label>
+     <label>Foto vinculada a
+      <select value={assigned[photo.id]??''}
+       onChange={e=>setAssigned(x=>({...x,[photo.id]:e.target.value}))}
+       disabled={busy}>
+       <option value="">Todas as cores (foto geral)</option>
+       {variants.map(variant=><option key={variant.id} value={variant.id}>
+        {optionLabel(variant)}
+       </option>)}
+      </select>
+     </label>
      <div className="pope-gallery-actions">
       <button type="button" className="admin-outline" disabled={busy}
        onClick={()=>void saveAlt(photo)} title="Salvar descrição">
-       <Save size={15}/> Salvar</button>
+       <Save size={15}/> Salvar foto/SKU</button>
       <button type="button" className="admin-outline" disabled={busy||index===0}
        onClick={()=>void move(index,-1)} title="Mover foto para cima"
        aria-label={'Mover foto '+(index+2)+' para cima'}><ArrowUp size={17}/></button>

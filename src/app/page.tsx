@@ -1,13 +1,17 @@
 import Link from 'next/link';
 import { ArrowRight, Gift, ShieldCheck, Sparkles, Truck, CreditCard, Heart } from 'lucide-react';
 import { getProducts } from '@/lib/catalog';
+import {catalogPageHref,normalizeCatalogPage} from '@/lib/catalog-query-core';
 import { ProductCard } from '@/components/product-card';
 
 const categories = [{name:'Make',emoji:'💄',tone:'pink'},{name:'Skincare',emoji:'🧴',tone:'aqua'},{name:'Acessórios',emoji:'🖌️',tone:'purple'},{name:'Kits',emoji:'🎁',tone:'yellow'}];
-export default async function Home({searchParams}:{searchParams:Promise<{q?:string;categoria?:string}>}) {
- const {products,demo}=await getProducts(); const filters=await searchParams;
- const q=(filters.q||'').trim().toLocaleLowerCase('pt-BR'); const cat=filters.categoria||'';
- const visible=products.filter(p=>(!cat||p.category===cat)&&(!q||[p.name,p.brand,p.category].join(' ').toLocaleLowerCase('pt-BR').includes(q)));
+export default async function Home({searchParams}:{searchParams:Promise<{q?:string;categoria?:string;pagina?:string}>}) {
+ const filters=await searchParams;
+ const {products:visible,demo,total,page,totalPages,q,category:cat}=await getProducts({
+  q:filters.q,category:filters.categoria,page:normalizeCatalogPage(filters.pagina)
+ });
+ const pages=Array.from({length:Math.min(5,totalPages)},(_,index)=>
+  Math.max(1,Math.min(page-2,totalPages-4))+index);
  return <>
   <div className="demo-banner">{demo?'🚧 Vitrine de demonstração: produtos, preços e condições são ilustrativos.':'🚧 Vitrine em implantação: catálogo ativo, mas pagamentos e checkout ainda estão indisponíveis.'} Pedidos não estão habilitados.</div>
   <section className="hero"><div className="container hero-inner">
@@ -23,7 +27,27 @@ export default async function Home({searchParams}:{searchParams:Promise<{q?:stri
    <div className="categories">{categories.map(c=><Link key={c.name} className={'category category-'+c.tone} href={'/?categoria='+encodeURIComponent(c.name)+'#destaques'}><span className="category-emoji">{c.emoji}</span><strong>{c.name}</strong><ArrowRight size={16}/></Link>)}</div>
   </section>
   <section className="container section" id="destaques"><div className="section-heading"><div><div className="section-kicker">ESCOLHIDOS PARA VOCÊ</div><h2>{q?'Resultado da busca':cat?cat:'Nossos'} <em>{q?'':cat?'':'queridinhos'}</em> <Heart size={25} fill="#ff489d" color="#ff489d"/></h2></div><Link href="/" className="text-link">Ver todos <ArrowRight size={16}/></Link></div>
+   <form className="pope-catalog-search" action="/" method="get" role="search" aria-label="Buscar produtos">
+    {cat?<input type="hidden" name="categoria" value={cat}/>:null}
+    <label htmlFor="pope-search-catalog">Buscar no catálogo</label>
+    <div className="pope-catalog-search-line">
+     <input id="pope-search-catalog" name="q" type="search" maxLength={60}
+      placeholder="Nome, marca ou descrição" defaultValue={q}/>
+     <button type="submit" className="admin-primary">Buscar</button>
+     {(q||cat)?<Link href="/#destaques" className="admin-outline">Limpar</Link>:null}
+    </div>
+   </form>
+   <p className="pope-catalog-count" aria-live="polite">
+    {total} {total===1?'produto encontrado':'produtos encontrados'}
+    {totalPages>0?' · Página '+page+' de '+totalPages:''}
+   </p>
    <div className="product-grid">{visible.map(p=><ProductCard key={p.id} product={p} demo={demo}/>)}</div>
+   {totalPages>1?<nav className="pope-catalog-pagination" aria-label="Páginas de produtos">
+    {page>1?<Link href={catalogPageHref({q,category:cat,page:page-1})}>Anterior</Link>:null}
+    {pages.map(n=><Link key={n} href={catalogPageHref({q,category:cat,page:n})}
+     aria-current={page===n?'page':undefined} className={page===n?'is-current':''}>{n}</Link>)}
+    {page<totalPages?<Link href={catalogPageHref({q,category:cat,page:page+1})}>Próxima</Link>:null}
+   </nav>:null}
    {visible.length===0?<div className="empty-state">Nenhum produto encontrado. {demo?'Tente outra busca.':'O catálogo será disponibilizado em breve.'}</div>:null}
   </section>
   <section className="container promo-section" id="achadinhos"><div className="promo-copy"><span>✦ APROVEITE</span><h2>Achadinhos<br/>da <em>Popê</em> 💕</h2><p>Uma seleção especial de beleza para todos os estilos e bolsos.</p><Link href="/#destaques" className="promo-button">Descobrir produtos <ArrowRight size={17}/></Link></div><div className="promo-art">💄 <span>🧴</span> 🎁</div></section>

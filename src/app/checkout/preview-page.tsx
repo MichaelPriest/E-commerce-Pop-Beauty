@@ -6,11 +6,12 @@ import {
  Truck,CreditCard,ClipboardList,CheckCircle2,AlertTriangle,ShoppingBag,Clock3,MapPin
 } from 'lucide-react';
 import {formatBRL} from '@/lib/products';
+import {type CartItem,normalizeCart,cartApiItems} from '@/lib/cart-core';
 import {checkoutStatusLabel,type CheckoutPreview} from '@/lib/checkout-preview';
 import type {CustomerAddress} from '@/types/customer-address';
 import {SandboxShippingQuote} from '@/components/checkout/sandbox-shipping-quote';
 
-type CartRow={id:string;slug:string;name:string;price_cents:number;qty:number;emoji?:string};
+type CartRow=CartItem;
 type Stage='loading'|'empty'|'failed'|'loaded';
 export function CheckoutPreviewPage({
  signedIn,isAdmin,addresses,shippingSandboxTokenPresent,shippingOriginConfigured
@@ -34,7 +35,7 @@ export function CheckoutPreviewPage({
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
      address_id:addressId,request_key:idempotencyKey.current,
-     items:cartRows.map(r=>({product_id:r.id,quantity:r.qty}))
+     items:cartApiItems(cartRows)
     }),cache:'no-store'
    });
    const body=await response.json();
@@ -55,27 +56,17 @@ export function CheckoutPreviewPage({
     if(live){setStage('empty');setCartRows([]);}
     return;
    }
-   if(stored.length>30){if(live){setStage('failed');setError('Limite de 30 produtos por conferência.');}return;}
-   const rows:CartRow[]=[];
-   for(const item of stored){
-    if(!item||typeof item!=='object'){
-     if(live){setStage('failed');setError('Existe um item inválido no carrinho.');}return;
-    }
-    const row=item as Partial<CartRow>;
-    if(typeof row.id!=='string'||row.id.length>80||
-     !Number.isInteger(row.qty)||Number(row.qty)<1||Number(row.qty)>99){
-     if(live){setStage('failed');setError('Verifique as quantidades e os produtos no carrinho.');}
-     return;
-    }
-    rows.push({id:row.id,slug:typeof row.slug==='string'?row.slug:'',
-      name:typeof row.name==='string'?row.name:'Produto',
-      price_cents:Number(row.price_cents)||0,qty:row.qty as number});
+   if(stored.length>30){if(live){setStage('failed');setError('Limite de 30 itens por conferência.');}return;}
+   const rows=normalizeCart(stored);
+   if(rows.length!==stored.length){
+    if(live){setStage('failed');setError('Há itens inválidos ou duplicados no carrinho. Revise antes de conferir.');}
+    return;
    }
    if(live)setCartRows(rows);
    try{
     const response=await fetch('/api/checkout/preview',{
      method:'POST',headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({items:rows.map(r=>({product_id:r.id,quantity:r.qty}))}),
+     body:JSON.stringify({items:cartApiItems(rows)}),
      cache:'no-store'
     });
     const body=await response.json();
@@ -115,14 +106,16 @@ export function CheckoutPreviewPage({
      <Link href="/" className="hero-button">Ver catálogo</Link>
     </div>:null}
     {stage==='loaded'&&quote?<>
-     {quote.lines.map((item,i)=><div className="pope-checkout-item" key={item.product_id+'-'+i}>
+     {quote.lines.map((item,i)=><div className="pope-checkout-item" key={item.product_id+'-'+(item.variant_id??i)}>
       <div className="pope-checkout-item-icon"><ShoppingBag size={23}/></div>
       <div className="pope-checkout-item-content">
-       <strong>{item.name}</strong><small>Quantidade: {item.quantity}</small>
+       <strong>{item.name}</strong>
+       {item.variant_name?<small>Cor/variação: {item.variant_name}</small>:null}
+       <small>Quantidade: {item.quantity}</small>
        <span className={'pope-checkout-state '+(item.status==='ready'?'ok':'blocked')}>
         {item.status==='ready'?<CheckCircle2 size={14}/>:<AlertTriangle size={14}/>}
         {checkoutStatusLabel[item.status]}</span>
-       {item.status==='variant_selection_required'?<small>Este produto possui mais de uma variação. A escolha de cor/tamanho será necessária antes da venda.</small>:null}
+       {item.status==='variant_selection_required'?<small>Este produto possui várias variações. Abra a página do produto e escolha a cor ou apresentação antes de continuar.</small>:null}
       </div>
       <div className="pope-checkout-price">
        <strong>{item.line_total_cents!==null?formatBRL(item.line_total_cents):'—'}</strong>
@@ -152,7 +145,7 @@ export function CheckoutPreviewPage({
         <Link href="/conta/enderecos" className="pope-checkout-link"> Cadastrar endereço</Link></p>}
        {isAdmin&&addresses.length>0?<SandboxShippingQuote
         postalCode={addresses.find(a=>a.id===addressId)?.postal_code||''}
-        items={cartRows.map(row=>({product_id:row.id,quantity:row.qty}))}
+        items={cartApiItems(cartRows)}
         sandboxTokenPresent={shippingSandboxTokenPresent}
         originConfigured={shippingOriginConfigured}
        />:null}

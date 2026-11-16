@@ -1001,3 +1001,9 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
   flex:1 1 auto}
  .pope-admin-tasks{grid-template-columns:1fr}
 }
+
+.pope-product-step{display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+ border-bottom:1px solid #eadbe5;padding:10px 0 15px;margin-bottom:18px}
+.pope-product-step strong{font-size:.87rem;font-weight:800;color:#fff;
+ background:#853e72;border-radius:40px;padding:6px 13px}
+.pope-product-step span{font-size:.93rem;font-weight:750;color:#663554}

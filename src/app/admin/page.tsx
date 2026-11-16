@@ -116,7 +116,10 @@ export default async function AdminPage(){
      orders.data?.length?<div className="admin-table">
       <div className="admin-table-row heading"><span>Origem</span><span>Total</span><span>Status</span></div>
       {orders.data.map(o=><div className="admin-table-row" key={o.id}>
-       <span>{o.channel==='store'?'Loja':o.channel}</span><span>{formatBRL(o.total_cents)}</span>
+       <span><Link href={'/admin/pedidos/'+o.id}
+        className="pope-oc-order-link">#{o.id.slice(0,8).toUpperCase()}</Link>
+        <small>{o.channel==='store'?'Loja':o.channel}</small></span>
+       <span>{formatBRL(o.total_cents)}</span>
        <span>{o.status}</span>
       </div>)}</div>:
       <div className="pope-admin-panel-empty"><ShoppingBag size={24}/><p>Nenhum pedido registrado.</p><Link href="/admin/pedidos">Abrir pedidos</Link></div>}

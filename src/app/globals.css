@@ -950,3 +950,54 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-internal-label{margin:0;break-inside:avoid;page-break-inside:avoid}
  .pope-print-stamp{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+
+/* Catálogo paginado e ações de qualidade — 2026-11 */
+.pope-catalog-search{border:1px solid #ead4df;border-radius:18px;background:#fff8fc;
+ padding:16px 20px;margin:16px 0 12px}
+.pope-catalog-search>label{display:block;font-size:.88rem;font-weight:750;
+ color:#693453;margin-bottom:9px}
+.pope-catalog-search-line{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.pope-catalog-search-line input{flex:1 1 210px;min-width:0;height:44px;
+ border:1px solid #cfb9c9;border-radius:10px;padding:0 14px;background:#fff;color:#221528}
+.pope-catalog-search-line .admin-primary,.pope-catalog-search-line .admin-outline{
+ min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0 18px}
+.pope-catalog-count{font-size:.92rem;color:#765d6d;margin:14px 0 17px}
+.pope-catalog-pagination{display:flex;flex-wrap:wrap;align-items:center;
+ justify-content:center;gap:9px;margin:30px 0 12px}
+.pope-catalog-pagination a{display:inline-flex;align-items:center;justify-content:center;
+ border:1px solid #ead0df;border-radius:10px;padding:9px 14px;min-width:43px;
+ text-decoration:none;color:#672e58;background:#fff}
+.pope-catalog-pagination a.is-current{background:#762a61;color:#fff;border-color:#762a61;
+ font-weight:750}
+.pope-catalog-pagination a:focus-visible,.pope-catalog-search-line input:focus-visible{
+ outline:3px solid #e39bbb;outline-offset:2px}
+.pope-product-stock{font-size:.76rem;font-weight:750;line-height:1.35;margin:7px 0 10px;
+ color:#7c3b61}
+.pope-product-stock.is-available{color:#226f4b}
+.pope-product-stock.is-unavailable{color:#93404d}
+.pope-admin-action-center{margin:22px 0}
+.pope-admin-tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:11px}
+.pope-admin-task{border:1px solid #e7d9df;background:#fff;border-radius:14px;
+ display:flex;align-items:center;gap:12px;padding:15px;text-decoration:none;color:#493047}
+.pope-admin-task>strong{font-size:1.5rem;color:#41745c;min-width:30px}
+.pope-admin-task.has-issues>strong{color:#b3455c}
+.pope-admin-task>span{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.pope-admin-task b{font-size:.89rem}
+.pope-admin-task small{color:#746474;font-size:.75rem;line-height:1.45}
+.pope-admin-task:hover{border-color:#c77baa;box-shadow:0 4px 15px #752b5916}
+.pope-product-issues{display:block;color:#a24465;font-weight:700;font-size:.75rem;
+ line-height:1.5;margin-top:4px}
+.pope-product-issues.is-complete{color:#28764e}
+.pope-product-guided{border:1px solid #eed4e1;background:#fff7fb;border-radius:13px;
+ display:grid;gap:6px;padding:14px 16px;margin-bottom:18px;color:#5b3150}
+.pope-product-guided strong{font-size:1rem}
+.pope-product-guided span{font-weight:750;font-size:.86rem}
+.pope-product-guided p{font-size:.78rem;line-height:1.5;margin:0}
+.pope-product-warn{color:#903956;background:#fff1f3;padding:12px;border-radius:10px;
+ border:1px solid #f2bccd;font-size:.84rem;line-height:1.55}
+@media(max-width:640px){
+ .pope-catalog-search{padding:13px}
+ .pope-catalog-search-line .admin-primary,.pope-catalog-search-line .admin-outline{
+  flex:1 1 auto}
+ .pope-admin-tasks{grid-template-columns:1fr}
+}

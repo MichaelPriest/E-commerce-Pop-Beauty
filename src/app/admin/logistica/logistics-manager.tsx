@@ -53,12 +53,16 @@ export function LogisticsManager({orders}:Props){
   </div>
   {notice?<p role="status" className="form-success">{notice}</p>:null}
   <div className="ops-table-scroll"><table className="ops-table"><thead><tr><th>Selecionar</th><th>Pedido</th><th>Itens</th><th>Total</th><th>Transportadora / Rastreio</th><th>Status</th><th>Ação</th></tr></thead>
-   <tbody>{shown.map(o=><tr key={o.id}><td>{o.origin==='admin_manual'?<input type="checkbox" aria-label={'Selecionar pedido '+o.id.slice(0,8)} checked={selected.includes(o.id)} disabled={!selected.includes(o.id)&&selected.length>=30} onChange={e=>setSelected(old=>e.target.checked?[...old,o.id].slice(0,30):old.filter(id=>id!==o.id))}/>:null}</td><td><strong>#{o.id.slice(0,8).toUpperCase()}</strong><small>{dateTimeBR(o.created_at)}</small></td>
+   <tbody>{shown.map(o=><tr key={o.id}><td>{o.origin==='admin_manual'?<input type="checkbox" aria-label={'Selecionar pedido '+o.id.slice(0,8)} checked={selected.includes(o.id)} disabled={!selected.includes(o.id)&&selected.length>=30} onChange={e=>setSelected(old=>e.target.checked?[...old,o.id].slice(0,30):old.filter(id=>id!==o.id))}/>:null}</td><td><Link href={'/admin/pedidos/'+o.id} className="pope-oc-order-link">
+     #{o.id.slice(0,8).toUpperCase()}</Link><small>{dateTimeBR(o.created_at)}</small></td>
     <td>{o.order_items?.reduce((a,i)=>a+i.quantity,0)??0} unidades</td>
     <td>{formatBRL(o.total_cents)}</td>
     <td>{o.tracking_code?<><strong>{o.carrier}</strong><small>{o.tracking_code}</small></>:'Não despachado'}</td>
     <td><span className={'ops-tag status-'+o.status}>{ORDER_LABELS[o.status]??o.status}</span></td>
-    <td>{o.origin!=='admin_manual'?<span className="ops-muted">Somente consulta</span>:<div style={{display:'flex',gap:6,flexWrap:'wrap'}}><Link className="ops-small" href={'/admin/logistica/volumes/'+o.id}><Boxes size={15}/> Volumes</Link>
+    <td><Link className="ops-small primary" href={'/admin/pedidos/'+o.id}>
+     Central do pedido</Link>
+    {o.origin!=='admin_manual'?<span className="ops-muted">Somente consulta</span>:
+     <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><Link className="ops-small" href={'/admin/logistica/volumes/'+o.id}><Boxes size={15}/> Volumes</Link>
      {o.status==='paid'?<button className="ops-small primary" onClick={()=>open(o,'packing')}><PackageOpen size={15}/> Iniciar separação</button>:
      o.status==='packing'?<button className="ops-small primary" onClick={()=>open(o,'shipped')}><Send size={15}/> Registrar envio</button>:
      o.status==='shipped'?<button className="ops-small primary" onClick={()=>open(o,'delivered')}><CheckCircle2 size={15}/> Marcar entregue</button>:

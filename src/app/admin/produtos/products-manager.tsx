@@ -1,11 +1,12 @@
 'use client';
-import {useMemo,useState, type ChangeEvent, type FormEvent} from 'react';
+import {useEffect,useMemo,useState, type ChangeEvent, type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {Boxes, Camera, ChevronDown, Edit3, PackagePlus, Plus, Search, Tag, X, Check, AlertTriangle, Layers3} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {formatBRL,productImageSrc} from '@/lib/products';
 import type {AdminProduct, Category} from '@/types/admin';
+import {catalogIssues,brazilTodayISO,CATALOG_ISSUE_LABELS} from '@/lib/catalog-quality';
 
 type ProductForm = {
  name:string;slug:string;category_id:string;brand:string;description:string;
@@ -42,11 +43,21 @@ export function ProductsManager({initialProducts,categories}:Props){
  const [variantFor,setVariantFor]=useState<AdminProduct|null>(null),[variantEditingId,setVariantEditingId]=useState<string|null>(null);
  const [vSku,setVSku]=useState(''),[vName,setVName]=useState(''),[vShade,setVShade]=useState(''),[vEan,setVEan]=useState(''),[vSafety,setVSafety]=useState('0');
  const isAdultCategory=!!categories.find(c=>c.id===form.category_id)?.is_adult;
+ const qualityById=useMemo(()=>new Map(initialProducts.map(p=>[p.id,catalogIssues(p,brazilTodayISO())])),[initialProducts]);
+ const missingQuality=initialProducts.filter(p=>p.active&&!p.is_adult&&
+  (qualityById.get(p.id)?.length??0)>0).length;
+ useEffect(()=>{
+  try{
+   if(new URLSearchParams(window.location.search).get('filtro')==='pendencias')
+    setFilter('pendencias');
+  }catch{/* Preferências de navegação opcionais. */}
+ },[]);
  const filtered=useMemo(()=>initialProducts.filter(p=>{
   const q=query.toLocaleLowerCase('pt-BR');
   return (!q||[p.name,p.brand,p.slug,...(p.variants??[]).map(v=>v.sku)].join(' ').toLocaleLowerCase('pt-BR').includes(q)) &&
-   (filter==='todos'||(filter==='ativos'?p.active:!p.active));
- }),[query,filter,initialProducts]);
+   (filter==='todos'||(filter==='ativos'?p.active:filter==='inativos'?!p.active:
+    filter==='pendencias'?p.active&&!p.is_adult&&(qualityById.get(p.id)?.length??0)>0:true));
+ }),[query,filter,initialProducts,qualityById]);
  const metrics=useMemo(()=>({
   all:initialProducts.length,
   active:initialProducts.filter(p=>p.active).length,
@@ -162,8 +173,14 @@ export function ProductsManager({initialProducts,categories}:Props){
    <div><Layers3/><small>SKUs / variações</small><strong>{metrics.variants}</strong></div>
    <div><AlertTriangle/><small>SKUs no mínimo</small><strong>{metrics.low}</strong></div>
   </div>
+  {missingQuality>0?<p className="ops-info">
+    <AlertTriangle size={18}/> {missingQuality} produto(s) ativo(s) precisam de foto,
+    descrição, preço, SKU ou estoque.
+    <button type="button" className="admin-outline"
+     onClick={()=>setFilter('pendencias')}>Mostrar pendências</button>
+   </p>:null}
   <div className="admin-filterbar"><label className="admin-search"><Search size={17}/><input placeholder="Buscar produto, marca ou SKU" value={query} onChange={e=>setQuery(e.target.value)}/></label>
-    <select value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Filtrar status"><option value="todos">Todos os produtos</option><option value="ativos">Ativos</option><option value="inativos">Rascunhos</option></select>
+    <select value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Filtrar status"><option value="todos">Todos os produtos</option><option value="ativos">Ativos</option><option value="inativos">Rascunhos</option><option value="pendencias">Com pendências na vitrine</option></select>
     <Link className="admin-outline" href="/admin/estoque"><Boxes size={17}/> Gestão de estoque</Link></div>
   {notice&&!open&&!variantFor?<div role="status" className="form-success">{notice}</div>:null}
   {error&&!open&&!variantFor?<div role="alert" className="form-error">{error}</div>:null}
@@ -171,8 +188,13 @@ export function ProductsManager({initialProducts,categories}:Props){
    <div className="admin-data-head"><span>Produto</span><span>Categoria</span><span>Preço / custo</span><span>SKUs / estoque</span><span>Status</span><span>Ações</span></div>
    {filtered.map(p=>{
     const amount=(p.variants??[]).reduce((a,v)=>a+(v.inventory?.on_hand??0),0);
+    const quality=qualityById.get(p.id)??[];
     return <div className="admin-data-row" key={p.id}>
-     <div className="admin-product-name"><div className="admin-product-thumb">{productImageSrc(p.image_url)?<img src={productImageSrc(p.image_url)!} alt=""/>:'💄'}</div><div><strong>{p.name}</strong><small>{p.brand}</small><small className="admin-tiny">{p.slug}</small></div></div>
+     <div className="admin-product-name"><div className="admin-product-thumb">{productImageSrc(p.image_url)?<img src={productImageSrc(p.image_url)!} alt=""/>:'💄'}</div><div><strong>{p.name}</strong><small>{p.brand}</small><small className="admin-tiny">{p.slug}</small>
+      {quality.length?<small className="pope-product-issues">
+       {quality.map(issue=>CATALOG_ISSUE_LABELS[issue]).join(' · ')}
+      </small>:<small className="pope-product-issues is-complete">Cadastro conferido</small>}
+     </div></div>
      <span className="admin-cell-muted">{p.categories?.name??'Sem categoria'}{p.is_adult?<small>🔒 Exclusivo +18</small>:null}</span>
      <span><strong>{formatBRL(p.price_cents)}</strong><small>Custo {formatBRL(p.cost_cents??0)}</small></span>
      <span><strong>{(p.variants??[]).length} SKU(s)</strong><small>{amount} un. em estoque</small></span>
@@ -189,6 +211,12 @@ export function ProductsManager({initialProducts,categories}:Props){
     <section className="admin-modal" role="dialog" aria-modal="true" aria-label={editing?'Editar produto':'Novo produto'}>
      <div className="admin-modal-header"><div><span className="section-kicker">CATÁLOGO</span><h2>{editing?'Editar produto':'Novo produto'} 💖</h2></div><button aria-label="Fechar" onClick={()=>setOpen(false)} disabled={saving}><X/></button></div>
      <form className="admin-form" onSubmit={save}>
+      <div className="pope-product-guided">
+       <strong>Cadastro orientado</strong>
+       <span>1. Identificação → 2. Descrição e preços → 3. Foto → 4. SKU e estoque</span>
+       <p>Salve como rascunho durante o preenchimento.
+        Confira também as dimensões e a tributação antes da produção.</p>
+      </div>
       <div className="admin-form-grid">
        <label className="full">Nome do produto *<input required maxLength={150} value={form.name} onChange={e=>{change('name',e.target.value);if(!editing&&!form.slug)setForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}));}} placeholder="Ex.: Base Líquida Alta Cobertura"/></label>
        <label>Categoria *<select value={form.category_id} disabled={!!editing} onChange={e=>{const next=e.target.value;const oldAdult=!!categories.find(c=>c.id===form.category_id)?.is_adult;const newAdult=!!categories.find(c=>c.id===next)?.is_adult;setForm(f=>({...f,category_id:next,image_url:oldAdult!==newAdult?'':f.image_url}));setFile(null);}} required><option value="">Selecionar...</option>{categories.map(c=><option key={c.id} value={c.id}>{c.is_adult?'🔒 ':''}{c.name}</option>)}</select></label>
@@ -199,6 +227,14 @@ export function ProductsManager({initialProducts,categories}:Props){
        <label>Custo unitário (R$) *<input inputMode="decimal" required value={form.cost} onChange={e=>change('cost',e.target.value)}/></label>
        <label>Preço anterior (R$)<input inputMode="decimal" placeholder="Opcional" value={form.compare} onChange={e=>change('compare',e.target.value)}/></label>
        <label className="admin-form-check"><input type="checkbox" checked={form.active} onChange={e=>change('active',e.target.checked)}/> Publicar na vitrine</label>
+       {form.active&&((!file&&!form.image_url.trim())||form.description.trim().length<60)?
+        <p className="pope-product-warn full" role="status">
+         Atenção: produto marcado para publicação com
+         {(!file&&!form.image_url.trim())?' foto ausente':''}
+         {(!file&&!form.image_url.trim())&&form.description.trim().length<60?' e':''}
+         {form.description.trim().length<60?' descrição curta':''}.
+         Para uma vitrine completa, corrija antes de publicar.
+        </p>:null}
        {isAdultCategory?<p className="adult-admin-note">🔒 Este produto será ocultado para visitantes e menores de idade. A foto ficará em armazenamento privado.</p>:null}
        <label className="full admin-file-label"><Camera size={19}/> {isAdultCategory?'Foto privada +18':'Foto do produto'} (JPG, PNG, WebP; até 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile}/>{file?<small>{file.name}</small>:null}</label>
        {!isAdultCategory?<label className="full">Ou URL da foto<input type="url" placeholder="https://..." disabled={!!file} value={form.image_url} onChange={e=>change('image_url',e.target.value)}/></label>:null}

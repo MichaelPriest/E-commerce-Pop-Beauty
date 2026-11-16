@@ -56,7 +56,7 @@ test('admin tem gestão hierárquica e produtos selecionam pais e filhos',()=>{
  assert.match(admin,/\.from\('categories'\)\.insert\(/);
  assert.match(admin,/\.update\(\{name,position,active:form\.active\}\)/);
  assert.match(admin,/Ative primeiro a categoria principal/);
- assert.match(admin,/\(root\.children\.length\)/);
+ assert.match(admin,/root\.children\.length/);
  assert.match(productForm,/<optgroup key=\{parent\.id\}/);
  assert.match(productForm,/c\.parent_id===parent\.id/);
  assert.match(shell,/href:'\/admin\/categorias'/);

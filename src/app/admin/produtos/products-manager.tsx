@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState, type ChangeEvent, type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {Boxes, Camera, ChevronDown, Edit3, PackagePlus, Plus, Search, Tag, X, Check, AlertTriangle, Layers3} from 'lucide-react';
+import {Boxes, Camera, Images, ChevronDown, Edit3, PackagePlus, Plus, Search, Tag, X, Check, AlertTriangle, Layers3} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {formatBRL,productImageSrc} from '@/lib/products';
 import type {AdminProduct, Category} from '@/types/admin';
@@ -234,7 +234,15 @@ export function ProductsManager({initialProducts,categories}:Props){
      <span><strong>{formatBRL(p.price_cents)}</strong><small>Custo {formatBRL(p.cost_cents??0)}</small></span>
      <span><strong>{(p.variants??[]).length} SKU(s)</strong><small>{amount} un. em estoque</small></span>
      <span className={p.active?'admin-status live':'admin-status draft'}>{p.active?'Ativo':'Rascunho'}</span>
-     <div className="admin-row-actions"><button aria-label={'Editar '+p.name} onClick={()=>startEdit(p)} title="Editar produto"><Edit3 size={17}/></button><button aria-label={'Adicionar variação a '+p.name} onClick={()=>openVariant(p)} title="Adicionar cor ou variação"><Plus size={18}/></button></div>
+     <div className="admin-row-actions">
+      <button aria-label={'Editar '+p.name} onClick={()=>startEdit(p)}
+       title="Editar produto"><Edit3 size={17}/></button>
+      <button aria-label={'Adicionar variação a '+p.name} onClick={()=>openVariant(p)}
+       title="Adicionar cor ou variação"><Plus size={18}/></button>
+      {!p.is_adult?<Link href={'/admin/produtos/'+p.id+'/imagens'}
+       className="pope-product-images-link" aria-label={'Gerenciar fotos de '+p.name}
+       title="Fotos adicionais do produto"><Images size={18}/></Link>:null}
+     </div>
      <details className="admin-row-variants"><summary>Ver variações <ChevronDown size={15}/></summary>
       <div className="admin-variant-chips">{(p.variants??[]).map(v=><span key={v.id}>{v.sku} · {v.shade||v.name} · {v.inventory?.on_hand??0} un. <button className="variant-edit" title="Editar variação" onClick={()=>editVariant(p,v)}><Edit3 size={13}/> Editar</button></span>)}</div>
      </details>

@@ -134,9 +134,9 @@ export function ProductsManager({initialProducts,categories}:Props){
     if(upError)throw upError;
     setNotice('Produto atualizado.');
    }else{
-    if(form.sku.trim().length<2)throw new Error('Informe um SKU único.');
+    // SKU vazio: gerado no banco, atomicamente, junto com o novo produto.
     const stock=integer(form.stock,'Estoque inicial'),safety=integer(form.safety_stock,'Estoque de segurança');
-    const {error:createError}=await sb.rpc('create_product_with_variant',{
+    const {data:createdProductId,error:createError}=await sb.rpc('create_product_with_variant',{
      p_name:productData.name,p_slug:productData.slug,p_category_id:productData.category_id,
      p_description:productData.description,p_brand:productData.brand,
      p_price_cents:price,p_cost_cents:cost,p_compare_at_cents:compare,p_image_url:imageUrl,
@@ -146,7 +146,11 @@ export function ProductsManager({initialProducts,categories}:Props){
      p_expires_at:form.expires_at||null,p_active:form.active
     });
     if(createError)throw createError;
-    setNotice('Produto cadastrado com estoque registrado.');
+    if(!form.sku.trim()&&createdProductId){
+     const {data:createdVariant}=await sb.from('variants').select('sku')
+      .eq('product_id',createdProductId).limit(1).maybeSingle();
+     setNotice('Produto cadastrado. SKU automático: '+(createdVariant?.sku??'gerado pelo banco')+'.');
+    }else setNotice('Produto cadastrado com SKU informado manualmente.');
    }
    setOpen(false);setEditing(null);setFile(null);router.refresh();
   }catch(err){setError(err instanceof Error?err.message:'Não foi possível salvar o produto.');}
@@ -172,11 +176,16 @@ export function ProductsManager({initialProducts,categories}:Props){
     if(minimumError)throw minimumError;
     setNotice('Variação atualizada. O saldo físico não foi alterado.');
    }else{
-    const {error:rpcError}=await sb.rpc('add_product_variant',{p_product_id:variantFor.id,p_sku:vSku.trim(),
+    const {data:createdVariantId,error:rpcError}=await sb.rpc('add_product_variant',{p_product_id:variantFor.id,p_sku:vSku.trim(),
      p_name:vName.trim()||'Padrão',p_shade:vShade.trim()||null,p_ean:vEan.trim()||null,
      p_safety_stock:safety});
     if(rpcError)throw rpcError;
-    setNotice('Variação criada. Acesse Estoque para registrar a entrada.');
+    if(!vSku.trim()&&createdVariantId){
+     const {data:variantSku}=await sb.from('variants').select('sku')
+      .eq('id',createdVariantId).maybeSingle();
+     setNotice('Variação criada com SKU '+(variantSku?.sku??'automático')+
+      '. Acesse Estoque para registrar a entrada.');
+    }else setNotice('Variação criada com SKU manual. Acesse Estoque para registrar a entrada.');
    }
    setVariantFor(null);setVariantEditingId(null);router.refresh();
   }catch(err){setError(err instanceof Error?err.message:'Falha ao criar variação.');}
@@ -199,6 +208,8 @@ export function ProductsManager({initialProducts,categories}:Props){
    </p>:null}
   <div className="admin-filterbar"><label className="admin-search"><Search size={17}/><input placeholder="Buscar produto, marca ou SKU" value={query} onChange={e=>setQuery(e.target.value)}/></label>
     <select value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Filtrar status"><option value="todos">Todos os produtos</option><option value="ativos">Ativos</option><option value="inativos">Rascunhos</option><option value="pendencias">Com pendências na vitrine</option></select>
+    <Link className="admin-outline" href="/admin/categorias">
+     <Tag size={16}/> Categorias</Link>
     <Link className="admin-outline" href="/admin/estoque"><Boxes size={17}/> Gestão de estoque</Link></div>
   {notice&&!open&&!variantFor?<div role="status" className="form-success">{notice}</div>:null}
   {error&&!open&&!variantFor?<div role="alert" className="form-error">{error}</div>:null}
@@ -242,7 +253,16 @@ export function ProductsManager({initialProducts,categories}:Props){
       </div>
       {formStep===1?<div className="admin-form-grid">
        <label className="full">Nome do produto *<input required maxLength={150} value={form.name} onChange={e=>{change('name',e.target.value);if(!editing&&!form.slug)setForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}));}} placeholder="Ex.: Base Líquida Alta Cobertura"/></label>
-       <label>Categoria *<select value={form.category_id} disabled={!!editing} onChange={e=>{const next=e.target.value;const oldAdult=!!categories.find(c=>c.id===form.category_id)?.is_adult;const newAdult=!!categories.find(c=>c.id===next)?.is_adult;setForm(f=>({...f,category_id:next,image_url:oldAdult!==newAdult?'':f.image_url}));setFile(null);}} required><option value="">Selecionar...</option>{categories.map(c=><option key={c.id} value={c.id}>{c.is_adult?'🔒 ':''}{c.name}</option>)}</select></label>
+       <label>Categoria *<select value={form.category_id} disabled={!!editing} onChange={e=>{const next=e.target.value;const oldAdult=!!categories.find(c=>c.id===form.category_id)?.is_adult;const newAdult=!!categories.find(c=>c.id===next)?.is_adult;setForm(f=>({...f,category_id:next,image_url:oldAdult!==newAdult?'':f.image_url}));setFile(null);}} required><option value="">Selecionar...</option>{categories.filter(c=>!c.parent_id).map(parent=>
+        <optgroup key={parent.id} label={parent.name}>
+         <option value={parent.id}>{parent.is_adult?'🔒 ':''}{parent.name} (principal)</option>
+         {categories.filter(c=>c.parent_id===parent.id).map(child=>
+          <option key={child.id} value={child.id}>
+           {child.is_adult?'🔒 ':''}↳ {child.name}
+          </option>)}
+        </optgroup>)}</select></label>
+       <p className="admin-help full">Precisa de uma nova categoria?
+        <Link href="/admin/categorias"> Gerenciar categorias e subcategorias</Link>.</p>
        <label>Marca<input value={form.brand} onChange={e=>change('brand',e.target.value)} maxLength={100}/></label>
        <label className="full">Endereço (slug)<input required disabled={!!editing} value={form.slug} onChange={e=>change('slug',slugify(e.target.value))} placeholder="base-liquida-alta-cobertura"/></label>
        <label className="full">Descrição<textarea rows={3} value={form.description} onChange={e=>change('description',e.target.value)} placeholder="Descrição para a vitrine, benefícios e informações importantes"/></label>
@@ -267,9 +287,15 @@ export function ProductsManager({initialProducts,categories}:Props){
         </p>:null}
 
        </div>:null}
-      {formStep===3?(!editing?<><h3>SKU e estoque inicial</h3><p className="admin-help">Cada cor ou apresentação possui SKU próprio. Outras variações podem ser adicionadas após salvar.</p>
+      {formStep===3?(!editing?<><h3>SKU e estoque inicial</h3><p className="admin-help">Cada cor ou apresentação possui SKU único. O código POP é
+       gerado automaticamente ao salvar, sem precisar preencher o campo.
+       O código de barras EAN é independente do SKU interno.</p>
       <div className="admin-form-grid">
-       <label>SKU único *<input value={form.sku} required maxLength={80} placeholder="BASE-NUDE-01" onChange={e=>change('sku',e.target.value)}/></label>
+       <label>SKU (opcional)
+        <input value={form.sku} maxLength={80} placeholder="Automático: POP-0000001"
+         onChange={e=>change('sku',e.target.value)}/>
+        <small>Deixe vazio para gerar um código único ao salvar. Ou digite um SKU manual.</small>
+       </label>
        <label>Nome da variação<input value={form.variant_name} maxLength={100} onChange={e=>change('variant_name',e.target.value)} placeholder="Padrão / Cor 01"/></label>
        <label>Cor / tonalidade<input value={form.shade} maxLength={100} onChange={e=>change('shade',e.target.value)} placeholder="Nude médio"/></label>
        <label>EAN / código de barras<input value={form.ean} maxLength={32} onChange={e=>change('ean',e.target.value)} placeholder="789..."/></label>
@@ -294,7 +320,11 @@ export function ProductsManager({initialProducts,categories}:Props){
   {variantFor?<div className="admin-modal-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setVariantFor(null);}}>
     <section className="admin-modal smaller" role="dialog" aria-modal="true" aria-label="Adicionar variação"><div className="admin-modal-header"><div><span className="section-kicker">{variantFor.name}</span><h2>{variantEditingId?'Editar variação':'Nova cor ou variação'} 🎨</h2></div><button aria-label="Fechar" onClick={()=>setVariantFor(null)}><X/></button></div>
      <form className="admin-form" onSubmit={saveVariant}><div className="admin-form-grid">
-      <label>SKU *<input required value={vSku} onChange={e=>setVSku(e.target.value)} placeholder="BATOM-ROSA-02"/></label>
+      <label>SKU (opcional)
+       <input value={vSku} maxLength={80} onChange={e=>setVSku(e.target.value)}
+        placeholder={variantEditingId?'SKU atual':'Automático ao salvar'}/>
+       <small>{variantEditingId?'SKU da variação existente.':'Deixe vazio para gerar POP-0000001, POP-0000002...'}</small>
+      </label>
       <label>Nome da variação<input value={vName} onChange={e=>setVName(e.target.value)}/></label>
       <label>Tonalidade<input value={vShade} onChange={e=>setVShade(e.target.value)} placeholder="Rosa médio"/></label>
       <label>EAN<input value={vEan} onChange={e=>setVEan(e.target.value)}/></label>

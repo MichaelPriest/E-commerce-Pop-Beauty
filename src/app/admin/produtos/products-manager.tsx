@@ -244,7 +244,13 @@ export function ProductsManager({initialProducts,categories}:Props){
        title="Fotos adicionais do produto"><Images size={18}/></Link>:null}
      </div>
      <details className="admin-row-variants"><summary>Ver variações <ChevronDown size={15}/></summary>
-      <div className="admin-variant-chips">{(p.variants??[]).map(v=><span key={v.id}>{v.sku} · {v.shade||v.name} · {v.inventory?.on_hand??0} un. <button className="variant-edit" title="Editar variação" onClick={()=>editVariant(p,v)}><Edit3 size={13}/> Editar</button></span>)}</div>
+      <div className="admin-variant-chips">{(p.variants??[]).map(v=><span key={v.id}>{v.sku} · {v.shade||v.name} · {v.inventory?.on_hand??0} un. <button className="variant-edit" title="Editar variação"
+       onClick={()=>editVariant(p,v)}><Edit3 size={13}/> Editar</button>
+       {!p.is_adult?<Link className="variant-edit pope-variant-images-link"
+        href={'/admin/produtos/'+p.id+'/imagens?sku='+v.id}
+        title={'Gerenciar imagens de '+(v.shade||v.name)}>
+        <Images size={13}/> Fotos</Link>:null}
+      </span>)}</div>
      </details>
     </div>;
    })}

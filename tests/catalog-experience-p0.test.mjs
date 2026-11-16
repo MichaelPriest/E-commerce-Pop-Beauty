@@ -54,7 +54,8 @@ test('consulta filtra e pagina no banco, detalhe não depende dos primeiros 24 i
  const detail=read('src/app/produto/[slug]/page.tsx');
  assert.match(catalog,/\.range\(offset,offset\+CATALOG_PAGE_SIZE-1\)/);
  assert.match(catalog,/\.or\('name\.ilike\.'/);
- assert.match(catalog,/categories!inner\(name\)/);
+ assert.match(catalog,/matchingCategoryIds\(catalogCategories,category\)/);
+ assert.match(catalog,/\.in\('category_id',categoryIds\)/);
  assert.match(catalog,/catalog_product_availability/);
  assert.match(catalog,/getProductBySlug/);
  assert.match(detail,/getProductBySlug\(slug\)/);

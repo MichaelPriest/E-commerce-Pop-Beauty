@@ -231,7 +231,7 @@ export function ProductsManager({initialProducts,categories}:Props){
      <form className="admin-form" onSubmit={save}>
       <div className="pope-product-guided">
        <strong>Cadastro orientado</strong>
-       <span>1. Identificação → 2. Descrição e preços → 3. Foto → 4. SKU e estoque</span>
+       <span>1. Identificação → 2. Preços e fotografia → 3. Estoque e publicação</span>
        <p>Salve como rascunho durante o preenchimento.
         Confira também as dimensões e a tributação antes da produção.</p>
       </div>
@@ -251,6 +251,11 @@ export function ProductsManager({initialProducts,categories}:Props){
        <label>Preço de venda (R$) *<input inputMode="decimal" required placeholder="29,90" value={form.price} onChange={e=>change('price',e.target.value)}/></label>
        <label>Custo unitário (R$) *<input inputMode="decimal" required value={form.cost} onChange={e=>change('cost',e.target.value)}/></label>
        <label>Preço anterior (R$)<input inputMode="decimal" placeholder="Opcional" value={form.compare} onChange={e=>change('compare',e.target.value)}/></label>
+       {isAdultCategory?<p className="adult-admin-note">🔒 Este produto será ocultado para visitantes e menores de idade. A foto ficará em armazenamento privado.</p>:null}
+       <label className="full admin-file-label"><Camera size={19}/> {isAdultCategory?'Foto privada +18':'Foto do produto'} (JPG, PNG, WebP; até 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile}/>{file?<small>{file.name}</small>:null}</label>
+       {!isAdultCategory?<label className="full">Ou URL da foto<input type="url" placeholder="https://..." disabled={!!file} value={form.image_url} onChange={e=>change('image_url',e.target.value)}/></label>:null}
+      </div>:null}
+      {formStep===3?<div className="admin-form-grid">
        <label className="admin-form-check"><input type="checkbox" checked={form.active} onChange={e=>change('active',e.target.checked)}/> Publicar na vitrine</label>
        {form.active&&((!file&&!form.image_url.trim())||form.description.trim().length<60)?
         <p className="pope-product-warn full" role="status">
@@ -260,10 +265,8 @@ export function ProductsManager({initialProducts,categories}:Props){
          {form.description.trim().length<60?' descrição curta':''}.
          Para uma vitrine completa, corrija antes de publicar.
         </p>:null}
-       {isAdultCategory?<p className="adult-admin-note">🔒 Este produto será ocultado para visitantes e menores de idade. A foto ficará em armazenamento privado.</p>:null}
-       <label className="full admin-file-label"><Camera size={19}/> {isAdultCategory?'Foto privada +18':'Foto do produto'} (JPG, PNG, WebP; até 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile}/>{file?<small>{file.name}</small>:null}</label>
-       {!isAdultCategory?<label className="full">Ou URL da foto<input type="url" placeholder="https://..." disabled={!!file} value={form.image_url} onChange={e=>change('image_url',e.target.value)}/></label>:null}
-      </div>:null}
+
+       </div>:null}
       {formStep===3?(!editing?<><h3>SKU e estoque inicial</h3><p className="admin-help">Cada cor ou apresentação possui SKU próprio. Outras variações podem ser adicionadas após salvar.</p>
       <div className="admin-form-grid">
        <label>SKU único *<input value={form.sku} required maxLength={80} placeholder="BASE-NUDE-01" onChange={e=>change('sku',e.target.value)}/></label>

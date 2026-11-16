@@ -39,6 +39,7 @@ type Props={initialProducts:AdminProduct[];categories:Category[]};
 export function ProductsManager({initialProducts,categories}:Props){
  const router=useRouter(),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos');
  const [open,setOpen]=useState(false),[editing,setEditing]=useState<string|null>(null),[form,setForm]=useState<ProductForm>(()=>emptyForm(categories));
+ const [formStep,setFormStep]=useState<1|2|3>(1);
  const [file,setFile]=useState<File|null>(null),[saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
  const [variantFor,setVariantFor]=useState<AdminProduct|null>(null),[variantEditingId,setVariantEditingId]=useState<string|null>(null);
  const [vSku,setVSku]=useState(''),[vName,setVName]=useState(''),[vShade,setVShade]=useState(''),[vEan,setVEan]=useState(''),[vSafety,setVSafety]=useState('0');
@@ -68,9 +69,25 @@ export function ProductsManager({initialProducts,categories}:Props){
  }),[initialProducts]);
  const change=(k:keyof ProductForm,v:string|boolean)=>setForm(prev=>({...prev,[k]:v}));
  const clearMessages=()=>{setError('');setNotice('');};
- function startCreate(){setForm(emptyForm(categories));setEditing(null);setFile(null);clearMessages();setOpen(true);}
+ function advanceProductForm(){
+  setError('');
+  try{
+   if(formStep===1){
+    if(form.name.trim().length<2||!form.category_id||
+     !slugify(form.slug||form.name))throw new Error('Preencha nome, categoria e endereço do produto.');
+   }
+   if(formStep===2){
+    if(cents(form.price)===null||cents(form.cost)===null)
+     throw new Error('Preencha preço e custo válidos.');
+   }
+   if(formStep<3)setFormStep((formStep+1) as 1|2|3);
+  }catch(err){
+   setError(err instanceof Error?err.message:'Verifique os campos desta etapa.');
+  }
+ }
+ function startCreate(){setForm(emptyForm(categories));setEditing(null);setFile(null);setFormStep(1);clearMessages();setOpen(true);}
  function startEdit(p:AdminProduct){
-   setEditing(p.id);setFile(null);clearMessages();
+   setEditing(p.id);setFile(null);setFormStep(1);clearMessages();
    setForm({...emptyForm(categories),name:p.name,slug:p.slug,category_id:p.category_id??'',brand:p.brand,
     description:p.description??'',price:prettyValue(p.price_cents),cost:prettyValue(p.cost_cents??0),
     compare:prettyValue(p.compare_at_cents),image_url:p.image_url??'',active:p.active});
@@ -97,6 +114,7 @@ export function ProductsManager({initialProducts,categories}:Props){
  }
  async function save(e:FormEvent<HTMLFormElement>){
   e.preventDefault();if(saving)return;
+  if(formStep!==3){advanceProductForm();return;}
   setSaving(true);clearMessages();
   try{
    const name=form.name.trim();if(name.length<2)throw new Error('Informe o nome do produto.');
@@ -217,12 +235,19 @@ export function ProductsManager({initialProducts,categories}:Props){
        <p>Salve como rascunho durante o preenchimento.
         Confira também as dimensões e a tributação antes da produção.</p>
       </div>
-      <div className="admin-form-grid">
+      <div className="pope-product-step" aria-label={'Etapa '+formStep+' de 3'}>
+       <strong>Etapa {formStep} de 3</strong>
+       <span>{formStep===1?'Identificação e descrição':
+        formStep===2?'Preços e fotografia':'SKU, estoque e publicação'}</span>
+      </div>
+      {formStep===1?<div className="admin-form-grid">
        <label className="full">Nome do produto *<input required maxLength={150} value={form.name} onChange={e=>{change('name',e.target.value);if(!editing&&!form.slug)setForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}));}} placeholder="Ex.: Base Líquida Alta Cobertura"/></label>
        <label>Categoria *<select value={form.category_id} disabled={!!editing} onChange={e=>{const next=e.target.value;const oldAdult=!!categories.find(c=>c.id===form.category_id)?.is_adult;const newAdult=!!categories.find(c=>c.id===next)?.is_adult;setForm(f=>({...f,category_id:next,image_url:oldAdult!==newAdult?'':f.image_url}));setFile(null);}} required><option value="">Selecionar...</option>{categories.map(c=><option key={c.id} value={c.id}>{c.is_adult?'🔒 ':''}{c.name}</option>)}</select></label>
        <label>Marca<input value={form.brand} onChange={e=>change('brand',e.target.value)} maxLength={100}/></label>
        <label className="full">Endereço (slug)<input required disabled={!!editing} value={form.slug} onChange={e=>change('slug',slugify(e.target.value))} placeholder="base-liquida-alta-cobertura"/></label>
        <label className="full">Descrição<textarea rows={3} value={form.description} onChange={e=>change('description',e.target.value)} placeholder="Descrição para a vitrine, benefícios e informações importantes"/></label>
+      </div>:null}
+      {formStep===2?<div className="admin-form-grid">
        <label>Preço de venda (R$) *<input inputMode="decimal" required placeholder="29,90" value={form.price} onChange={e=>change('price',e.target.value)}/></label>
        <label>Custo unitário (R$) *<input inputMode="decimal" required value={form.cost} onChange={e=>change('cost',e.target.value)}/></label>
        <label>Preço anterior (R$)<input inputMode="decimal" placeholder="Opcional" value={form.compare} onChange={e=>change('compare',e.target.value)}/></label>
@@ -238,8 +263,8 @@ export function ProductsManager({initialProducts,categories}:Props){
        {isAdultCategory?<p className="adult-admin-note">🔒 Este produto será ocultado para visitantes e menores de idade. A foto ficará em armazenamento privado.</p>:null}
        <label className="full admin-file-label"><Camera size={19}/> {isAdultCategory?'Foto privada +18':'Foto do produto'} (JPG, PNG, WebP; até 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onFile}/>{file?<small>{file.name}</small>:null}</label>
        {!isAdultCategory?<label className="full">Ou URL da foto<input type="url" placeholder="https://..." disabled={!!file} value={form.image_url} onChange={e=>change('image_url',e.target.value)}/></label>:null}
-      </div>
-      {!editing?<><h3>SKU e estoque inicial</h3><p className="admin-help">Cada cor ou apresentação possui SKU próprio. Outras variações podem ser adicionadas após salvar.</p>
+      </div>:null}
+      {formStep===3?(!editing?<><h3>SKU e estoque inicial</h3><p className="admin-help">Cada cor ou apresentação possui SKU próprio. Outras variações podem ser adicionadas após salvar.</p>
       <div className="admin-form-grid">
        <label>SKU único *<input value={form.sku} required maxLength={80} placeholder="BASE-NUDE-01" onChange={e=>change('sku',e.target.value)}/></label>
        <label>Nome da variação<input value={form.variant_name} maxLength={100} onChange={e=>change('variant_name',e.target.value)} placeholder="Padrão / Cor 01"/></label>
@@ -249,9 +274,18 @@ export function ProductsManager({initialProducts,categories}:Props){
        <label>Estoque de segurança<input type="number" min={0} max={100000} step={1} value={form.safety_stock} onChange={e=>change('safety_stock',e.target.value)}/></label>
        <label>Lote<input value={form.lot_code} maxLength={60} onChange={e=>change('lot_code',e.target.value)} placeholder="LOT-2026-A"/></label>
        <label>Validade do lote<input type="date" value={form.expires_at} onChange={e=>change('expires_at',e.target.value)}/></label>
-      </div></>:<p className="admin-help">Para alterar o estoque, use a tela de movimentações; para incluir outra cor, clique em + na lista de produtos.</p>}
+      </div></>:<p className="admin-help">Para alterar o estoque, use a tela de movimentações; para incluir outra cor, clique em + na lista de produtos.</p>):null}
+      {formStep===3?<p className="admin-help">Revisão final: salve como rascunho
+       ou publique conscientemente. Foto, descrição, SKU e estoque pendentes
+       continuam destacados na administração.</p>:null}
       {error?<p className="form-error" role="alert">{error}</p>:null}
-      <div className="admin-form-footer"><button type="button" className="admin-outline" onClick={()=>setOpen(false)} disabled={saving}>Cancelar</button><button type="submit" className="admin-primary" disabled={saving}>{saving?'Salvando...':editing?'Salvar alterações':'Cadastrar produto'}</button></div>
+      <div className="admin-form-footer"><button type="button" className="admin-outline" onClick={()=>setOpen(false)} disabled={saving}>Cancelar</button>
+       {formStep>1?<button type="button" className="admin-outline"
+        onClick={()=>{setError('');setFormStep((formStep-1) as 1|2|3);}} disabled={saving}>Anterior</button>:null}
+       {formStep<3?<button type="button" className="admin-primary"
+        onClick={advanceProductForm} disabled={saving}>Próxima etapa</button>:
+        <button type="submit" className="admin-primary" disabled={saving}>
+         {saving?'Salvando...':editing?'Salvar alterações':'Cadastrar produto'}</button>}</div>
      </form>
     </section></div>:null}
   {variantFor?<div className="admin-modal-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setVariantFor(null);}}>

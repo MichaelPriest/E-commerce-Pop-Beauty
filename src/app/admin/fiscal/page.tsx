@@ -2,8 +2,11 @@ import {requireAdmin} from '@/lib/admin';
 import {FiscalManager} from './fiscal-manager';
 export const dynamic='force-dynamic';
 export const metadata={title:'Preparação fiscal e documentos | Popê Beauty'};
-export default async function FiscalPage(){
+export default async function FiscalPage({searchParams}:{
+ searchParams:Promise<{pedido?:string}>
+}){
  const sb=await requireAdmin();
+ const {pedido}=await searchParams;
  const [issuer,products,orders,drafts,recipients,packages]=await Promise.all([
   sb.from('fiscal_issuer_settings').select('*').eq('id',1).maybeSingle(),
   sb.from('products')
@@ -20,5 +23,6 @@ export default async function FiscalPage(){
   <p className="form-error" role="alert">Falha ao consultar a preparação fiscal: {fail.message}</p></div>;
  return <FiscalManager issuer={issuer.data as any} products={(products.data??[]) as any}
   orders={(orders.data??[]) as any} drafts={(drafts.data??[]) as any}
-  recipients={(recipients.data??[]) as any} packages={(packages.data??[]) as any}/>;
+  recipients={(recipients.data??[]) as any} packages={(packages.data??[]) as any}
+  initialOrderId={typeof pedido==='string'?pedido:undefined}/>;
 }

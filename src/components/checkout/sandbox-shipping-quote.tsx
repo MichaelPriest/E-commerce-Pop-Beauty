@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {Truck,FlaskConical,ShieldCheck,AlertTriangle} from 'lucide-react';
 import {formatBRL} from '@/lib/products';
 
-type Line={product_id:string;quantity:number};
+type Line={product_id:string;variant_id?:string;quantity:number};
 type ShippingQuote={
  service_id:string;carrier:string;service:string;
  price_cents:number;delivery_days:number;
@@ -20,7 +20,7 @@ export function SandboxShippingQuote({
  const [loading,setLoading]=useState(false);
  const [quotes,setQuotes]=useState<ShippingQuote[]>([]);
  const [error,setError]=useState(''),[notice,setNotice]=useState('');
- const sourceKey=postalCode+'|'+items.map(i=>i.product_id+':'+i.quantity).join(',');
+ const sourceKey=postalCode+'|'+items.map(i=>i.product_id+':'+(i.variant_id??'default')+':'+i.quantity).join(',');
  useEffect(()=>{setQuotes([]);setNotice('');setError('');},[sourceKey]);
  async function calculate(){
   if(loading||!sandboxTokenPresent||!originConfigured||

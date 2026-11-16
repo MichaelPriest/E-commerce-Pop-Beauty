@@ -1,15 +1,25 @@
 import Link from 'next/link';
 import { ArrowRight, Gift, ShieldCheck, Sparkles, Truck, CreditCard, Heart } from 'lucide-react';
-import { getProducts } from '@/lib/catalog';
+import {getProducts,getCatalogCategories} from '@/lib/catalog';
+import {sortedCategoryTree} from '@/lib/catalog-category-core';
 import {catalogPageHref,normalizeCatalogPage} from '@/lib/catalog-query-core';
 import { ProductCard } from '@/components/product-card';
 
-const categories = [{name:'Make',emoji:'💄',tone:'pink'},{name:'Skincare',emoji:'🧴',tone:'aqua'},{name:'Acessórios',emoji:'🖌️',tone:'purple'},{name:'Kits',emoji:'🎁',tone:'yellow'}];
+const categoryAppearance:Record<string,{emoji:string;tone:string}>={
+ make:{emoji:'💄',tone:'pink'},
+ skincare:{emoji:'🧴',tone:'aqua'},
+ acessorios:{emoji:'🖌️',tone:'purple'},
+ kits:{emoji:'🎁',tone:'yellow'}
+};
 export default async function Home({searchParams}:{searchParams:Promise<{q?:string;categoria?:string;pagina?:string}>}) {
  const filters=await searchParams;
- const {products:visible,demo,total,page,totalPages,q,category:cat}=await getProducts({
-  q:filters.q,category:filters.categoria,page:normalizeCatalogPage(filters.pagina)
- });
+ const [catalog,categoryRows]=await Promise.all([
+  getProducts({q:filters.q,category:filters.categoria,
+   page:normalizeCatalogPage(filters.pagina)}),
+  getCatalogCategories()
+ ]);
+ const {products:visible,demo,total,page,totalPages,q,category:cat,categoryLabel}=catalog;
+ const categoryTree=sortedCategoryTree(categoryRows);
  const pages=Array.from({length:Math.min(5,totalPages)},(_,index)=>
   Math.max(1,Math.min(page-2,totalPages-4))+index);
  return <>
@@ -24,9 +34,25 @@ export default async function Home({searchParams}:{searchParams:Promise<{q?:stri
   </div></section>
   <section className="benefits container"><div><Truck/><span><strong>Frete e entregas</strong><small>Consulte condições na finalização</small></span></div><div><CreditCard/><span><strong>Pagamento</strong><small>Em preparação</small></span></div><div><ShieldCheck/><span><strong>Compra segura</strong><small>Ambiente protegido</small></span></div><div><Gift/><span><strong>Kits especiais</strong><small>Surpresas para você</small></span></div></section>
   <section className="container section" id="categorias"><div className="section-heading"><div><div className="section-kicker">ESCOLHA SEU FAVORITO</div><h2>Compre por <em>categoria</em> <span>💗</span></h2></div></div>
-   <div className="categories">{categories.map(c=><Link key={c.name} className={'category category-'+c.tone} href={'/?categoria='+encodeURIComponent(c.name)+'#destaques'}><span className="category-emoji">{c.emoji}</span><strong>{c.name}</strong><ArrowRight size={16}/></Link>)}</div>
+   <div className="categories">{categoryTree.map(root=>{
+    const appearance=categoryAppearance[root.slug]??{emoji:'🎀',tone:'pink'};
+    return <div className="pope-category-tile" key={root.id}>
+     <Link className={'category category-'+appearance.tone}
+      href={'/?categoria='+encodeURIComponent(root.slug)+'#destaques'}>
+      <span className="category-emoji">{appearance.emoji}</span>
+      <strong>{root.name}</strong><ArrowRight size={16}/>
+     </Link>
+     {root.children.length?<nav className="pope-subcategory-nav"
+      aria-label={'Subcategorias de '+root.name}>
+      {root.children.map(child=><Link key={child.id}
+       href={'/?categoria='+encodeURIComponent(child.slug)+'#destaques'}>
+       {child.name}
+      </Link>)}
+     </nav>:null}
+    </div>;
+   })}</div>
   </section>
-  <section className="container section" id="destaques"><div className="section-heading"><div><div className="section-kicker">ESCOLHIDOS PARA VOCÊ</div><h2>{q?'Resultado da busca':cat?cat:'Nossos'} <em>{q?'':cat?'':'queridinhos'}</em> <Heart size={25} fill="#ff489d" color="#ff489d"/></h2></div><Link href="/" className="text-link">Ver todos <ArrowRight size={16}/></Link></div>
+  <section className="container section" id="destaques"><div className="section-heading"><div><div className="section-kicker">ESCOLHIDOS PARA VOCÊ</div><h2>{q?'Resultado da busca':cat?categoryLabel:'Nossos'} <em>{q?'':cat?'':'queridinhos'}</em> <Heart size={25} fill="#ff489d" color="#ff489d"/></h2></div><Link href="/" className="text-link">Ver todos <ArrowRight size={16}/></Link></div>
    <form className="pope-catalog-search" action="/" method="get" role="search" aria-label="Buscar produtos">
     {cat?<input type="hidden" name="categoria" value={cat}/>:null}
     <label htmlFor="pope-search-catalog">Buscar no catálogo</label>

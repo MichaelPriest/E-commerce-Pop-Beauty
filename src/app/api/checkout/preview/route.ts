@@ -39,15 +39,20 @@ export async function POST(request:NextRequest){
  for(const item of items){
   if(!item||typeof item!=='object')return NextResponse.json(
    {error:'Há um item inválido no carrinho.'},{status:400,headers:noStore});
-  const row=item as {product_id?:unknown;quantity?:unknown};
+  const row=item as {product_id?:unknown;variant_id?:unknown;quantity?:unknown};
   if(typeof row.product_id!=='string'||row.product_id.length<1||row.product_id.length>80||
     !Number.isInteger(row.quantity)||Number(row.quantity)<1||Number(row.quantity)>99){
    return NextResponse.json({error:'Identificador ou quantidade inválidos.'},{status:400,headers:noStore});
   }
-  if(seen.has(row.product_id))return NextResponse.json(
+  if(row.variant_id!==undefined&&(typeof row.variant_id!=='string'||
+    !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(row.variant_id)))return NextResponse.json(
+    {error:'Variação inválida.'},{status:400,headers:noStore});
+  const cartKey=row.product_id+':'+(row.variant_id??'default');
+  if(seen.has(cartKey))return NextResponse.json(
    {error:'Há produtos repetidos no carrinho. Ajuste as quantidades.'},{status:400,headers:noStore});
-  seen.add(row.product_id);
-  normalized.push({product_id:row.product_id,quantity:row.quantity});
+  seen.add(cartKey);
+  normalized.push({product_id:row.product_id,quantity:row.quantity,
+   ...(row.variant_id?{variant_id:row.variant_id}:{})});
  }
  try{
   const sb=await createClient();

@@ -18,7 +18,7 @@ type Draft={order_id:string;fiscal_model:string;operation_nature:string|null;rev
 type Recipient={order_id:string;full_name:string;tax_id:string|null;state_registration:string|null};
 type Packing={order_id:string;volumes:number;weight_g:number|null;packing_notes:string|null};
 type Props={issuer:GenericRecord|null;products:FiscalProduct[];orders:Order[];
- drafts:Draft[];recipients:Recipient[];packages:Packing[]};
+ drafts:Draft[];recipients:Recipient[];packages:Packing[];initialOrderId?:string};
 const issuerFields:[string,string,string][]=[
  ['legal_name','Razão social','text'],['trade_name','Nome fantasia','text'],
  ['cnpj','CNPJ (14 dígitos)','digits'],['state_registration','Inscrição estadual','text'],
@@ -52,9 +52,10 @@ const numberString=(s:string)=>s.replace(/\D/g,'');
 const labelOrder=(o:Order)=>'#'+o.id.slice(0,8).toUpperCase()+
  ' · '+o.status+' · '+new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'})
   .format(o.total_cents/100);
-export function FiscalManager({issuer,products,orders,drafts,recipients,packages}:Props){
+export function FiscalManager({issuer,products,orders,drafts,recipients,packages,initialOrderId}:Props){
  const router=useRouter(),sb=useMemo(()=>createClient(),[]);
- const [tab,setTab]=useState<'issuer'|'products'|'orders'>('issuer');
+ const initialSelectedOrder=orders.some(o=>o.id===initialOrderId)?initialOrderId:orders[0]?.id;
+ const [tab,setTab]=useState<'issuer'|'products'|'orders'>(initialOrderId&&initialSelectedOrder===initialOrderId?'orders':'issuer');
  const [issuerForm,setIssuerForm]=useState<Record<string,string>>(
   strings(issuer,issuerFields,emptyIssuer));
  const [productId,setProductId]=useState(products.find(p=>!p.is_adult)?.id??'');
@@ -63,7 +64,7 @@ export function FiscalManager({issuer,products,orders,drafts,recipients,packages
  const initialTax=Array.isArray(productDetails)?productDetails[0]:productDetails;
  const [taxForm,setTaxForm]=useState<Record<string,string>>(
   strings(initialTax??null,taxFields));
- const [orderId,setOrderId]=useState(orders[0]?.id??'');
+ const [orderId,setOrderId]=useState(initialSelectedOrder??'');
  const selectedOrder=orders.find(o=>o.id===orderId);
  const [model,setModel]=useState<'55'|'65'>(
   drafts.find(d=>d.order_id===orderId)?.fiscal_model==='65'?'65':'55');

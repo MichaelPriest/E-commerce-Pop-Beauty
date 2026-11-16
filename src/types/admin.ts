@@ -1,4 +1,4 @@
-export type Category = {id:string;name:string;is_adult:boolean};
+export type Category = {id:string;name:string;is_adult:boolean;slug?:string;parent_id?:string|null;position?:number;active?:boolean};
 export type InventoryRow = {on_hand:number;reserved:number;safety_stock:number} | null;
 export type LotRow = {id:string;lot_code:string;expires_at:string|null;on_hand:number};
 export type VariantRow = {

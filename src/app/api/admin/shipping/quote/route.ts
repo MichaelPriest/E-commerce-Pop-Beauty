@@ -5,7 +5,7 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store'};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type CartItem={product_id:string;quantity:number};
+type CartItem={product_id:string;variant_id?:string;quantity:number};
 type ProviderService={
  id:unknown;name?:unknown;custom_price?:unknown;price?:unknown;
  custom_delivery_time?:unknown;delivery_time?:unknown;
@@ -49,13 +49,16 @@ export async function POST(request:NextRequest){
  for(const x of input.items){
   if(!x||typeof x!=='object')return NextResponse.json(
    {error:'Item inválido.'},{status:400,headers});
-  const item=x as {product_id?:unknown;quantity?:unknown};
+  const item=x as {product_id?:unknown;variant_id?:unknown;quantity?:unknown};
   if(typeof item.product_id!=='string'||!uuid.test(item.product_id)||
    !Number.isInteger(item.quantity)||Number(item.quantity)<1||
-   Number(item.quantity)>30||seen.has(item.product_id))return NextResponse.json(
+   Number(item.quantity)>30||
+   (item.variant_id!==undefined&&(typeof item.variant_id!=='string'||!uuid.test(item.variant_id)))||
+   seen.has(item.product_id+':'+(item.variant_id??'default')))return NextResponse.json(
    {error:'Item ou quantidade inválidos.'},{status:400,headers});
-  seen.add(item.product_id);totalQty+=Number(item.quantity);
-  items.push({product_id:item.product_id,quantity:Number(item.quantity)});
+  seen.add(item.product_id+':'+(item.variant_id??'default'));totalQty+=Number(item.quantity);
+  items.push({product_id:item.product_id,quantity:Number(item.quantity),
+   ...(item.variant_id?{variant_id:item.variant_id}:{})});
  }
  if(totalQty>30)return NextResponse.json({error:'Limite de 30 unidades por simulação.'},
   {status:400,headers});
@@ -77,10 +80,13 @@ export async function POST(request:NextRequest){
  const payloadProducts=[];
  for(const item of items){
   const matches=(variants??[]).filter(v=>v.product_id===item.product_id);
-  if(matches.length!==1)return NextResponse.json({
-   error:'Este produto não possui uma única variação ativa para cotação.'
+  const selected=item.variant_id?
+   matches.find(v=>v.id===item.variant_id):
+   matches.length===1?matches[0]:null;
+  if(!selected)return NextResponse.json({
+   error:'Selecione uma variação válida para cada produto antes de cotar o frete.'
   },{status:400,headers});
-  const v=matches[0];
+  const v=selected;
   const p=Array.isArray(v.products)?v.products[0]:v.products;
   if(!p||!p.active||p.is_adult||!Number.isInteger(p.price_cents)||
     p.price_cents<=0)return NextResponse.json({

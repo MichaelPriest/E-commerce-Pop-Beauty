@@ -15,7 +15,7 @@ type ProductForm = {
  lot_code:string;expires_at:string;
 };
 const emptyForm=(categories:Category[]):ProductForm=>({
- name:'',slug:'',category_id:categories[0]?.id??'',brand:'Popê Beauty',description:'',
+ name:'',slug:'',category_id:categories.find(c=>c.active!==false&&!c.parent_id)?.id??'',brand:'Popê Beauty',description:'',
  price:'',cost:'0',compare:'',image_url:'',active:false,sku:'',variant_name:'Padrão',
  shade:'',ean:'',stock:'0',safety_stock:'0',lot_code:'SEM-LOTE',expires_at:''
 });
@@ -135,6 +135,8 @@ export function ProductsManager({initialProducts,categories}:Props){
     setNotice('Produto atualizado.');
    }else{
     // SKU vazio: gerado no banco, atomicamente, junto com o novo produto.
+    if(/^POP-[0-9]{7,}$/.test(form.sku.trim()))
+     throw new Error('Códigos POP numéricos são reservados. Deixe vazio para geração automática.');
     const stock=integer(form.stock,'Estoque inicial'),safety=integer(form.safety_stock,'Estoque de segurança');
     const {data:createdProductId,error:createError}=await sb.rpc('create_product_with_variant',{
      p_name:productData.name,p_slug:productData.slug,p_category_id:productData.category_id,
@@ -168,6 +170,10 @@ export function ProductsManager({initialProducts,categories}:Props){
   try{
    const sb=createClient();
    const safety=integer(vSafety,'Estoque de segurança');
+   const originalSku=variantEditingId?variantFor.variants.find(v=>v.id===variantEditingId)?.sku:null;
+   if(variantEditingId&&!vSku.trim())throw new Error('Informe o SKU da variação existente.');
+   if(vSku.trim()!==originalSku&&/^POP-[0-9]{7,}$/.test(vSku.trim()))
+    throw new Error('Este formato é reservado. Deixe o campo vazio apenas ao criar uma nova variação.');
    if(variantEditingId){
     const {error:editError}=await sb.from('variants').update({sku:vSku.trim(),name:vName.trim()||'Padrão',
      shade:vShade.trim()||null,ean:vEan.trim()||null}).eq('id',variantEditingId).eq('product_id',variantFor.id);
@@ -255,9 +261,9 @@ export function ProductsManager({initialProducts,categories}:Props){
        <label className="full">Nome do produto *<input required maxLength={150} value={form.name} onChange={e=>{change('name',e.target.value);if(!editing&&!form.slug)setForm(f=>({...f,name:e.target.value,slug:slugify(e.target.value)}));}} placeholder="Ex.: Base Líquida Alta Cobertura"/></label>
        <label>Categoria *<select value={form.category_id} disabled={!!editing} onChange={e=>{const next=e.target.value;const oldAdult=!!categories.find(c=>c.id===form.category_id)?.is_adult;const newAdult=!!categories.find(c=>c.id===next)?.is_adult;setForm(f=>({...f,category_id:next,image_url:oldAdult!==newAdult?'':f.image_url}));setFile(null);}} required><option value="">Selecionar...</option>{categories.filter(c=>!c.parent_id).map(parent=>
         <optgroup key={parent.id} label={parent.name}>
-         <option value={parent.id}>{parent.is_adult?'🔒 ':''}{parent.name} (principal)</option>
+         <option value={parent.id} disabled={parent.active===false}>{parent.is_adult?'🔒 ':''}{parent.name} (principal){parent.active===false?' (desativada)':''}</option>
          {categories.filter(c=>c.parent_id===parent.id).map(child=>
-          <option key={child.id} value={child.id}>
+          <option key={child.id} value={child.id} disabled={child.active===false||parent.active===false}>
            {child.is_adult?'🔒 ':''}↳ {child.name}
           </option>)}
         </optgroup>)}</select></label>
@@ -320,8 +326,9 @@ export function ProductsManager({initialProducts,categories}:Props){
   {variantFor?<div className="admin-modal-overlay" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget&&!saving)setVariantFor(null);}}>
     <section className="admin-modal smaller" role="dialog" aria-modal="true" aria-label="Adicionar variação"><div className="admin-modal-header"><div><span className="section-kicker">{variantFor.name}</span><h2>{variantEditingId?'Editar variação':'Nova cor ou variação'} 🎨</h2></div><button aria-label="Fechar" onClick={()=>setVariantFor(null)}><X/></button></div>
      <form className="admin-form" onSubmit={saveVariant}><div className="admin-form-grid">
-      <label>SKU (opcional)
-       <input value={vSku} maxLength={80} onChange={e=>setVSku(e.target.value)}
+      <label>{variantEditingId?'SKU atual *':'SKU (opcional)'}
+       <input value={vSku} required={!!variantEditingId} maxLength={80}
+        onChange={e=>setVSku(e.target.value)}
         placeholder={variantEditingId?'SKU atual':'Automático ao salvar'}/>
        <small>{variantEditingId?'SKU da variação existente.':'Deixe vazio para gerar POP-0000001, POP-0000002...'}</small>
       </label>

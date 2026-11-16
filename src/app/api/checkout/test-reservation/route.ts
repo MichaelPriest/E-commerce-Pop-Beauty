@@ -34,19 +34,21 @@ export async function POST(request:NextRequest){
   return NextResponse.json({error:'Selecione endereço e até 10 produtos.'},{status:400,headers});
  }
  const seen=new Set<string>();
- const items:{product_id:string;quantity:number}[]=[];
+ const items:{product_id:string;variant_id?:string;quantity:number}[]=[];
  for(const item of b.items){
   if(!item||typeof item!=='object')return NextResponse.json(
    {error:'Produto inválido'},{status:400,headers});
-  const value=item as {product_id?:unknown;quantity?:unknown};
+  const value=item as {product_id?:unknown;variant_id?:unknown;quantity?:unknown};
   if(typeof value.product_id!=='string'||!uuid.test(value.product_id)||
      !Number.isInteger(value.quantity)||Number(value.quantity)<1||Number(value.quantity)>99||
-     seen.has(value.product_id)){
+     (value.variant_id!==undefined&&(typeof value.variant_id!=='string'||!uuid.test(value.variant_id)))||
+     seen.has(value.product_id+':'+(value.variant_id??'default'))){
    return NextResponse.json({error:'Verifique produtos e quantidades duplicadas.'},
     {status:400,headers});
   }
-  seen.add(value.product_id);
-  items.push({product_id:value.product_id,quantity:Number(value.quantity)});
+  seen.add(value.product_id+':'+(value.variant_id??'default'));
+  items.push({product_id:value.product_id,quantity:Number(value.quantity),
+   ...(value.variant_id?{variant_id:value.variant_id}:{})});
  }
  try{
   const {data,error}=await sb.rpc('create_checkout_order',{

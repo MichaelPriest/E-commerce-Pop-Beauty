@@ -142,7 +142,7 @@ export type CatalogVariant={
  product_id:string;variant_id:string;sku:string;name:string;
  shade:string|null;available:boolean
 };
-export type ProductGalleryPhoto={id:string;url:string;alt:string};
+export type ProductGalleryPhoto={id:string;url:string;alt:string;variant_id:string|null};
 export async function getProductDetailExtras(productId:string):
  Promise<{variants:CatalogVariant[];gallery:ProductGalleryPhoto[]}>{
  if(!isSupabaseConfigured()||
@@ -151,7 +151,7 @@ export async function getProductDetailExtras(productId:string):
  const sb=await createClient();
  const [variantResult,galleryResult]=await Promise.all([
   sb.rpc('catalog_variant_availability',{p_product_ids:[productId]}),
-  sb.from('product_gallery_images').select('id,storage_path,alt_text')
+  sb.from('product_gallery_images').select('id,storage_path,alt_text,variant_id')
    .eq('product_id',productId).order('sort_order',{ascending:true})
    .order('created_at',{ascending:true}).limit(8)
  ]);
@@ -162,7 +162,8 @@ export async function getProductDetailExtras(productId:string):
   gallery:galleryResult.error?[]:(galleryResult.data??[]).map(img=>({
    id:img.id,
    url:sb.storage.from('product-images').getPublicUrl(img.storage_path).data.publicUrl,
-   alt:img.alt_text||'Foto adicional do produto'
+   alt:img.alt_text||'Foto adicional do produto',
+   variant_id:img.variant_id??null
   }))
  };
 }

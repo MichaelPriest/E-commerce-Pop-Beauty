@@ -3,6 +3,7 @@ import {Activity,Boxes,ArrowUpRight,ShoppingBag,Truck,Users,PackagePlus,
  PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards,Timer,CreditCard,ClipboardCheck} from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {formatBRL} from '@/lib/products';
+import {catalogIssues,brazilTodayISO,type QualityProduct} from '@/lib/catalog-quality';
 
 export const dynamic='force-dynamic';
 export default async function AdminPage(){
@@ -10,7 +11,7 @@ export default async function AdminPage(){
  const {data:auth}=await supabase.auth.getClaims();
  const userId=auth?.claims?.sub??'';
  const since=new Date(Date.now()-3*60*1000).toISOString();
- const [profile,products,orders,stock,activity,notifications]=await Promise.all([
+ const [profile,products,orders,stock,activity,notifications,catalogQuality]=await Promise.all([
   supabase.from('profiles').select('display_name').eq('id',userId).maybeSingle(),
   supabase.from('products').select('id,name,price_cents,active',{count:'exact'})
    .order('created_at',{ascending:false}).limit(6),
@@ -20,10 +21,34 @@ export default async function AdminPage(){
   supabase.from('user_session_presence').select('user_id')
    .is('signed_out_at',null).gte('last_seen_at',since).limit(500),
   supabase.from('order_notifications').select('id',{count:'exact',head:true})
-   .in('status',['pending','failed'])
+   .in('status',['pending','failed']),
+  supabase.from('products')
+   .select('id,name,description,image_url,price_cents,variants(sku,active,inventory(on_hand,reserved,safety_stock),inventory_lots(on_hand,expires_at))')
+   .eq('active',true).eq('is_adult',false).limit(250)
  ]);
  const firstName=profile.data?.display_name?.trim().split(/\s+/)[0]||'equipe';
  const onlineCount=new Set((activity.data??[]).map(x=>x.user_id)).size;
+ const today=brazilTodayISO();
+ const qualityRows=(catalogQuality.data??[]) as unknown as (QualityProduct&{id:string;name:string})[];
+ const issues=qualityRows.map(p=>({id:p.id,name:p.name,problems:catalogIssues(p,today)}));
+ const withIssue=(problem:'photo'|'description'|'stock')=>
+  issues.filter(p=>p.problems.includes(problem)).length;
+ const photosMissing=withIssue('photo');
+ const detailsMissing=withIssue('description');
+ const noStock=withIssue('stock');
+ const pendingOrders=orders.data?.filter(x=>x.status==='pending').length??0;
+ const tasks=[
+  {label:'Produtos sem fotografia',count:photosMissing,
+   detail:'Adicione fotos reais para apresentar os itens.',href:'/admin/produtos?filtro=pendencias'},
+  {label:'Produtos sem estoque disponível',count:noStock,
+   detail:'Revise lotes, reservas e reposição.',href:'/admin/estoque'},
+  {label:'Produtos com descrição curta',count:detailsMissing,
+   detail:'Melhore a apresentação e os detalhes de uso.',href:'/admin/produtos?filtro=pendencias'},
+  {label:'Pedidos aguardando confirmação',count:pendingOrders,
+   detail:'Confira os pedidos administrativos pendentes.',href:'/admin/pedidos'},
+  {label:'Notificações aguardando ação',count:notifications.count??0,
+   detail:'Verifique os e-mails pendentes ou com falha.',href:'/admin/notificacoes'}
+ ];
  const shortcuts=[
   {href:'/admin/produtos',label:'Cadastrar produto',caption:'Novo item do catálogo',icon:PackagePlus},
   {href:'/admin/pedidos',label:'Novo pedido',caption:'Criar pedido interno',icon:ShoppingBag},
@@ -38,6 +63,26 @@ export default async function AdminPage(){
    </div>
    <Link href="/" className="admin-outline"><ArrowLeft size={16}/> Ver loja</Link>
   </div>
+  <section className="admin-panel pope-admin-action-center" aria-labelledby="pope-tasks-heading">
+   <div className="pope-admin-panel-heading">
+    <div><h2 id="pope-tasks-heading">O que precisa de atenção agora</h2>
+     <p className="admin-help">Pendências calculadas a partir dos dados atuais da loja.</p>
+    </div>
+    <Link href="/admin/prontidao">Prontidão para produção <ArrowUpRight size={15}/></Link>
+   </div>
+   {catalogQuality.error?<p className="form-error">Não foi possível conferir a qualidade do catálogo.
+    Revise o cadastro de produtos antes da abertura comercial.</p>:null}
+   <div className="pope-admin-tasks">
+    {tasks.map(item=><Link href={item.href} key={item.label}
+     className={'pope-admin-task'+(item.count>0?' has-issues':'')}>
+     <strong>{item.count}</strong>
+     <span><b>{item.label}</b><small>{item.detail}</small></span>
+     <ArrowUpRight size={17}/>
+    </Link>)}
+   </div>
+   {qualityRows.length===250?<p className="admin-help">A conferência de catálogo cobre
+    somente os 250 produtos públicos mais recentes. Use filtros para revisar todos.</p>:null}
+  </section>
   <section aria-label="Atalhos rápidos" className="pope-admin-dashboard-shortcuts">
    {shortcuts.map(item=>{const Icon=item.icon;return <Link href={item.href} key={item.href}>
     <span className="pope-admin-dash-icon"><Icon size={21}/></span>

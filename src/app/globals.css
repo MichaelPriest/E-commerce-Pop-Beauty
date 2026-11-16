@@ -1007,3 +1007,9 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-product-step strong{font-size:.87rem;font-weight:800;color:#fff;
  background:#853e72;border-radius:40px;padding:6px 13px}
 .pope-product-step span{font-size:.93rem;font-weight:750;color:#663554}
+
+/* Acesso direto à central de cada pedido em módulos administrativos */
+.pope-oc-order-link{color:#793861;text-decoration:none;font-weight:800;
+ display:inline-flex;align-items:center;gap:5px;overflow-wrap:anywhere}
+.pope-oc-order-link:hover{text-decoration:underline;color:#a54878}
+.pope-oc-order-link:focus-visible{outline:2px solid #b56891;outline-offset:3px;border-radius:4px}

@@ -31,7 +31,7 @@ export default async function ProductGalleryAdmin({
   .eq('product_id',id).order('sort_order',{ascending:true})
   .order('created_at',{ascending:true}).limit(8);
  if(galleryError)throw new Error('Não foi possível carregar a galeria.');
- const photos=(gallery??[]).map(photo=>({
+ const photos=(data??[]).map(photo=>({
   ...photo,
   url:sb.storage.from('product-images').getPublicUrl(photo.storage_path).data.publicUrl
  }));

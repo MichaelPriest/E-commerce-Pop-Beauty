@@ -47,8 +47,9 @@ async function attachAvailability(
 }
 export async function getProducts(filters:Filters={}):Promise<CatalogResult>{
  const q=normalizeCatalogSearch(filters.q),category=normalizeCatalogCategory(filters.category);
- const page=Number.isSafeInteger(filters.page)&&filters.page!>0&&filters.page!<=10000?
-  filters.page!:1;
+ const requestedPage=filters.page;
+ const page=typeof requestedPage==='number'&&Number.isSafeInteger(requestedPage)
+  &&requestedPage>0&&requestedPage<=10000?requestedPage:1;
  const empty=(demo:boolean):CatalogResult=>({
   products:[],demo,total:0,page,totalPages:0,pageSize:CATALOG_PAGE_SIZE,q,category
  });

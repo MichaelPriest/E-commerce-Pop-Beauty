@@ -9,13 +9,13 @@ export const metadata={title:'Fotos do produto | Popê Beauty'};
 const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 export default async function ProductGalleryAdmin({
- params
-}:{params:Promise<{id:string}>}){
+ params,searchParams
+}:{params:Promise<{id:string}>;searchParams:Promise<{sku?:string}>}){
  const {id}=await params;
  if(!uuid.test(id))notFound();
  const sb=await requireAdmin();
  const {data:product,error}=await sb.from('products')
-  .select('id,name,slug,image_url,is_adult,active')
+  .select('id,name,slug,image_url,is_adult,active,variants(id,sku,name,shade,active)')
   .eq('id',id).maybeSingle();
  if(error)throw new Error('Não foi possível consultar o produto.');
  if(!product)notFound();
@@ -27,7 +27,7 @@ export default async function ProductGalleryAdmin({
    As imagens desse módulo devem permanecer no armazenamento privado de acesso restrito.</p>
  </div>;
  const {data,error:galleryError}=await sb.from('product_gallery_images')
-  .select('id,storage_path,alt_text,sort_order,created_at')
+  .select('id,storage_path,alt_text,sort_order,created_at,variant_id')
   .eq('product_id',id).order('sort_order',{ascending:true})
   .order('created_at',{ascending:true}).limit(8);
  if(galleryError)throw new Error('Não foi possível carregar a galeria.');
@@ -35,5 +35,12 @@ export default async function ProductGalleryAdmin({
   ...photo,
   url:sb.storage.from('product-images').getPublicUrl(photo.storage_path).data.publicUrl
  }));
- return <GalleryManager product={product} photos={photos as GalleryPhoto[]}/>;
+ const {sku}=await searchParams;
+ const variants=(product.variants??[]).map(v=>({
+  id:v.id,sku:v.sku,name:v.name,shade:v.shade,active:v.active
+ }));
+ const initialVariantId=typeof sku==='string'&&variants.some(v=>v.id===sku)?
+  sku:'';
+ return <GalleryManager product={product} photos={photos as GalleryPhoto[]}
+  variants={variants} initialVariantId={initialVariantId}/>;
 }

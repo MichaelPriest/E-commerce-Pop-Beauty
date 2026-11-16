@@ -90,4 +90,11 @@ test('dashboard e cadastro oferecem acesso às pendências',()=>{
  assert.match(admin,/Com pendências na vitrine/);
  assert.match(admin,/pope-product-issues/);
  assert.match(admin,/Cadastro orientado/);
+ assert.match(admin,/setFormStep\(1\)/);
+ assert.match(admin,/formStep===1/);
+ assert.match(admin,/formStep===2/);
+ assert.match(admin,/formStep===3/);
+ assert.match(admin,/advanceProductForm/);
+ assert.match(admin,/Próxima etapa/);
+ assert.match(admin,/Salvar alterações/);
 });

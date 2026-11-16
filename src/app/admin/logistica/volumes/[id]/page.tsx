@@ -11,6 +11,7 @@ import {ShippingProviderEvidence,type VerifiedShippingDocument,type VerifiedTrac
 import {CancellationReviewPanel,type CancellationReviewRow} from './cancellation-review-panel';
 import {ShipmentPurchasePreflight,type PurchasePreflightRow} from './preflight-panel';
 import {PurchaseGuardPanel,type PurchaseGuardRow} from './purchase-guard-panel';
+import {ShippingOperationPlanPanel,type OperationPlanRow,type OperationPlanEventRow} from './operation-plan-panel';
 import type {ProviderDraft} from '@/lib/shipping/provider-adapters';
 
 export const dynamic='force-dynamic';
@@ -52,7 +53,7 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   destination:order.data.shipping_address_snapshot as ShippingDestination|null,
   plannedVolumes:prep.data?.volumes??null,volumes:rows
  });
- const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews,preflights,purchaseGuard]=await Promise.all([
+ const [workflowRequests,internalEvents,providerDocs,providerTracking,cancellationReviews,preflights,purchaseGuard,operationPlan]=await Promise.all([
   sb.from('shipment_workflow_requests')
    .select('id,intent_key,source_fingerprint,request_key,provider,status,created_at,voided_at')
    .eq('order_id',id).order('created_at',{ascending:false}).limit(30),
@@ -71,9 +72,12 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    .eq('order_id',id).order('reviewed_at',{ascending:false}).limit(30),
   sb.from('shipment_purchase_guards')
    .select('guard_key,guard_revision,request_id,intent_key,source_fingerprint,preflight_review_key,provider,status,updated_at')
+   .eq('order_id',id).maybeSingle(),
+  sb.from('shipment_provider_operation_plans')
+   .select('id,request_id,order_id,guard_key,preflight_review_key,source_fingerprint,provider,state,review_reason,review_notes,external_dispatch_count,created_at,updated_at')
    .eq('order_id',id).maybeSingle()
  ]);
- if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error||preflights.error||purchaseGuard.error)
+ if(workflowRequests.error||internalEvents.error||providerDocs.error||providerTracking.error||cancellationReviews.error||preflights.error||purchaseGuard.error||operationPlan.error)
   throw new Error('Não foi possível carregar as solicitações logísticas.');
  const activeRequest=(workflowRequests.data??[]).find(request=>
   request.status==='prepared_internal'&&request.intent_key===labelIntent.data?.intent_key
@@ -89,6 +93,12 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
   (cancellationReviews.data??[]).some(review=>
    review.request_id===activeRequest.id&&review.status==='pending_internal_review'
   ));
+ const operationEvents=operationPlan.data?
+  await sb.from('shipment_operation_plan_events')
+   .select('id,plan_id,event_type,event_reason,occurred_at,external_request_performed')
+   .eq('plan_id',operationPlan.data.id).order('occurred_at',{ascending:false}).limit(50):
+  {data:[] as OperationPlanEventRow[],error:null};
+ if(operationEvents.error)throw new Error('Não foi possível carregar a auditoria do plano.');
  const editable=['paid','packing'].includes(order.data.status);
  return <div className="container admin-workspace pope-fiscal-area">
   <div className="admin-top"><div><div className="section-kicker">EXPEDIÇÃO • POPÊ BEAUTY</div>
@@ -162,6 +172,18 @@ export default async function VolumesPage({params}:{params:Promise<{id:string}>}
    hasProviderEvidence={providerEvidenceForCurrent}
    hasCancellationPending={pendingCancellationForCurrent}
    guard={purchaseGuard.data as PurchaseGuardRow|null}/>
+
+  <ShippingOperationPlanPanel key={operationPlan.data?.id??'no-plan'}
+   requestId={activeRequest?.id??null}
+   guardKey={purchaseGuard.data?.guard_key??null}
+   guardCurrent={Boolean(activeRequest&&currentPreflight&&purchaseGuard.data&&
+    currentPreflight.checklist_complete_internal===true&&
+    currentPreflight.review_key===purchaseGuard.data.preflight_review_key&&
+    activeRequest.id===purchaseGuard.data.request_id&&
+    activeRequest.source_fingerprint===labelIntent.data?.source_fingerprint)}
+   editable={editable}
+   plan={operationPlan.data as OperationPlanRow|null}
+   events={(operationEvents.data??[]) as OperationPlanEventRow[]}/>
 
   <ShippingProviderEvidence
    documents={(providerDocs.data??[]) as VerifiedShippingDocument[]}

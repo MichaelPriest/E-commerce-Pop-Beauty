@@ -63,6 +63,9 @@ export function CategoryManager({categories,truncated}:Props){
   if(!form.id&&!suggested){
    setError('Informe um nome que produza um endereço válido.');return;
   }
+  if(!form.id&&suggested.length>160){
+   setError('O endereço ficou muito longo. Use um nome mais curto.');return;
+  }
   if(!form.id&&categories.some(c=>c.slug===suggested)){
    setError('Este endereço já existe. Escolha outro nome.');return;
   }

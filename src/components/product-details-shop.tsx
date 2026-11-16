@@ -5,17 +5,15 @@ import {Check,ChevronLeft,ChevronRight,ShoppingBag,ShieldCheck} from 'lucide-rea
 import {formatBRL,productImageSrc,type Product} from '@/lib/products';
 import {normalizeCart,putCartItem} from '@/lib/cart-core';
 import type {CatalogVariant,ProductGalleryPhoto} from '@/lib/catalog';
+import {visibleProductGallery} from '@/lib/product-gallery-core';
 
 export function ProductDetailsShop({
  product,demo,variants,gallery
 }:{product:Product;demo:boolean;variants:CatalogVariant[];gallery:ProductGalleryPhoto[]}){
  const cover=productImageSrc(product.image_url);
- const images=[
-  ...(cover?[{id:'cover',url:cover,alt:'Foto principal de '+product.name}]:[]),
-  ...gallery.map(g=>({...g}))
- ];
  const [imageIndex,setImageIndex]=useState(0);
  const [variantId,setVariantId]=useState(variants.length===1?variants[0].variant_id:'');
+ const images=visibleProductGallery(cover,product.name,gallery,variantId||null);
  const [quantity,setQuantity]=useState(1);
  const [message,setMessage]=useState(''),[error,setError]=useState('');
  const variant=variants.find(v=>v.variant_id===variantId);
@@ -47,9 +45,15 @@ export function ProductDetailsShop({
  return <div className="pope-detail-shop">
   <div className="pope-detail-gallery">
    <div className={'detail-visual pope-detail-photo tone-'+(product.tone||'pink')}>
-    {images[imageIndex]?<img src={images[imageIndex].url}
+    {images[imageIndex]?<img key={images[imageIndex].id}
+     src={images[imageIndex].url}
      alt={images[imageIndex].alt} loading={imageIndex===0?'eager':'lazy'}/>:
      <span role="img" aria-label="Produto sem fotografia">{product.emoji||'💖'}</span>}
+    {variantId&&images.some(image=>image.source==='variant')?
+     <span className="pope-variant-photo-label" aria-live="polite">
+      Fotos da cor {variants.find(v=>v.variant_id===variantId)?.shade||
+       variants.find(v=>v.variant_id===variantId)?.name}
+     </span>:null}
     {images.length>1?<div className="pope-detail-gallery-arrows">
      <button type="button" aria-label="Foto anterior"
       onClick={()=>setImageIndex((imageIndex-1+images.length)%images.length)}>
@@ -81,13 +85,21 @@ export function ProductDetailsShop({
     <label htmlFor="pope-variant-select">Cor / Variação</label>
     <select id="pope-variant-select" value={variantId}
      disabled={demo||variants.length===0}
-     onChange={event=>{setVariantId(event.target.value);setMessage('');setError('');}}>
+     onChange={event=>{
+      setVariantId(event.target.value);setImageIndex(0);
+      setMessage('');setError('');
+     }}>
      <option value="">Selecione uma opção</option>
      {variants.map(v=><option key={v.variant_id} value={v.variant_id}
       disabled={!v.available}>
       {v.shade||v.name} · {v.sku}{v.available?'':' — Esgotada'}
      </option>)}
     </select>
+    <p className="pope-detail-photo-hint">
+     {variantId&&images.some(image=>image.source==='variant')?
+      'As fotos acima correspondem à cor selecionada.':
+      'A imagem principal e as fotos gerais são exibidas quando a cor não possui fotos próprias.'}
+    </p>
     <p className={'pope-product-stock'+(canAdd?' is-available':' is-unavailable')}
      role="status">{label}</p>
     <div className="pope-detail-purchase-controls">

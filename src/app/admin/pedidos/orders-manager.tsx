@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState,type FormEvent} from 'react';
+import {useEffect,useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {MailCheck} from 'lucide-react';
@@ -25,6 +25,14 @@ export function OrdersManager({orders,variants,customers}:Props){
  const [note,setNote]=useState(''),[carrier,setCarrier]=useState(''),[tracking,setTracking]=useState('');
  const [saving,setSaving]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [expanded,setExpanded]=useState<string|null>(null);
+ useEffect(()=>{
+  try{
+   const id=new URLSearchParams(window.location.search).get('pedido');
+   if(id&&/^[a-f0-9-]{36}$/i.test(id)){
+    setQuery(id);setExpanded(id);
+   }
+  }catch{/* Filtro opcional de navegação. */}
+ },[]);
  const sellable=useMemo(()=>variants.filter(v=>v.products?.active&&!v.products?.is_adult),[variants]);
  const clients=useMemo(()=>new Map(customers.map(c=>[c.id,c.display_name])),[customers]);
  const shown=useMemo(()=>orders.filter(o=>
@@ -108,7 +116,10 @@ export function OrdersManager({orders,variants,customers}:Props){
     <td>{o.order_items?.reduce((a,i)=>a+i.quantity,0)??0} un.</td>
     <td><strong>{formatBRL(o.total_cents)}</strong></td>
     <td><span className={'ops-tag status-'+o.status}>{ORDER_LABELS[o.status]??o.status}</span></td>
-    <td><div className="ops-buttons"><button className="ops-small" onClick={()=>setExpanded(s=>s===o.id?null:o.id)}><History size={14}/> {expanded===o.id?'Ocultar':'Detalhes'}</button>
+    <td><div className="ops-buttons"><Link className="ops-small primary" href={'/admin/pedidos/'+o.id}>
+      <ShoppingBag size={14}/> Central do pedido</Link>
+     <button className="ops-small" onClick={()=>setExpanded(s=>s===o.id?null:o.id)}>
+      <History size={14}/> {expanded===o.id?'Ocultar':'Detalhes'}</button>
     {(actions[o.status]??[]).filter(()=>o.origin==='admin_manual').map(a=>
       <button key={a.status} className="ops-small primary" onClick={()=>startAction(o,a.status)}>{a.label}</button>)}</div>
     {expanded===o.id?<div className="ops-order-detail"><strong>Itens</strong>

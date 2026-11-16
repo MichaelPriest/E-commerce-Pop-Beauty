@@ -117,7 +117,9 @@ export function SandboxPaymentPlanner({reservations,attempts,mpSandboxReady}:{
     <thead><tr><th>Registrado</th><th>Reserva</th><th>Gateway</th><th>Valor dos itens</th><th>Ambiente</th><th>Estado</th><th>Checkout TEST</th></tr></thead>
     <tbody>{attempts.map(a=><tr key={a.id}>
      <td>{dateTimeBR(a.created_at)}</td>
-     <td>#{a.order_id.slice(0,8).toUpperCase()}</td>
+     <td><Link href={'/admin/pedidos/'+a.order_id}
+      className="pope-oc-order-link">#{a.order_id.slice(0,8).toUpperCase()}</Link>
+      <small>Central do pedido</small></td>
      <td>{PAYMENT_GATEWAYS.find(g=>g.id===a.provider)?.name??a.provider}</td>
      <td>{formatBRL(a.amount_cents)}</td><td><span className="ops-tag">Sandbox</span></td>
      <td>{a.state==='draft'?'Preparação (sem cobrança)':a.state==='expired'?'Expirada':'Cancelada'}</td>

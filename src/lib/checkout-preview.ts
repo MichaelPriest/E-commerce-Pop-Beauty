@@ -3,6 +3,7 @@ export type CheckoutLineStatus=
  'ready'|'unavailable'|'out_of_stock'|'variant_selection_required';
 export type CheckoutPreviewLine={
  product_id:string;name:string;slug:string|null;
+ variant_id?:string|null;variant_name?:string|null;
  quantity:number;unit_price_cents:number|null;
  line_total_cents:number|null;status:CheckoutLineStatus;
 };

@@ -21,7 +21,7 @@ export function ProductCard({product,demo}:{product:Product;demo:boolean}){
  const ready=!demo&&!product.is_adult&&!!chosen?.available;
  const href=(product.is_adult?'/adulto/produto/':'/produto/')+product.slug+
   (chosen?'?variacao='+encodeURIComponent(chosen.variant_id):'');
- const stockLabel=demo?'Produto ilustrativo':
+ const stockLabel=demo?'Produto de demonstração':
   chosen?(chosen.available?'Disponível para conferência':'Esta cor está esgotada'):
   multiple?'Escolha uma cor ou apresentação':
   product.availability==='out_of_stock'?'Esgotado':'Disponibilidade não confirmada';

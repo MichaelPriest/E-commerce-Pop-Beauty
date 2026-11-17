@@ -8,11 +8,15 @@ import type {CatalogVariant,ProductGalleryPhoto} from '@/lib/catalog';
 import {visibleProductGallery} from '@/lib/product-gallery-core';
 
 export function ProductDetailsShop({
- product,demo,variants,gallery
-}:{product:Product;demo:boolean;variants:CatalogVariant[];gallery:ProductGalleryPhoto[]}){
+ product,demo,variants,gallery,initialVariantId=''
+}:{product:Product;demo:boolean;variants:CatalogVariant[];
+ gallery:ProductGalleryPhoto[];initialVariantId?:string}){
  const cover=productImageSrc(product.image_url);
  const [imageIndex,setImageIndex]=useState(0);
- const [variantId,setVariantId]=useState(variants.length===1?variants[0].variant_id:'');
+ const [variantId,setVariantId]=useState(
+  variants.some(v=>v.variant_id===initialVariantId)?
+   initialVariantId:variants.length===1?variants[0].variant_id:''
+ );
  const images=visibleProductGallery(cover,product.name,gallery,variantId||null);
  const [quantity,setQuantity]=useState(1);
  const [message,setMessage]=useState(''),[error,setError]=useState('');
@@ -29,7 +33,8 @@ export function ProductDetailsShop({
    const item={
     id:product.id,slug:product.slug,name:product.name,price_cents:product.price_cents,
     qty:quantity,variant_id:variant.variant_id,variant_name:variant.shade||variant.name,
-    sku:variant.sku,emoji:product.emoji
+    sku:variant.sku,emoji:product.emoji,
+    ...(images[0]?.url?{image_url:images[0].url}:{})
    };
    const updated=putCartItem(stored,item);
    if(!updated.some(x=>x.id===item.id&&x.variant_id===item.variant_id)){

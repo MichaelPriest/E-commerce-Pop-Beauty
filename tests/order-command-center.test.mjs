@@ -58,6 +58,12 @@ test('pagamento sandbox e webhooks não são baixa bancária',()=>{
  assert.equal(find(steps,'payment').state,'manual_review');
  assert.match(find(steps,'payment').description,/Nenhum constitui confirmação/);
 });
+test('confirmação e contestação do gateway mudam a etapa de pagamento',()=>{
+ const paid=summarizeOrderCenter({...base,status:'paid',gatewayPaymentState:'confirmed'});
+ assert.equal(find(paid,'payment').label,'Aprovado pelo Mercado Pago');
+ const disputed=summarizeOrderCenter({...base,status:'paid',gatewayPaymentState:'review'});
+ assert.equal(nextOrderCenterStep(disputed,'paid').id,'payment');
+});
 test('notificações com falha têm precedência sobre fila pendente',()=>{
  const steps=summarizeOrderCenter({...base,sentNotifications:1,
   pendingNotifications:2,failedNotifications:3});
@@ -85,7 +91,8 @@ test('rota individual exige admin e lista somente evidências daquele pedido',()
  assert.match(page,/sandbox_payment_attempts/);
  assert.match(page,/payment_webhook_receipts/);
  assert.match(page,/ORDER_CENTER_TONE_LABEL/);
- assert.match(page,/consolidação somente leitura/);
+ assert.match(page,/commercial_payment_checkouts/);
+ assert.match(page,/<OrderPaymentActions orderId=\{id\}/);
  assert.doesNotMatch(page,/\.insert\(|\.update\(|\.delete\(|fetch\('/);
 });
 test('central de pedidos oferece atalho por registro e deep-link fiscal seleciona pedido',()=>{

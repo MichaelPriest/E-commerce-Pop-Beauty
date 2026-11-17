@@ -2,13 +2,15 @@
 
 > Plataforma de e-commerce de beleza, maquiagem e catálogo reservado +18, desenvolvida com **Next.js, React, TypeScript, Supabase e Vercel**.  
 > **Situação: aplicação publicada, mas NÃO liberada para vendas online reais.**  
-> **Documentação revisada em:** 11/11/2026 · **Ambiente:** [Popê Beauty](https://e-commerce-pope-beauty.vercel.app) · **Branch de publicação:** `main`.
+> **Documentação revisada em:** 17/11/2026 · **Ambiente:** [Popê Beauty](https://e-commerce-pope-beauty.vercel.app) · **Branch de publicação:** `main`.
 
 Este é o **documento principal do projeto**. Reúne recursos, URLs, arquitetura, tabelas, regras de negócio, configuração, homologação, segurança, limitações, operações e próximos passos. A implementação em código e no banco é a fonte de verdade quando existir divergência; nunca habilite recursos de produção somente com base na presença de uma tela.
 
 ## 1. Visão geral e status
 
 ### 1.1. Painel executivo
+
+Em 17/11/2026, o checkout administrativo passou a conferir o total com as tarifas por CEP, com origem em **04431-080**. Em seguida, foram desenvolvidos os links para pedidos internos e a conciliação pelo Mercado Pago. A ativação dos links e o checkout público estão pendentes. Consulte [pagamento de pedidos internos](#114-pagamento-de-pedidos-internos-pelo-checkout-pro).
 
 | Área | Situação em 11/11/2026 | Observações |
 | --- | --- | --- |
@@ -400,7 +402,7 @@ A rota `POST /api/admin/payments/mercadopago/test-checkout` só pode gerar prefe
 
 O prefixo `APP_USR-` **não identifica sozinho** credenciais de testes: também ocorre em produção. Não configurar token de vendedor real como TEST.
 
-O servidor cria a preferência com preços e itens do pedido, confere o vendedor retornado e o domínio do link. Uma vez iniciada a geração, o sistema **não repete automaticamente** a chamada em caso de falha/timeout, para evitar duplicidades. Reconciliar manualmente ocorrências com estado `preparing` antes de qualquer retomada.
+O servidor cria a preferência com preços e itens do pedido, confere o vendedor retornado e o domínio do link. Em reservas com entrega, o frete é enviado em `shipments.cost` e integra o valor conferido. Uma vez iniciada a geração, a tentativa permanece em `preparing` em caso de timeout. Confira a preferência no provedor antes de retomar.
 
 **Importante:** Checkout Pro TEST pode usar endpoints compartilhados com produção pelo provedor. Somente uma **conta compradora TEST** deve abrir links de homologação. O painel não efetua redirecionamento automático.
 
@@ -424,7 +426,7 @@ Fica bloqueado (`503`) até o servidor possuir:
 3. Aceita para processamento apenas o tipo `payment` e eventos declarados TEST (`live_mode=false`).
 4. Autentica vendedor TEST via API e consulta o pagamento na **API oficial** em `GET /v1/payments/{id}`.
 5. Exige `collector_id` igual à conta TEST e moeda BRL.
-6. Verifica `external_reference=pope-sandbox:<attempt_id>`, subtotal, pedido e validade da reserva.
+6. Verifica `external_reference=pope-sandbox:<attempt_id>`, total com frete, pedido e validade da reserva.
 7. Salva evento deduplicado por `(provider, external_event_id)` em `payment_webhook_receipts`; não armazena JSON integral, documentos, dados de cartão ou credenciais.
 8. Mostra histórico de auditoria em `/admin/pagamentos`, incluindo status do provedor e relação com a reserva.
 
@@ -432,7 +434,19 @@ Fica bloqueado (`503`) até o servidor possuir:
 
 ### 11.3. Limitações a resolver
 
-O fluxo ainda não foi validado ponta a ponta com eventos reais de TEST; faltam credenciais, simulação de retornos aprovados/recusados/estornados, processamento financeiro oficial, cálculo final de frete, webhooks produtivos, reconciliação e reprocessamento assistido de incidentes. A integração não deve ser habilitada para vendedores/compradores reais nesta etapa.
+Para concluir a homologação TEST, valide o fluxo com credenciais de teste do vendedor e do comprador, incluindo retornos aprovados, recusados e estornados.
+
+### 11.4. Pagamento de pedidos internos pelo Checkout Pro
+
+Em **Pedidos → Central do pedido → Pagamento**, o administrador poderá gerar e copiar um link para um pedido interno pendente após a homologação comercial. A validade do link é de 30 minutos. As quantias vêm do pedido, com valores de itens e frete conferidos em centavos. As reservas do checkout de teste seguem o fluxo TEST desta documentação.
+
+A migração `supabase/commercial_order_payments_v1.sql` é aplicada após `checkout_delivery_rates_v1.sql` e `payment_gateway_evaluation.sql`. Um registro de preparação protege chamadas concorrentes e permite recuperar o link já persistido. Se a resposta do provedor for incerta, a preparação protege o intervalo de validade. Um novo link pode ser gerado depois do vencimento se o pedido continuar pendente e os pagamentos anteriores estiverem encerrados sem valor aplicado.
+
+O webhook `POST /api/webhooks/mercadopago/orders` valida a assinatura e consulta `GET /v1/payments/{id}`. A conciliação exige conta vendedora correspondente, BRL, referência do link, pagamento comercial aprovado dentro da validade e total idêntico ao pedido. A gravação do pagamento, a mudança para `paid` e o evento do pedido ocorrem na mesma transação. O saldo reservado é consumido na expedição. A tela também consulta e concilia pelo ID do Mercado Pago para recuperar notificações ausentes.
+
+A confirmação local é única por pedido. Retornos repetidos ou fora de ordem respeitam a última atualização do pagamento. Valores divergentes, aprovações tardias, pagamentos adicionais e contestações ficam disponíveis em **Financeiro → Pagamentos para conferir**. Um estorno ou uma contestação do pagamento que confirmou a venda exige conferência antes de novo despacho. O sistema ainda precisa de fluxo de estorno pela loja, conciliação dos repasses e tratamento da devolução do estoque.
+
+Para homologação, configure `MP_LIVE_ACCESS_TOKEN`, `MP_LIVE_SELLER_ID`, `MP_LIVE_WEBHOOK_SECRET` e `SUPABASE_SERVICE_ROLE_KEY` no servidor. No painel do Mercado Pago, configure o tópico **Pagamentos** na URL HTTPS comercial do webhook e valide a entrega ao ambiente escolhido. A variável `MP_LIVE_WEBHOOK_ENABLED=verified-live-account-only` habilita a conciliação. A criação de links depende também de `MP_LIVE_SITE_ORIGIN` e `MP_LIVE_PAYMENT_LINKS_ENABLED=internal-orders`. A retirada da flag de links suspende novas gerações e preserva a consulta de pagamentos recebidos enquanto o webhook estiver habilitado. Confira os meios de pagamento da conta e homologue o retorno, o repasse e o tratamento de divergências antes de operar.
 
 ## 12. Pedidos internos, faturamento operacional e notificações
 
@@ -440,7 +454,7 @@ O fluxo ainda não foi validado ponta a ponta com eventos reais de TEST; faltam 
 
 `/admin/pedidos` permite registrar pedidos administrativos com estoque reservado, itens e preços atuais. Mudanças de status são executadas por RPCs e rotas protegidas; a logística controla separação, transporte, rastreio e baixa FEFO.
 
-O `/admin/financeiro` considera **confirmação administrativa de recebimento**, não pagamento bancário conciliado. `/admin/relatorios` oferece evolução mensal, exportação CSV e alertas operacionais. Reservas TEST `store_api` são excluídas desses indicadores.
+O `/admin/financeiro` considera o **total bruto dos pedidos confirmados**, com as ocorrências do provedor para conferência. `/admin/relatorios` oferece evolução mensal, exportação CSV e alertas operacionais. Reservas TEST `store_api` são excluídas desses indicadores.
 
 `/admin/marketplaces` já oferece OAuth Shopee/Mercado Livre e consulta manual da primeira página de anúncios/pedidos em tabelas isoladas. **Não existem sincronização contínua, reserva automática de estoque nem criação de pedidos de marketplace no módulo operacional**.
 
@@ -517,6 +531,7 @@ A pasta `supabase/` contém os seguintes scripts; alguns são **correções incr
 | `mercado_pago_test_preference.sql` | Criação única de preferência TEST |
 | `mercado_pago_test_preference_domain_fix.sql` | Restrição de domínio do checkout TEST |
 | `mercado_pago_test_webhook_audit.sql` | Campos de auditoria Mercado Pago |
+| `commercial_order_payments_v1.sql` | Links de pagamento e conciliação de pedidos internos |
 
 Para implantações novas, **não executar manualmente todos em ordem alfabética**. Planejar sequência validada, backup, homologação e versão de schema; alguns scripts esperam objetos criados por outros ou reimplementam funções corrigidas por migrations posteriores.
 

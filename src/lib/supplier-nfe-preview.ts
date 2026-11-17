@@ -44,7 +44,12 @@ export function parseSupplierNfeXml(xml:string):SupplierInvoicePreview{
   const barcode=str(prod,'cEAN');
   const productCode=str(prod,'cProd'),description=str(prod,'xProd');
   const quantity=Number(str(prod,'qCom').replace(',','.'));
-  const unitCost=str(prod,'vUnCom').replace('.',',');
+  const rawUnitCost=str(prod,'vUnCom');
+  const rawCost=Number(rawUnitCost.replace(',','.'));
+  const unitCost=Number.isFinite(rawCost)&&rawCost>=0&&rawCost<=1000000?
+   (Math.round(rawCost*100)/100).toFixed(2).replace('.',','):'';
+  if(rawUnitCost&&!unitCost)
+   warnings.push('Item '+(index+1)+': custo unitário inválido, confira manualmente.');
   const trace=all(prod,'rastro');
   const traces=trace.length?trace:[null];
   for(const t of traces){

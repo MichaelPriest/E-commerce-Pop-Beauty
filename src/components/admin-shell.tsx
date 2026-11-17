@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -46,6 +46,8 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/categorias',label:'Categorias e subcategorias',icon:FolderTree},
    {href:'/admin/estoque',label:'Estoque e lotes',icon:Boxes},
    {href:'/admin/estoque/reposicao',label:'Reposição de estoque',icon:ReplenishmentIcon},
+   {href:'/admin/estoque/recebimento',label:'Recebimento de mercadorias',icon:ScanBarcode},
+   {href:'/admin/fornecedores',label:'Fornecedores',icon:Building2},
    {href:'/admin/adulto',label:'Prévia reservada +18',icon:Eye}
   ]},
   {title:'Operação',items:[
@@ -77,6 +79,8 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/produtos',label:'Cadastrar produto',icon:PackagePlus},
   {href:'/admin/produtos/importar',label:'Importar planilha CSV',icon:FileSpreadsheet},
   {href:'/admin/estoque/reposicao',label:'Planejar reposição',icon:ReplenishmentIcon},
+  {href:'/admin/estoque/recebimento',label:'Conferir mercadorias',icon:ScanBarcode},
+  {href:'/admin/fornecedores',label:'Cadastrar fornecedor',icon:Building2},
   {href:'/admin/categorias',label:'Cadastrar categorias',icon:FolderTree},
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},

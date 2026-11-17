@@ -1079,3 +1079,33 @@ A fonte é um SELECT admin-only de até 1.000 variações com indicador caso ess
 Arquivos: `src/lib/stock-replenishment.ts`, `src/app/admin/estoque/reposicao/page.tsx`, `replenishment-manager.tsx`, além de atualizações em `stock-manager.tsx`, `products-manager.tsx` e no menu. Testes: `tests/catalog-bulk-import-and-replenishment.test.mjs`.
 
 **Próximos passos**: entrada por leitura de EAN com seleção de lote e validação de quantidades, importação de comprovantes de fornecedor, fluxo de conferência de recebimento de mercadorias e testes end-to-end autenticados antes de ativar qualquer transação comercial.
+
+### 22.27. Fornecedores e recebimento de mercadorias em duas etapas
+
+A Popê Beauty agora possui **Fornecedores** em `/admin/fornecedores` e **Recebimento de mercadorias** em `/admin/estoque/recebimento`, acessíveis pelo menu lateral e pela central de estoque. O cadastro de fornecedores contém nome/razão social, CPF/CNPJ opcional (com validação dos dígitos verificadores no cliente), e-mail, telefone, observações e status ativo/inativo. Não exclui nem sobrescreve o histórico. A política RLS restringe leitura e escrita aos administradores, e visitantes anônimos não têm acesso.
+
+O recebimento permite identificar o fornecedor, registrar referência da nota/documento e data, observações e **até 25 itens por recebimento**, encontrados digitando o SKU ou lendo EAN/GTIN em scanners USB/Bluetooth que operem como teclado. Cada item tem SKU, lote, validade opcional, quantidade inteira e custo unitário de conferência opcional. Custos informados no recebimento **não alteram** automaticamente o preço de venda nem o custo cadastral; são somente metadados históricos do documento.
+
+O servidor oferece duas RPCs:
+- `public.save_goods_receipt_draft(p_receipt_id,p_payload)`: cria ou edita um **rascunho**, validando fornecedor, SKUs, lotes e quantidades; **não movimenta estoque**. A edição usa lock na linha do recebimento e impede alterações após a contabilização. Não há gravação parcial do lote.
+- `public.post_goods_receipt(p_receipt_id)`: faz o lock do recebimento, exige `status='draft'`, revalida lotes e vencimentos e chama `public.adjust_stock` para cada item, reutilizando histórico, controle de reservas e atualização de lotes. **Toda contabilização é uma transação única**; qualquer falha de lote ou saldo causa rollback e impede entradas parciais. Um recebimento já contabilizado não pode gerar outra entrada.
+
+A confirmação é explícita no painel, depois de salvar o rascunho. O botão de contabilização é bloqueado quando o formulário sofreu alterações desde a última gravação. Dados antigos de produtos, fornecedores e inventário não foram modificados durante a implantação. Os documentos não são enviados para plataformas externas nem geram NF-e, cobranças ou fretes.
+
+Tabelas: `public.suppliers`, `public.goods_receipts`, `public.goods_receipt_items`. RLS e privilégios restringem seleção a administradores e bloqueiam INSERT direto nas tabelas de recebimento. A escrita é controlada por RPCs `SECURITY DEFINER` com `auth.uid()` e `private.is_admin()`. Migração: `supabase/goods_receipts_supplier_register_atomic_v1.sql`. Frontend: `src/app/admin/fornecedores/`, `src/app/admin/estoque/recebimento/`, `src/lib/goods-receipts-core.ts`, `src/lib/supplier-tax-id.ts`. Testes: `tests/goods-receipts-suppliers-fiscal.test.mjs`.
+
+### 22.28. NF-e XML de fornecedor: leitura local de conferência, sem validação fiscal
+
+No recebimento de mercadorias, o operador pode selecionar um arquivo **XML de NF-e** de até 2 MB. O arquivo é analisado **no navegador**, sem upload persistido: a prévia extrai a razão social/CNPJ do emitente, número/série, data, itens, códigos `cEAN` ou `cProd`, `qCom`, custo unitário `vUnCom` e rastreabilidade de lote `rastro/nLote/dVal/qLote` quando presente. O código faz correspondência somente por EAN/GTIN cadastrado ou `cProd` exatamente igual ao SKU, e não cria produtos desconhecidos. Se existem itens não identificados, quantidades fracionadas ou avisos de interpretação, a interface exige confirmação de revisão manual. O XML pode ser substituído sem gravar nada. DTD e entidades externas são rejeitados.
+
+**A leitura não autentica a NF-e**, não valida assinatura XML, não consulta a SEFAZ, não confirma o fornecedor fiscal e não representa entrada física. A confirmação do estoque continua sendo o processo independente e auditado descrito acima. O arquivo não autoriza automaticamente pagamentos a fornecedores nem emissão de NFe/NFCe de saída. Arquivo: `src/lib/supplier-nfe-preview.ts`.
+
+### 22.29. Fiscal: relatório de pendências e prontidão operacional
+
+A aba **Fiscal dos produtos** em `/admin/fiscal` recebeu triagem e exportação CSV com nomes, marcas e **campos de preenchimento fiscal ainda pendentes**: NCM, origem, unidade, CFOP de referência, CST PIS/COFINS e CST ICMS ou CSOSN conforme CRT informado. A listagem é *prévia* para trabalho com contabilidade; não verifica se os códigos, classificações, alíquotas ou situações fiscais são corretos, não preenche automaticamente tributação e não autoriza documentos em ambiente de produção. O CSV neutraliza valores que poderiam ser interpretados como fórmulas por aplicativos de planilha.
+
+A página `/admin/prontidao` também acompanha o cadastro de fornecedores e os recebimentos pendentes, com links diretos para a operação. Essas verificações não alteram as travas existentes sobre checkout, cobrança, transportadoras e emissão fiscal.
+
+Arquivos: `src/lib/fiscal-catalog-audit.ts`, `src/app/admin/fiscal/fiscal-manager.tsx`, `src/app/admin/prontidao/page.tsx` e testes correspondentes.
+
+**Pendente antes de produção:** validar um recebimento com SKU real e XML de NF-e real, conferir a contabilização contra lotes e histórico, homologar NCM/tributação com contabilidade e configurar serviços fiscais, marketplaces, pagamentos e transportadoras em fase específica de credenciais. Não usar resultados de leitura XML como prova de autenticidade.

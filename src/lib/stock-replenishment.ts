@@ -29,12 +29,14 @@ export function computeReplenishment(
    l.expires_at!==null&&l.expires_at<today)
    .reduce((s,l)=>s+l.on_hand,0);
   const threshold=minimum||1;
-  const suggested=Math.max(0,threshold*factor-available);
+  const active=v.active&&(v.products?.active??false);
+  // Não recomendar compra de produtos ou SKUs desativados.
+  const suggested=active?Math.max(0,threshold*factor-available):0;
   return {
    id:v.id,sku:v.sku,ean:v.ean,product:v.products?.name??'Produto removido',
    shade:v.shade||v.name,physical,reserved,validLots:validQuantity,
    available,minimum,expired,expiring:0,suggested,
-   active:v.active&&(v.products?.active??false)
+   active
   };
  }).sort((a,b)=>Number(b.suggested>0)-Number(a.suggested>0)||
   b.suggested-a.suggested||a.product.localeCompare(b.product,'pt-BR'));

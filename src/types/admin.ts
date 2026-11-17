@@ -11,7 +11,7 @@ export type AdminProduct = {
  active:boolean;is_adult:boolean;created_at:string;categories:Category|null;variants:VariantRow[];
 };
 export type StockVariant = Omit<VariantRow,'product_id'> & {
- products: {id:string;name:string;brand:string;active:boolean;price_cents:number;cost_cents:number}|null;
+ products: {id:string;name:string;brand:string;active:boolean;price_cents:number}|null;
 };
 
 export type StockMovement={

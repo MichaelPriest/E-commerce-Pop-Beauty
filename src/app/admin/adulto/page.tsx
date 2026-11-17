@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {ArrowLeft,Eye,ImageOff,LockKeyhole,PackagePlus,Settings,ShieldCheck,ShieldAlert,PackageOpen} from 'lucide-react';
-import {requireAdmin} from '@/lib/admin';
+import {readAdminProductCosts,requireAdmin} from '@/lib/admin';
 import {formatBRL,productImageSrc} from '@/lib/products';
 
 export const dynamic='force-dynamic';
@@ -10,7 +10,7 @@ type Variant={
 };
 type AdultProduct={
  id:string;slug:string;name:string;brand:string;description:string;
- price_cents:number;cost_cents:number;image_url:string|null;active:boolean;
+ price_cents:number;image_url:string|null;active:boolean;
  categories:{name:string}|null;
  variants:Variant[];
 };
@@ -21,17 +21,19 @@ export default async function AdultAdminPreview(){
  const [settingsResult,productsResult]=await Promise.all([
   supabase.from('store_settings').select('adult_enabled').eq('id',1).maybeSingle(),
   supabase.from('products')
-   .select('id,slug,name,brand,description,price_cents,cost_cents,image_url,active,categories(name),variants(id,sku,shade,inventory(on_hand,reserved))')
+   .select('id,slug,name,brand,description,price_cents,image_url,active,categories(name),variants(id,sku,shade,inventory(on_hand,reserved))')
    .eq('is_adult',true).order('created_at',{ascending:false}).limit(100)
  ]);
- if(settingsResult.error||productsResult.error){
+ const products=(productsResult.data??[]) as unknown as AdultProduct[];
+ const {costs,error:costError}=await readAdminProductCosts(supabase,products.map(p=>p.id));
+ const error=settingsResult.error||productsResult.error||costError;
+ if(error){
   return <div className="container admin-workspace">
    <h1>Prévia administrativa +18</h1>
-   <p role="alert" className="form-error">Não foi possível consultar o catálogo: {settingsResult.error?.message||productsResult.error?.message}</p>
+   <p role="alert" className="form-error">Não foi possível consultar o catálogo: {error.message}</p>
    <Link className="admin-outline" href="/admin">Voltar</Link>
   </div>;
  }
- const products=(productsResult.data??[]) as unknown as AdultProduct[];
  const active=products.filter(p=>p.active).length;
  const units=products.reduce((sum,p)=>sum+(p.variants??[]).reduce((count,v)=>count+(v.inventory?.on_hand??0),0),0);
  const enabled=!!settingsResult.data?.adult_enabled;
@@ -76,7 +78,7 @@ export default async function AdultAdminPreview(){
         <div className="admin-adult-labels"><small>{p.brand}</small><span className={p.active?'admin-status live':'admin-status draft'}>{p.active?'Publicado':'Rascunho'}</span></div>
         <h2>{p.name}</h2><p>{p.description||'Sem descrição cadastrada.'}</p>
         <strong className="admin-adult-price">{formatBRL(p.price_cents)}</strong>
-        <div className="admin-adult-info"><span>Custo: {formatBRL(p.cost_cents)}</span><span>Físico: {stock}</span><span>Disponível: {available}</span></div>
+        <div className="admin-adult-info"><span>Custo: {formatBRL(costs.get(p.id)??0)}</span><span>Físico: {stock}</span><span>Disponível: {available}</span></div>
         <div className="admin-adult-skus">
         {(p.variants??[]).length? p.variants.map(v=><small key={v.id}>{v.sku}{v.shade?' • '+v.shade:''}</small>):<small>Sem variações cadastradas</small>}
         </div>

@@ -890,6 +890,10 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-readiness-item>a{display:inline-flex;gap:6px;align-items:center;text-decoration:none;color:#b5298d;font-weight:800;font-size:11px}
 .pope-readiness-footnote{display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.7;color:#9a7e8e;margin:20px 0}
 .pope-readiness-footnote svg{flex-shrink:0}
+.pope-preflight-grid{margin-top:12px}
+.pope-preflight-vars{display:grid;gap:5px;margin:11px 0;padding-left:16px;color:#785073;font-size:11px;overflow-wrap:anywhere}
+.pope-preflight-result{display:block;white-space:normal}
+.pope-preflight-grid .admin-outline{margin-top:10px}
 @media(max-width:780px){.pope-readiness-grid{grid-template-columns:1fr}}
 
 /* Marketplaces: conexão OAuth e leitura isolada */

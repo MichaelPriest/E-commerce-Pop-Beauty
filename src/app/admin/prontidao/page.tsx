@@ -9,6 +9,10 @@ import {mpTestWebhookEnabled} from '@/lib/payments/mp-webhook-test';
 import {mpLivePaymentConfig} from '@/lib/payments/mercado-pago-live';
 import {focusConfig} from '@/lib/fiscal/focus-nfe';
 import {labelConfig} from '@/lib/shipping/melhor-envio-label';
+import {fiscalIssuerIssues} from '@/lib/fiscal/readiness-core';
+import {auditFiscalCatalog,type FiscalAuditProduct} from '@/lib/fiscal-catalog-audit';
+import {integrationPreflight} from '@/lib/integration-preflight';
+import {IntegrationChecks} from './integration-checks';
 import {
  READINESS_LABELS,summarizeReadiness,type ReadinessItem,type ReadinessState
 } from '@/lib/release-readiness';
@@ -21,18 +25,20 @@ function statusClass(state:ReadinessState){
 }
 export default async function AdminReadinessPage(){
  const sb=await requireAdmin();
- const [productCount,variantData,shippingOrigin,deliveryRates,gateways,settings,suppliers,receipts]=await Promise.all([
+ const [productCount,variantData,shippingOrigin,deliveryRates,gateways,settings,suppliers,receipts,issuer,fiscalProducts]=await Promise.all([
   sb.from('products').select('id',{head:true,count:'exact'}).eq('active',true).eq('is_adult',false),
   sb.from('variants').select(
-   'id,variant_shipping_specs(weight_g,height_cm,width_cm,length_cm)'
-  ).eq('active',true).limit(501),
+   'id,products!inner(id),variant_shipping_specs(weight_g,height_cm,width_cm,length_cm)'
+  ).eq('active',true).eq('products.active',true).eq('products.is_adult',false).limit(501),
   sb.from('shipping_origin_settings').select('origin_postal_code').eq('id',1).maybeSingle(),
   sb.from('checkout_delivery_rates').select('id',{head:true,count:'exact'}).eq('active',true),
   sb.from('payment_gateway_settings').select('provider')
    .eq('preferred_for_sandbox',true).limit(1),
   sb.from('store_settings').select('checkout_reservations_enabled,commercial_checkout_enabled').eq('id',1).maybeSingle(),
   sb.from('suppliers').select('id',{head:true,count:'exact'}).eq('active',true),
-  sb.from('goods_receipts').select('id,status').order('created_at',{ascending:false}).limit(150)
+  sb.from('goods_receipts').select('id,status').order('created_at',{ascending:false}).limit(150),
+  sb.from('fiscal_issuer_settings').select('legal_name,cnpj,state_registration,tax_regime,state_code,city,city_ibge_code,postal_code,street,house_number,district').eq('id',1).maybeSingle(),
+  sb.from('products').select('id,name,brand,active,is_adult,product_fiscal_details(*)').eq('active',true).eq('is_adult',false).limit(501),
  ]);
  const activeProducts=productCount.error?null:(productCount.count??0);
  const variants=variantData.data??[];
@@ -53,6 +59,10 @@ export default async function AdminReadinessPage(){
  const livePayments=mpLivePaymentConfig();
  const focus=focusConfig(),labels=labelConfig();
  const checkoutOpen=Boolean(livePayments?.linkOrigin&&settings.data?.commercial_checkout_enabled);
+ const issuerIssues=fiscalIssuerIssues(issuer.data??null);
+ const productFiscalAudit=auditFiscalCatalog((fiscalProducts.data??[]) as FiscalAuditProduct[],issuer.data?.tax_regime??null);
+ const productsWithPendingTax=productFiscalAudit.filter(item=>!item.readyForReview).length;
+ const fiscalCoverage=activeProducts!==null&&productFiscalAudit.length===activeProducts;
 
  const checks:ReadinessItem[]=[
   {id:'build',group:'Técnico',title:'Dependências e testes automatizados',
@@ -131,6 +141,16 @@ export default async function AdminReadinessPage(){
    detail:focus?'Focus NFe configurado em '+focus.environment+'. Confira emitente, produtos e autorização fiscal.':
     'Emissão, consulta, XML, DANFE e cancelamento desenvolvidos. Aguardando credenciais e cadastro fiscal.',
    state:focus?'manual':'pending',href:'/admin/fiscal',action:'Conferir cadastro fiscal'},
+  {id:'fiscal-issuer',group:'Operação',title:'Dados do emitente',
+   detail:issuer.error?'Cadastro fiscal indisponível.':issuerIssues.length?issuerIssues.join(' · '):
+    'Identificação, regime e endereço fiscal preenchidos. Confira o credenciamento no emissor.',
+   state:!issuer.error&&issuerIssues.length===0?'manual':'pending',href:'/admin/fiscal',action:'Preencher emitente'},
+  {id:'fiscal-items',group:'Catálogo',title:'Dados fiscais dos produtos ativos',
+   detail:fiscalProducts.error?'Não foi possível consultar a tributação dos produtos.':
+    `${productsWithPendingTax} de ${productFiscalAudit.length} produtos consultados têm pendências de preenchimento.`+
+    (fiscalCoverage?'':' Confira os demais no cadastro fiscal.'),
+   state:!fiscalProducts.error&&fiscalCoverage&&productFiscalAudit.length>0&&productsWithPendingTax===0?'manual':'pending',
+   href:'/admin/fiscal',action:'Conferir produtos'},
   {id:'legal',group:'Operação',title:'Políticas e atendimento ao consumidor',
    detail:'Publicar termos, privacidade/LGPD, trocas, devoluções, frete, contatos e identificação do fornecedor.',
    state:'manual'},
@@ -153,6 +173,7 @@ export default async function AdminReadinessPage(){
    <div><h2>{checkoutOpen?'Checkout comercial habilitado':'Checkout comercial aguardando abertura'}</h2>
     <p>Confira a configuração dos provedores e a operação da loja antes do lançamento.</p></div>
   </section>
+  <IntegrationChecks cards={integrationPreflight(process.env)}/>
   <div className="admin-metric-row">
    <div><ShieldCheck/><small>Itens verificados</small><strong>{summary.ready}</strong></div>
    <div><AlertTriangle/><small>Pendências técnicas</small><strong>{summary.pending}</strong></div>

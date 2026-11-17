@@ -14,7 +14,7 @@ export function labelConfig(){
 }
 export type LabelConfig=NonNullable<ReturnType<typeof labelConfig>>;
 
-export async function labelRequest(config:LabelConfig,path:string,body?:object,accept='application/json'){
+export async function labelRequest(config:Pick<LabelConfig,'base'|'token'|'email'>,path:string,body?:object,accept='application/json'){
  return fetch(config.base+'/api/v2/me/'+path,{method:body?'POST':'GET',cache:'no-store',redirect:'error',
   signal:AbortSignal.timeout(10000),headers:{Authorization:'Bearer '+config.token,Accept:accept,
    'User-Agent':`Popê Beauty (${config.email})`,...(body?{'Content-Type':'application/json'}:{})},

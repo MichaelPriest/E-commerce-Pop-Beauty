@@ -7,17 +7,22 @@ import type {CommercialPaymentResult} from './commercial-payment';
 const mercadoPagoApi = 'https://api.mercadopago.com';
 export const commercialPaymentId = /^[0-9]{1,24}$/;
 
-export function mpLivePaymentConfig() {
+export function mpLiveSellerConfig() {
   const token = process.env.MP_LIVE_ACCESS_TOKEN?.trim();
   const sellerId = process.env.MP_LIVE_SELLER_ID?.trim();
+  if (!token || !sellerId || !/^[1-9][0-9]{0,19}$/.test(sellerId) ||
+      token.startsWith('TEST-') || token === process.env.MP_TEST_ACCESS_TOKEN?.trim() ||
+      sellerId === process.env.MP_TEST_SELLER_ID?.trim()) return null;
+  return {token,sellerId};
+}
+
+export function mpLivePaymentConfig() {
+  const seller = mpLiveSellerConfig();
   const secret = process.env.MP_LIVE_WEBHOOK_SECRET?.trim();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (process.env.MP_LIVE_WEBHOOK_ENABLED !== 'verified-live-account-only' ||
-      !token || !sellerId || !/^[1-9][0-9]{0,19}$/.test(sellerId) ||
-      !secret || !serviceKey || !supabaseUrl || token.startsWith('TEST-') ||
-      token === process.env.MP_TEST_ACCESS_TOKEN?.trim() ||
-      sellerId === process.env.MP_TEST_SELLER_ID?.trim()) return null;
+      !seller || !secret || !serviceKey || !supabaseUrl) return null;
   let linkOrigin: string | null = null;
   if (process.env.MP_LIVE_PAYMENT_LINKS_ENABLED === 'internal-orders') {
     try {
@@ -25,7 +30,7 @@ export function mpLivePaymentConfig() {
       if (site.protocol === 'https:' && site.href === site.origin + '/') linkOrigin = site.origin;
     } catch { /* A origem pública precisa ser configurada para criar links. */ }
   }
-  return {token,sellerId,secret,serviceKey,supabaseUrl,linkOrigin};
+  return {...seller,secret,serviceKey,supabaseUrl,linkOrigin};
 }
 
 type LiveConfig = NonNullable<ReturnType<typeof mpLivePaymentConfig>>;
@@ -36,7 +41,7 @@ export function commercialPaymentStore(config: LiveConfig) {
   });
 }
 
-async function mpRequest(config: LiveConfig, path: string, body?: object, requestKey?: string) {
+async function mpRequest(config: Pick<LiveConfig,'token'>, path: string, body?: object, requestKey?: string) {
   const response = await fetch(mercadoPagoApi + path, {
     method: body ? 'POST' : 'GET', cache: 'no-store', redirect: 'error',
     signal: AbortSignal.timeout(8000),
@@ -51,7 +56,7 @@ async function mpRequest(config: LiveConfig, path: string, body?: object, reques
   return await response.json() as Record<string,unknown>;
 }
 
-export async function verifyMpLiveSeller(config: LiveConfig) {
+export async function verifyMpLiveSeller(config: Pick<LiveConfig,'token'|'sellerId'>) {
   const account = await mpRequest(config, '/users/me');
   const sellerId = typeof account.id === 'string' || Number.isSafeInteger(account.id)
     ? String(account.id) : '';

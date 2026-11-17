@@ -1216,3 +1216,48 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  }
  .cart-page .pope-cart-product > .pope-cart-thumbnail span{font-size:1.45rem}
 }
+
+/* CSV e reposição — formulários operacionais compactos, responsivos. */
+.pope-csv-head-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:14px 0 18px}
+.pope-csv-admin .ops-form-card,.pope-replenishment-admin .ops-form-card{min-width:0}
+.pope-csv-admin .ops-form-card h2,.pope-replenishment-admin .ops-form-card h2{
+ display:flex;align-items:center;gap:9px;font-size:1.04rem}
+.pope-csv-admin .ops-form-card>p,.pope-replenishment-admin .ops-form-card>p{
+ line-height:1.55}
+.pope-csv-file-label{display:grid;gap:8px;font-weight:750;color:#69485e;font-size:.86rem}
+.pope-csv-file-label input{min-height:44px;padding:10px;border:1px solid #e3cbd9;
+ border-radius:9px;background:#fff;max-width:100%}
+.pope-csv-file-name{display:flex;align-items:center;gap:8px;font-size:.86rem;
+ color:#7c4367;overflow-wrap:anywhere}
+.pope-csv-summary{display:flex;flex-wrap:wrap;gap:10px;margin:15px 0}
+.pope-csv-summary>span{display:flex;align-items:center;gap:8px;padding:9px 12px;
+ border-radius:10px;border:1px solid #edd5e2;color:#764061;font-size:.83rem;
+ background:#fff8fc}
+.pope-csv-summary strong{font-size:1.03rem;color:#513548}
+.pope-csv-search{max-width:450px;margin-bottom:14px}
+.pope-csv-commit-actions{display:flex;gap:12px;flex-wrap:wrap;
+ align-items:center;margin:19px 0 13px}
+.pope-csv-commit-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:43px}
+.pope-csv-categories{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 20px}
+.pope-csv-categories>span{border:1px solid #e8d2de;border-radius:9px;
+ padding:8px 11px;background:#fff8fc;font-size:.81rem;color:#65425d}
+.pope-csv-categories code{font-weight:800;margin-right:4px}
+.pope-csv-admin .ops-table small,.pope-replenishment-admin .ops-table small{display:block;
+ font-size:.73rem;color:#766071;margin-top:3px}
+.pope-replenishment-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin:17px 0}
+.pope-replenishment-controls>label:not(.admin-search){display:grid;gap:7px;font-weight:700;
+ font-size:.83rem;color:#705365}
+.pope-replenishment-controls select{border:1px solid #dac0d0;border-radius:10px;
+ padding:10px 12px;min-height:44px;background:white;color:#483047}
+.pope-replenishment-controls .admin-search{min-width:230px;flex:1}
+.pope-replenishment-toggle{display:flex!important;align-items:center!important;
+ flex-direction:row!important;gap:7px!important;min-height:44px}
+.pope-replenishment-toggle input{width:17px;height:17px;accent-color:#963e77}
+.pope-replenishment-controls .admin-outline{min-height:44px;display:inline-flex;
+ align-items:center;gap:7px}
+@media(max-width:700px){
+ .pope-csv-head-grid{grid-template-columns:1fr}
+ .pope-csv-commit-actions button{flex:1 1 auto}
+ .pope-replenishment-controls>label{flex:1 1 100%}
+ .pope-replenishment-controls .admin-search{min-width:0}
+}

@@ -46,16 +46,25 @@ export default function CartPage(){
    <div className="cart-layout">
     <div className="cart-items">{cart.map(item=>{
      const key=cartIdentity(item);
-     return <div className="cart-item" key={key}>
-      <div className="cart-emoji">{item.emoji||'🛍️'}</div>
+     const detailHref='/produto/'+item.slug+
+      (item.variant_id?'?variacao='+encodeURIComponent(item.variant_id):'');
+     return <div className="cart-item pope-cart-product" key={key}>
+      <Link className="cart-emoji pope-cart-thumbnail" href={detailHref}
+       aria-label={'Ver imagens de '+item.name+
+        (item.variant_name?' na cor '+item.variant_name:'')}>
+       {item.image_url?<img src={item.image_url}
+        alt={'Foto de '+item.name+(item.variant_name?' — '+item.variant_name:'')}
+        loading="lazy"/>:
+        <span aria-hidden="true">{item.emoji||'🛍️'}</span>}
+      </Link>
       <div className="pope-cart-line-info">
-       <Link href={'/produto/'+item.slug}><strong>{item.name}</strong></Link>
+       <Link href={detailHref}><strong>{item.name}</strong></Link>
        {item.variant_id?<small>Variação: {item.variant_name||'SKU selecionado'}
         {item.sku?' · '+item.sku:''}</small>:
         <small>Sem variação selecionada · o checkout verificará se é necessária</small>}
        <p>{formatBRL(item.price_cents)}</p>
-       <Link href={'/produto/'+item.slug} className="pope-cart-edit-variant">
-        {item.variant_id?'Trocar cor / variação':'Escolher variação'}
+       <Link href={detailHref} className="pope-cart-edit-variant">
+        {item.variant_id?'Ver fotos ou escolher outra cor':'Escolher cor ou variação'}
        </Link>
       </div>
       <div className="quantity">

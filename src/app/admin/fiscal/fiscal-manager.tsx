@@ -2,9 +2,10 @@
 import {useMemo,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
+import {auditFiscalCatalog,fiscalAuditCsv} from '@/lib/fiscal-catalog-audit';
 import {createClient} from '@/lib/supabase/browser';
 import {
- FileText,Printer,PackageCheck,ShieldAlert,Save,Building2,
+ FileText,Printer,PackageCheck,ShieldAlert,Save,Building2,Download,
  ClipboardCheck,Boxes,Truck
 } from 'lucide-react';
 
@@ -85,11 +86,19 @@ export function FiscalManager({issuer,products,orders,drafts,recipients,packages
   packages.find(p=>p.order_id===orderId)?.packing_notes??'');
  const [working,setWorking]=useState(''),[notice,setNotice]=useState(''),
   [error,setError]=useState('');
- const completed=products.filter(p=>{
-  const value=Array.isArray(p.product_fiscal_details)?
-   p.product_fiscal_details[0]:p.product_fiscal_details;
-  return value?.ncm&&value?.tax_origin!==null&&value?.tax_origin!==undefined&&value?.cfop_sale;
- }).length;
+ const preliminaryAudit=auditFiscalCatalog(products,
+  issuer?.tax_regime===undefined||issuer?.tax_regime===null?null:Number(issuer.tax_regime));
+ const completed=preliminaryAudit.filter(item=>item.readyForReview).length;
+ const pendingAudit=preliminaryAudit.filter(item=>item.missing.length>0);
+ function downloadFiscalAudit(){
+  const csv=fiscalAuditCsv(preliminaryAudit);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');
+  anchor.href=url;anchor.download='pope-pendencias-fiscais.csv';
+  document.body.append(anchor);anchor.click();anchor.remove();
+  URL.revokeObjectURL(url);
+ }
  function pickProduct(id:string){
   setProductId(id);const p=products.find(x=>x.id===id);
   const raw=p?.product_fiscal_details;
@@ -178,6 +187,15 @@ export function FiscalManager({issuer,products,orders,drafts,recipients,packages
   </section>:null}
   {tab==='products'?<section className="ops-form-card">
    <h2><Boxes size={19}/> Tributação de mercadorias</h2>
+   <div className="pope-fiscal-audit-controls">
+    <p className="admin-help"><strong>Triagem preliminar:</strong> {pendingAudit.length} produto(s)
+     com campos fiscais faltando ou regime do emitente a conferir.
+     Esse relatório não valida NCM, CFOP, alíquotas ou autorização na SEFAZ.</p>
+    <button className="admin-outline" type="button"
+     onClick={downloadFiscalAudit} disabled={!pendingAudit.length}>
+     <Download size={16}/> Baixar pendências CSV
+    </button>
+   </div>
    <p className="admin-help">Os campos são informações de referência. CFOP, CST, CSOSN,
     IBS/CBS e alíquotas definitivas dependem da operação e do regime do emitente.
     Não foram preenchidos automaticamente.</p>

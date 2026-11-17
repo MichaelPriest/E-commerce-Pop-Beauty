@@ -1,10 +1,21 @@
 /** Carrinho local é só uma prévia, nunca fonte de preço ou disponibilidade. */
 export type CartItem={
  id:string;slug:string;name:string;price_cents:number;qty:number;
- variant_id?:string;variant_name?:string;sku?:string;emoji?:string
+ variant_id?:string;variant_name?:string;sku?:string;emoji?:string;
+ image_url?:string
 };
 const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const trim=(value:unknown,max:number)=>typeof value==='string'?value.slice(0,max):'';
+/** A imagem ilustrativa do carrinho vem de dados locais, nunca é fonte de verdade.
+ * Rejeita protocolos executáveis, data URLs e caminhos de origem cruzada.
+ */
+export function safeCartImageUrl(value:unknown):string|null{
+ if(typeof value!=='string'||value.length>2048)return null;
+ const url=value.trim();
+ if(/^https:\/\/[^\s"'<>\\]+$/i.test(url))return url;
+ if(/^\/(?!\/)[a-z0-9/_%.?=&-]+$/i.test(url))return url;
+ return null;
+}
 export function cartIdentity(item:Pick<CartItem,'id'|'variant_id'>){
  return item.id+':'+(item.variant_id??'default');
 }
@@ -27,7 +38,8 @@ export function normalizeCart(raw:unknown):CartItem[]{
    ...(typeof variant_id==='string'&&variant_id?{variant_id}:{}),
    ...(typeof v.variant_name==='string'?{variant_name:trim(v.variant_name,100)}:{}),
    ...(typeof v.sku==='string'?{sku:trim(v.sku,80)}:{}),
-   ...(typeof v.emoji==='string'?{emoji:trim(v.emoji,12)}:{})
+   ...(typeof v.emoji==='string'?{emoji:trim(v.emoji,12)}:{}),
+   ...(safeCartImageUrl(v.image_url)?{image_url:safeCartImageUrl(v.image_url)!}:{})
   };
   const key=cartIdentity(item);
   const existing=byKey.get(key);
@@ -42,7 +54,7 @@ export function putCartItem(items:CartItem[],added:CartItem):CartItem[]{
  if(!next)return normalized;
  const index=normalized.findIndex(item=>cartIdentity(item)===cartIdentity(next));
  if(index>=0){
-  normalized[index]={...normalized[index],qty:Math.min(99,normalized[index].qty+next.qty)};
+  normalized[index]={...normalized[index],...next,qty:Math.min(99,normalized[index].qty+next.qty)};
  }else if(normalized.length<30)normalized.push(next);
  return normalized;
 }

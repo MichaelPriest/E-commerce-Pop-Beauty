@@ -75,9 +75,11 @@ test('RPC revela apenas status de produtos públicos e respeita lotes',()=>{
 });
 test('vitrine impede inserir produto esgotado no carrinho',()=>{
  const card=read('src/components/product-card.tsx');
- assert.match(card,/const ready=!demo&&!product\.is_adult&&product\.availability==='ready'/);
- assert.match(card,/if\(!ready\)return/);
+ assert.match(card,/const ready=!demo&&!product\.is_adult&&!!chosen\?\.available/);
+ assert.match(card,/if\(!ready\|\|!chosen\)return/);
  assert.match(card,/disabled=\{!ready\}/);
+ assert.match(card,/putCartItem\(stored,item\)/);
+ assert.match(card,/variant_id:chosen\.variant_id/);
  assert.match(card,/Produto de demonstração/);
  assert.match(card,/Esgotado/);
  assert.match(card,/pope-favorites/);

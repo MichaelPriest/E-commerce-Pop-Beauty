@@ -17,6 +17,8 @@ export type CheckoutDeliveryOrder = {
  delivery_fee_cents:number;
  total_cents:number;
  delivery_name:string;
+ checkout_url?:string;
+ payment_error?:string;
 };
 
 export function checkoutDeliveryItems(lines:CheckoutPreviewLine[]){

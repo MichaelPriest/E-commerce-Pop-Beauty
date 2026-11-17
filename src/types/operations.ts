@@ -4,6 +4,7 @@ export type ItemRow={id:string;sku_snapshot:string;title_snapshot:string;quantit
 export type EventRow={id:string;event_type:string;note:string;created_at:string};
 export type OrderRow={
  id:string;customer_id:string|null;channel:string;origin:string;
+ storefront_order?:boolean;
  status:OrderStatus;total_cents:number;created_at:string;
  carrier:string|null;tracking_code:string|null;payment_reference:string|null;
  order_items:ItemRow[];order_events:EventRow[];
@@ -19,7 +20,7 @@ export type ListingRow={
  variants:{id:string;sku:string;products:{name:string;is_adult:boolean}|null}|null;
 };
 export const ORDER_LABELS:Record<string,string>={
- pending:'Aguardando pagamento',paid:'Pago (manual)',packing:'Em separação',
+ pending:'Aguardando pagamento',paid:'Pago',packing:'Em separação',
  shipped:'Enviado',delivered:'Entregue',cancelled:'Cancelado',refunded:'Reembolsado'
 };
 export const CHANNEL_LABELS:Record<string,string>={store:'Loja',shopee:'Shopee',mercadolivre:'Mercado Livre'};

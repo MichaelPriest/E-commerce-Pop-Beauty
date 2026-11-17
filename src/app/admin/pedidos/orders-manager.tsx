@@ -112,7 +112,7 @@ export function OrdersManager({orders,variants,customers}:Props){
    <tbody>{shown.map(o=><tr key={o.id}>
     <td><strong>#{o.id.slice(0,8).toUpperCase()}</strong><small>{dateTimeBR(o.created_at)}</small></td>
     <td>{o.customer_id?clients.get(o.customer_id)||'Cliente cadastrado':'Balcão / sem vínculo'}</td>
-    <td>{CHANNEL_LABELS[o.channel]??o.channel}{o.origin==='admin_manual'?<small>Pedido interno</small>:null}</td>
+    <td>{CHANNEL_LABELS[o.channel]??o.channel}{o.origin==='admin_manual'?<small>{o.storefront_order?'Compra online':'Pedido interno'}</small>:null}</td>
     <td>{o.order_items?.reduce((a,i)=>a+i.quantity,0)??0} un.</td>
     <td><strong>{formatBRL(o.total_cents)}</strong></td>
     <td><span className={'ops-tag status-'+o.status}>{ORDER_LABELS[o.status]??o.status}</span></td>
@@ -120,7 +120,8 @@ export function OrdersManager({orders,variants,customers}:Props){
       <ShoppingBag size={14}/> Central do pedido</Link>
      <button className="ops-small" onClick={()=>setExpanded(s=>s===o.id?null:o.id)}>
       <History size={14}/> {expanded===o.id?'Ocultar':'Detalhes'}</button>
-    {(actions[o.status]??[]).filter(()=>o.origin==='admin_manual').map(a=>
+    {o.storefront_order&&o.status==='pending'&&<Link className="ops-small" href={'/admin/pedidos/'+o.id+'/operacao#cancelamento'}>Cancelamento</Link>}
+    {(actions[o.status]??[]).filter(a=>o.origin==='admin_manual'&&(!o.storefront_order||a.status==='packing')).map(a=>
       <button key={a.status} className="ops-small primary" onClick={()=>startAction(o,a.status)}>{a.label}</button>)}</div>
     {expanded===o.id?<div className="ops-order-detail"><strong>Itens</strong>
      {o.order_items?.map(i=><p key={i.id}>{i.title_snapshot} • {i.sku_snapshot} • {i.quantity} × {formatBRL(i.unit_price_cents)}</p>)}

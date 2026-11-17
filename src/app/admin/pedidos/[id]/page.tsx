@@ -46,7 +46,7 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
  const sb=await requireAdmin();
  const [order,items,events,notices,draft,recipient,integration,packing,
   volumes,requests,documents,tracking,attempts,plan,preflight]=await Promise.all([
-  sb.from('orders').select('id,customer_id,origin,channel,status,total_cents,created_at,updated_at,payment_reference,carrier,tracking_code,shipped_at,delivered_at,shipping_address_snapshot,checkout_delivery_fee_cents')
+  sb.from('orders').select('id,customer_id,origin,channel,status,storefront_order,total_cents,created_at,updated_at,payment_reference,carrier,tracking_code,shipped_at,delivered_at,shipping_address_snapshot,checkout_delivery_fee_cents')
    .eq('id',id).maybeSingle(),
   sb.from('order_items').select('id,sku_snapshot,title_snapshot,quantity,unit_price_cents')
    .eq('order_id',id).order('sku_snapshot'),
@@ -156,7 +156,7 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
   <div className="pope-oc-overview">
    <div><small>Status do pedido</small>
     <strong>{ORDER_LABELS[o.status as keyof typeof ORDER_LABELS]??o.status}</strong>
-    <span>{isManual?'Pedido interno':'Origem loja / homologação'}</span>
+    <span>{isManual?(o.storefront_order?'Compra online':'Pedido interno'):'Origem loja / homologação'}</span>
    </div>
    <div><small>Valor registrado</small><strong>{formatBRL(o.total_cents)}</strong>
     <span>Não equivale a recebimento bancário</span></div>
@@ -175,6 +175,7 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
     'Nenhuma pendência simples identificada automaticamente; ainda pode haver conferências externas necessárias.'}
   </p>}
   <nav className="pope-oc-nav" aria-label="Seções do pedido">
+   {isManual&&<Link href={'/admin/pedidos/'+id+'/operacao'}>Estorno, NF-e e etiqueta</Link>}
    {steps.map(x=><a href={'#etapa-'+x.id} key={x.id}>{x.title}</a>)}
    <a href="#itens">Itens</a><a href="#historico">Histórico</a>
   </nav>
@@ -224,6 +225,9 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
         {(documents.data??[]).length} documento(s) do provedor armazenado(s).
         Confira na central de evidências.</p>:null}
       <div className="pope-oc-actions">
+       {isManual&&['payment','fiscal','shipping'].includes(stage.id)&&<Link className="admin-primary"
+        href={'/admin/pedidos/'+id+'/operacao#'+(stage.id==='payment'?'cancelamento':stage.id==='fiscal'?'nfe':'etiqueta')}>
+        {stage.id==='payment'?'Cancelamento e estorno':stage.id==='fiscal'?'Emitir NF-e':'Frete e etiqueta'}</Link>}
        <Link className="admin-outline" href={stage.id==='payment'&&isManual?
         '/admin/pedidos?pedido='+id:actionLinks[stage.id]}>
         {stage.id==='fiscal'?'Conferir preparação fiscal':

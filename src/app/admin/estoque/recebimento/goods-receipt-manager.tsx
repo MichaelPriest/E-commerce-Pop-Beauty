@@ -44,6 +44,7 @@ export function GoodsReceiptManager({
  const [notes,setNotes]=useState('');
  const [barcode,setBarcode]=useState(''),[lines,setLines]=useState<ReceiptLine[]>([]);
  const [xmlWarnings,setXmlWarnings]=useState<string[]>([]);
+ const [xmlReviewed,setXmlReviewed]=useState(false);
  const [draftId,setDraftId]=useState<string|null>(null);
  const [lastSaved,setLastSaved]=useState<string|null>(null);
  const [dirty,setDirty]=useState(false);
@@ -60,7 +61,7 @@ export function GoodsReceiptManager({
  const itemsCount=lines.reduce((sum,line)=>sum+(Number(line.quantity)||0),0);
  const todayString=today();
  const problems=validateReceiptLines(lines,todayString);
- const canSave=lines.length>0&&!problems.length&&!xmlWarnings.length&&supplierLabel.trim().length>=2&&
+ const canSave=lines.length>0&&!problems.length&&(!xmlWarnings.length||xmlReviewed)&&supplierLabel.trim().length>=2&&
   supplierLabel.trim().length<=180&&reference.length<=100&&notes.length<=1000;
  const saved=!!draftId&&lastSaved===draftId&&!dirty;
  const allDrafts=receipts.filter(receipt=>receipt.status==='draft');
@@ -75,6 +76,7 @@ export function GoodsReceiptManager({
   setSupplierId('');setSupplierLabel('');setReference('');setDocumentDate('');
   setNotes('');setBarcode('');setLines([]);setDraftId(null);
   setLastSaved(null);setDirty(false);setError('');setNotice('');setXmlWarnings([]);
+  setXmlReviewed(false);
  }
  function addLine(event?:FormEvent){
   event?.preventDefault();setError('');setNotice('');
@@ -103,6 +105,7 @@ export function GoodsReceiptManager({
    !window.confirm('Substituir os itens atuais pelos itens identificados no XML?'))return;
   if(busy)return;
   setBusy(true);setError('');setNotice('');setXmlWarnings([]);
+  setXmlReviewed(false);
   try{
    const preview=parseSupplierNfeXml(await file.text());
    const issues=[...preview.warnings];
@@ -312,8 +315,14 @@ export function GoodsReceiptManager({
     <ul>{problems.map((p,i)=><li key={i}>{p}</li>)}</ul>
    </div>:null}
    {xmlWarnings.length?<div className="form-error" role="alert">
-    <strong>Pendências do XML:</strong>
+    <strong>Confira as pendências do XML:</strong>
     <ul>{xmlWarnings.map((w,i)=><li key={i}>{w}</li>)}</ul>
+    <label className="pope-receipt-ack">
+     <input type="checkbox" checked={xmlReviewed} disabled={busy}
+      onChange={e=>{setXmlReviewed(e.target.checked);changed();}}/>
+     Conferi manualmente os itens não identificados, quantidades e lotes;
+     confirmo que posso continuar com os itens mostrados.
+    </label>
    </div>:null}
    {error?<p role="alert" className="form-error"><AlertTriangle size={16}/> {error}</p>:null}
    {notice?<p role="status" className="form-success"><CheckCircle2 size={16}/> {notice}</p>:null}

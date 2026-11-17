@@ -2,8 +2,11 @@ import Link from 'next/link';
 import {notFound} from 'next/navigation';
 import {getProductBySlug,getProductDetailExtras} from '@/lib/catalog';
 import {ProductDetailsShop} from '@/components/product-details-shop';
-export default async function ProductPage({params}:{params:Promise<{slug:string}>}){
+export default async function ProductPage({params,searchParams}:{
+ params:Promise<{slug:string}>;searchParams:Promise<{variacao?:string}>
+}){
  const {slug}=await params;
+ const {variacao}=await searchParams;
  const {product,demo}=await getProductBySlug(slug);
  if(!product)notFound();
  const extras=await getProductDetailExtras(product.id);
@@ -15,6 +18,7 @@ export default async function ProductPage({params}:{params:Promise<{slug:string}
    'Demonstração: não é possível realizar uma compra real.':
    'A loja está em implantação; pedidos e pagamentos comerciais continuam desativados.'}</p>
   <ProductDetailsShop product={product} demo={demo}
-   variants={extras.variants} gallery={extras.gallery}/>
+   variants={extras.variants} gallery={extras.gallery}
+   initialVariantId={typeof variacao==='string'?variacao:''}/>
  </div>;
 }

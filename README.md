@@ -233,12 +233,15 @@ Todas as rotas `/admin/*` são para perfil `admin` verificado no banco.
 | `/admin` | Dashboard e atalhos |
 | `/admin/produtos` | Produtos, fotos, categorias, preços, variações, SKUs e EAN |
 | `/admin/estoque` | Saldos, lotes, validades, movimentações e alertas |
+| `/admin/estoque/compras` | Pedidos a fornecedores, previsão, entregas parciais e saldo por SKU |
+| `/admin/estoque/recebimento` | Entrada por lote e comparação entre pedido, NF-e e contagem física |
 | `/admin/pedidos` | Pedidos internos, criação e alterações de status |
 | `/admin/clientes` | Clientes e relacionamentos com pedidos comerciais |
 | `/admin/logistica` | Separação, expedição, rastreio e baixa FEFO |
 | `/admin/remessas` | Fila administrativa de preparação por Correios/Melhor Envio (sem compra de frete) |
 | `/admin/frete` | CEP de origem, peso/medidas e cotação sandbox |
 | `/admin/financeiro` | Indicadores de pedidos com confirmação administrativa |
+| `/admin/financeiro/compras` | Custos das entradas contabilizadas por mês e fornecedor |
 | `/admin/relatorios` | Evolução mensal, CSV e alertas de estoque |
 | `/admin/marketplaces` | OAuth de contas Shopee/Mercado Livre, importação manual somente leitura e vínculos de SKU |
 | `/admin/notificacoes` | Fila de e-mails de pedidos; reprocessamento |
@@ -489,6 +492,8 @@ A pasta `supabase/` contém os seguintes scripts; alguns são **correções incr
 | `order_notifications_security.sql` | Proteção das RPCs de notificações |
 | `admin_user_access_audit.sql` | Diretório, perfis e auditoria |
 | `admin_operational_reports.sql` | Indicadores mensais e alertas |
+| `goods_receipts_supplier_register_atomic_v1.sql` | Fornecedores, rascunhos e contabilização de entradas |
+| `purchase_orders_receipt_conference_v1.sql` | Pedidos de compra, conferência de NF-e e relatório de custos |
 | `payment_gateway_evaluation.sql` | Configuração dos dez gateways |
 | `payment_gateway_fk_index.sql` | Índice de referência na configuração |
 | `preview_checkout_cart.sql` | Prévia de preço e estoque |
@@ -1109,3 +1114,15 @@ A página `/admin/prontidao` também acompanha o cadastro de fornecedores e os r
 Arquivos: `src/lib/fiscal-catalog-audit.ts`, `src/app/admin/fiscal/fiscal-manager.tsx`, `src/app/admin/prontidao/page.tsx` e testes correspondentes.
 
 **Pendente antes de produção:** validar um recebimento com SKU real e XML de NF-e real, conferir a contabilização contra lotes e histórico, homologar NCM/tributação com contabilidade e configurar serviços fiscais, marketplaces, pagamentos e transportadoras em fase específica de credenciais. Não usar resultados de leitura XML como prova de autenticidade.
+
+### 22.30. Pedidos de compra, conferência de entrada e custos de mercadorias
+
+Em **Estoque → Pedidos de compra**, selecione um fornecedor ativo, informe até 50 SKUs e defina a quantidade, o prazo de entrega e o custo previsto por unidade, quando disponível. A lista de reposição pode preencher o SKU e a quantidade sugerida. Salve o rascunho e confirme o pedido para disponibilizá-lo no recebimento. A confirmação registra um pedido interno. O fornecedor deve ser contatado pelo canal habitual.
+
+Em **Recebimento de mercadorias**, vincule o pedido quando houver um. A entrega pode ser parcial. A contabilização atualiza os lotes, o estoque e o saldo do pedido em uma transação. O banco recusa SKUs que não constam no pedido e quantidades acima do saldo. É possível encerrar o saldo restante de um pedido parcialmente recebido com uma justificativa registrada. Entradas avulsas e rascunhos anteriores continuam disponíveis.
+
+Ao carregar uma NF-e, a conferência guarda as quantidades comerciais declaradas no XML por SKU, separadas das quantidades físicas editadas no formulário. O histórico conserva as quantidades, os avisos e a justificativa das diferenças. A justificativa é obrigatória antes de contabilizar divergências ou avisos da leitura. O XML é processado no navegador.
+
+Em **Financeiro → Custos de mercadorias**, consulte as entradas por mês da contabilização no horário de São Paulo. O relatório soma quantidade física × custo unitário informado, apresenta as unidades sem custo e exporta o resumo por fornecedor em CSV. O custo previsto em um pedido e o valor pago a um fornecedor são apurações diferentes do custo de entrada exibido.
+
+Aplique `supabase/purchase_orders_receipt_conference_v1.sql` após `supabase/goods_receipts_supplier_register_atomic_v1.sql` e antes de publicar as novas telas. A migração preserva a assinatura de chamada das RPCs existentes para rascunhos legados e acrescenta o controle de versão para as novas conferências. As tabelas e funções de compras e custos usam RLS ou autorização administrativa explícita.

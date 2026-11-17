@@ -68,7 +68,8 @@ test('sistema exige confirmação e rascunho salvo antes da entrada',()=>{
  assert.match(ui,/setDirty\(true\)/);
  assert.match(ui,/byBarcode\.get\(value\.toLowerCase\(\)\)/);
  assert.match(ui,/parseSupplierNfeXml\(await file\.text\(\)\)/);
- assert.match(ui,/xmlReviewed/);
+ assert.match(ui,/invoice\.review_reason/);
+ assert.match(ui,/!missingReason/);
 });
 test('validação CPF/CNPJ rejeita números e dígitos verificadores inválidos',()=>{
  assert.equal(supplierTaxIdValid('529.982.247-25'),true);

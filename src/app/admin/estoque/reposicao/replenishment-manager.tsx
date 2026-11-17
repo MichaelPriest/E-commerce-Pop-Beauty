@@ -44,9 +44,8 @@ export function ReplenishmentManager({items,truncated}:{
     <strong>{expired}</strong></div>
   </div>
   <p className="ops-info"><AlertTriangle size={18}/>
-   Esta é uma <strong>lista de planejamento</strong>, não um pedido a fornecedores.
-   Ela não compra mercadorias, ajusta o estoque ou sincroniza Shopee/Mercado Livre.
-   Lotes vencidos não contam como disponíveis para venda.</p>
+   Use a sugestão de reposição ao criar um pedido de compra.
+   O cálculo exclui lotes vencidos do saldo disponível para venda.</p>
   {truncated?<p className="form-error" role="alert">A lista foi limitada a mil SKUs.
    Confira o restante antes de usar os totais para uma compra.</p>:null}
   <section className="ops-form-card">
@@ -96,9 +95,13 @@ export function ReplenishmentManager({items,truncated}:{
       </td>
       <td>{row.minimum}</td>
       <td><strong>{row.suggested}</strong></td>
-      <td><Link className="ops-small primary"
+      <td><div className="pope-receipt-links">
+       {row.suggested>0&&<Link className="ops-small primary"
+        href={'/admin/estoque/compras?sku='+encodeURIComponent(row.sku)+'&quantidade='+row.suggested}>
+        Criar pedido de compra</Link>}
+       <Link className="ops-small"
        href={'/admin/estoque?busca='+encodeURIComponent(row.sku)+'&abrir=entrada'}>
-       Registrar entrada</Link></td>
+       Registrar entrada</Link></div></td>
      </tr>)}</tbody>
     </table>
    </div>

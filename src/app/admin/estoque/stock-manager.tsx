@@ -86,6 +86,7 @@ export function StockManager({variants,movements}:Props){
    <Barcode size={17}/> Receber mercadorias</Link>
   <Link href="/admin/estoque/reposicao" className="admin-outline">
    Planejar reposição</Link>
+  <Link href="/admin/estoque/compras" className="admin-outline">Pedidos de compra</Link>
   <Link href="/admin/produtos" className="admin-primary">
    <PackageSearch size={18}/> Produtos</Link>
  </div></div>

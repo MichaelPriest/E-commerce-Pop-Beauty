@@ -13,8 +13,20 @@ const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 const headers = {'Cache-Control': 'private, no-store, max-age=0'};
 const reject = (error: string, status: number) => NextResponse.json({error}, {status,headers});
 
+function hasSameOrigin(request: NextRequest) {
+  const header = request.headers.get('origin');
+  if (!header) return false;
+  try {
+    const origin = new URL(header);
+    return header === origin.origin && origin.protocol === request.nextUrl.protocol &&
+      origin.host === request.headers.get('host')?.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
-  if (request.headers.get('origin') !== request.nextUrl.origin) {
+  if (!hasSameOrigin(request)) {
     return reject('Origem não autorizada.',403);
   }
   const config = mpLivePaymentConfig();

@@ -19,16 +19,25 @@ function statusFor(v:StockVariant){
 function readableDate(value:string|null){if(!value)return 'Sem validade';const [y,m,d]=value.split('-');return [d,m,y].join('/');}
 export function StockManager({variants,movements}:Props){
  const router=useRouter(),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos');
- useEffect(()=>{
-  try{
-   const sku=new URLSearchParams(window.location.search).get('busca');
-   if(sku)setQuery(sku.slice(0,80));
-  }catch{/* Busca opcional vinda do planejamento de reposição. */}
- },[]);
  const [selected,setSelected]=useState<StockVariant|null>(null),[direction,setDirection]=useState<'in'|'out'>('in');
  const [amount,setAmount]=useState('1'),[reason,setReason]=useState('Entrada de mercadorias');
  const [lotCode,setLotCode]=useState('SEM-LOTE'),[expiry,setExpiry]=useState('');
  const [saving,setSaving]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState('');
+ useEffect(()=>{
+  try{
+   const params=new URLSearchParams(window.location.search);
+   const sku=params.get('busca')?.slice(0,80);
+   if(!sku)return;
+   setQuery(sku);
+   if(params.get('abrir')!=='entrada')return;
+   const match=variants.find(v=>v.sku===sku);
+   if(!match)return;
+   // Somente abre o formulário; nenhuma entrada é registrada sem confirmação.
+   setSelected(match);setDirection('in');setAmount('1');
+   setReason('Entrada de mercadorias');setLotCode('SEM-LOTE');setExpiry('');
+  }catch{/* Atalho opcional; movimentação continua manual e auditada. */}
+ },[]);
+
  const metrics=useMemo(()=>{
   const all=variants.length,units=variants.reduce((a,v)=>a+(v.inventory?.on_hand??0),0),
     low=variants.filter(v=>statusFor(v)==='baixo').length,

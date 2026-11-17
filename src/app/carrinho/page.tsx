@@ -52,9 +52,9 @@ export default function CartPage(){
       <Link className="cart-emoji pope-cart-thumbnail" href={detailHref}
        aria-label={'Ver imagens de '+item.name+
         (item.variant_name?' na cor '+item.variant_name:'')}>
-       {item.image_url?<img src={item.image_url}
+       {item.image_url?<img src={item.image_url} width={88} height={88}
         alt={'Foto de '+item.name+(item.variant_name?' — '+item.variant_name:'')}
-        loading="lazy"/>:
+        loading="lazy" decoding="async"/>:
         <span aria-hidden="true">{item.emoji||'🛍️'}</span>}
       </Link>
       <div className="pope-cart-line-info">

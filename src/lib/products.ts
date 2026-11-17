@@ -1,9 +1,13 @@
+import type {CatalogCardVariant} from './catalog-card-preview';
+
 export type Product = {
   id: string; slug: string; name: string; description: string; brand: string;
   price_cents: number; compare_at_cents: number | null; image_url: string | null;
   category: string; is_adult?: boolean; emoji?: string; tone?: string;
   availability?:'ready'|'out_of_stock'|'variant_selection_required'|'unavailable';
   active_variant_count?:number;
+  preview_variants?:CatalogCardVariant[];
+  preview_general_image_url?:string|null;
 };
 export const demoProducts: Product[] = [
   {id:'demo-1',slug:'batom-cremoso-rosa',name:'Batom Cremoso Rosa Pop',description:'Cor vibrante e acabamento confortável para arrasar.',brand:'Popê Beauty',price_cents:2990,compare_at_cents:3990,image_url:null,category:'Make',emoji:'💄',tone:'pink'},

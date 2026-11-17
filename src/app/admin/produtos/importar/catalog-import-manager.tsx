@@ -126,8 +126,10 @@ export function CatalogImportManager({categories}:{categories:Category[]}){
    <div className="pope-csv-section-heading"><div>
     <h2><ClipboardCheck size={19}/> 3. Confira e valide as linhas</h2>
     <p className="admin-help">A atualização identifica o produto pelo SKU e
-     altera nome, categoria, marca, descrição, preço, custo e código de barras.
-     Não modifica o SKU, slug, imagens, status de publicação ou estoque.</p>
+     altera nome, categoria, marca, descrição, preço e custo.
+     O código de barras é atualizado somente quando preenchido; campo vazio
+     preserva o EAN anterior. Não modifica SKU, slug, imagens, publicação ou estoque.
+     Em produtos com várias cores, preço e nome são compartilhados entre os SKUs.</p>
    </div></div>
    <div className="pope-csv-summary">
     <span><PackagePlus size={16}/> Novos rascunhos:

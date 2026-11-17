@@ -55,7 +55,7 @@ export function ProductsManager({initialProducts,categories}:Props){
  },[]);
  const filtered=useMemo(()=>initialProducts.filter(p=>{
   const q=query.toLocaleLowerCase('pt-BR');
-  return (!q||[p.name,p.brand,p.slug,...(p.variants??[]).map(v=>v.sku)].join(' ').toLocaleLowerCase('pt-BR').includes(q)) &&
+  return (!q||[p.name,p.brand,p.slug,...(p.variants??[]).flatMap(v=>[v.sku,v.ean??''])].join(' ').toLocaleLowerCase('pt-BR').includes(q)) &&
    (filter==='todos'||(filter==='ativos'?p.active:filter==='inativos'?!p.active:
     filter==='pendencias'?p.active&&!p.is_adult&&(qualityById.get(p.id)?.length??0)>0:true));
  }),[query,filter,initialProducts,qualityById]);

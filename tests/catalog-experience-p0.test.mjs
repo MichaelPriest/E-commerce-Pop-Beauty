@@ -101,3 +101,22 @@ test('dashboard e cadastro oferecem acesso às pendências',()=>{
  assert.match(admin,/Próxima etapa/);
  assert.match(admin,/Salvar alterações/);
 });
+
+test('políticas de visitantes não executam funções administrativas',()=>{
+ const sql=read('supabase/catalog_anonymous_read_policies_v1.sql');
+ for(const [table,policy] of [
+  ['categories','categories_public_read'],
+  ['products','products_catalog_read'],
+  ['variants','variants_catalog_read'],
+  ['product_gallery_images','gallery_public_read']
+ ]){
+  assert.ok(sql.includes('alter policy '+policy+' on public.'+table+' to authenticated'));
+ }
+ assert.equal((sql.match(/for select to anon/g)??[]).length,4);
+ assert.equal((sql.match(/not (?:p\.)?is_adult/g)??[]).length,4);
+ assert.doesNotMatch(sql.slice(0,sql.indexOf('revoke select')),/private\.|grant execute/i);
+ assert.match(sql,/if auth\.uid\(\) is null or not private\.is_admin\(\)/);
+ const final=read('supabase/catalog_cost_admin_only_v1.sql');
+ assert.match(final,/revoke select \(cost_cents\) on public\.products from public,authenticated/);
+ assert.doesNotMatch(final,/grant select[^;]*cost_cents/);
+});

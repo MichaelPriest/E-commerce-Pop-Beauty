@@ -18,7 +18,7 @@ function statusClass(state:ReadinessState){
 }
 export default async function AdminReadinessPage(){
  const sb=await requireAdmin();
- const [productCount,variantData,shippingOrigin,gateways,settings]=await Promise.all([
+ const [productCount,variantData,shippingOrigin,gateways,settings,suppliers,receipts]=await Promise.all([
   sb.from('products').select('id',{head:true,count:'exact'}).eq('active',true).eq('is_adult',false),
   sb.from('variants').select(
    'id,variant_shipping_specs(weight_g,height_cm,width_cm,length_cm)'
@@ -26,7 +26,9 @@ export default async function AdminReadinessPage(){
   sb.from('shipping_origin_settings').select('origin_postal_code').eq('id',1).maybeSingle(),
   sb.from('payment_gateway_settings').select('provider')
    .eq('preferred_for_sandbox',true).limit(1),
-  sb.from('store_settings').select('checkout_reservations_enabled').eq('id',1).maybeSingle()
+  sb.from('store_settings').select('checkout_reservations_enabled').eq('id',1).maybeSingle(),
+  sb.from('suppliers').select('id',{head:true,count:'exact'}).eq('active',true),
+  sb.from('goods_receipts').select('id,status').order('created_at',{ascending:false}).limit(150)
  ]);
  const activeProducts=productCount.error?null:(productCount.count??0);
  const variants=variantData.data??[];
@@ -95,6 +97,19 @@ export default async function AdminReadinessPage(){
    detail:smtpCount+' de '+smtpKeys.length+' variáveis SMTP de pedidos presentes. A entrega precisa de teste real.',
    state:smtpCount===smtpKeys.length?'ready':'pending',
    href:'/admin/notificacoes',action:'Ver notificações'},
+  {id:'suppliers',group:'Operação',title:'Cadastro de fornecedores',
+   detail:suppliers.error?'Não foi possível consultar fornecedores.':
+    (suppliers.count??0)+' fornecedor(es) ativo(s). Cadastre fornecedores para rastrear compras e recebimentos.',
+   state:!suppliers.error&&(suppliers.count??0)>0?'ready':'pending',
+   href:'/admin/fornecedores',action:'Cadastrar fornecedores'},
+  {id:'goods-receipts',group:'Operação',title:'Conferência e recebimento de mercadorias',
+   detail:receipts.error?'Não foi possível consultar a conferência.':
+    (receipts.data??[]).filter(r=>r.status==='draft').length+
+    ' rascunho(s) aguardando contabilização; '+
+    (receipts.data??[]).filter(r=>r.status==='posted').length+
+    ' entrada(s) contabilizada(s), até 150 últimas.',
+   state:receipts.error?'pending':(receipts.data??[]).some(r=>r.status==='draft')?
+    'pending':'ready',href:'/admin/estoque/recebimento',action:'Conferir recebimentos'},
   {id:'fiscal',group:'Operação',title:'Emissão fiscal',
    detail:'Definir com a contabilidade a emissão aplicável (NF-e/NFC-e) e integrar o processo aos pedidos.',
    state:'manual'},

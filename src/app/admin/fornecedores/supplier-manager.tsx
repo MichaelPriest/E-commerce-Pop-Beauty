@@ -4,6 +4,7 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {Building2,CheckCircle2,Plus,Search,Save,Pencil} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
+import {supplierTaxIdValid} from '@/lib/supplier-tax-id';
 type Supplier={id:string;name:string;tax_id:string|null;email:string|null;
  phone:string|null;notes:string;active:boolean;created_at:string};
 const empty=()=>({name:'',tax_id:'',email:'',phone:'',notes:'',active:true});
@@ -34,8 +35,8 @@ export function SupplierManager({suppliers}:{suppliers:Supplier[]}){
   event.preventDefault();if(busy)return;
   const name=form.name.trim(),tax_id=form.tax_id.replace(/\D/g,'');
   if(name.length<2||name.length>180){setError('Nome entre 2 e 180 caracteres.');return;}
-  if(tax_id&&![11,14].includes(tax_id.length)){
-   setError('CPF ou CNPJ deve conter 11 ou 14 dígitos.');return;
+  if(tax_id&&!supplierTaxIdValid(tax_id)){
+   setError('CPF/CNPJ inválido: verifique os dígitos e o código verificador.');return;
   }
   if(form.email&&(!form.email.includes('@')||form.email.length>254)){
    setError('E-mail inválido.');return;

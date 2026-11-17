@@ -7,6 +7,7 @@ import {
 import {
  auditFiscalCatalog,fiscalAuditCsv,csvCellSafe
 } from '../src/lib/fiscal-catalog-audit.ts';
+import {supplierTaxIdValid} from '../src/lib/supplier-tax-id.ts';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const uuid='22222222-2222-4222-8222-222222222222';
 const sample={
@@ -69,6 +70,13 @@ test('sistema exige confirmação e rascunho salvo antes da entrada',()=>{
  assert.match(ui,/parseSupplierNfeXml\(await file\.text\(\)\)/);
  assert.match(ui,/xmlReviewed/);
 });
+test('validação CPF/CNPJ rejeita números e dígitos verificadores inválidos',()=>{
+ assert.equal(supplierTaxIdValid('529.982.247-25'),true);
+ assert.equal(supplierTaxIdValid('11.222.333/0001-81'),true);
+ assert.equal(supplierTaxIdValid('52998224726'),false);
+ assert.equal(supplierTaxIdValid('00000000000'),false);
+ assert.equal(supplierTaxIdValid('11222333000182'),false);
+});
 test('fornecedores têm edição administrativa, sem exclusão de histórico',()=>{
  const sql=read('supabase/goods_receipts_supplier_register_atomic_v1.sql');
  const ui=read('src/app/admin/fornecedores/supplier-manager.tsx');
@@ -80,6 +88,7 @@ test('fornecedores têm edição administrativa, sem exclusão de histórico',()
  assert.match(ui,/\.from\('suppliers'\)\.update\(/);
  assert.match(ui,/\.from\('suppliers'\)\.insert\(/);
  assert.match(ui,/Fornecedor ativo/);
+ assert.match(ui,/supplierTaxIdValid\(tax_id\)/);
 });
 test('XML NF-e só preenche a conferência e não autoriza nota fiscal',()=>{
  const xml=read('src/lib/supplier-nfe-preview.ts');
@@ -118,4 +127,11 @@ test('menu integra fornecedores/recebimento e fiscal possui exportação de pend
  assert.match(stock,/href="\/admin\/estoque\/recebimento"/);
  assert.match(fiscal,/fiscalAuditCsv\(preliminaryAudit\)/);
  assert.match(fiscal,/Baixar pendências CSV/);
+});
+
+test('prontidão de lançamento inclui a operação de fornecedores e recebimentos',()=>{
+ const page=read('src/app/admin/prontidao/page.tsx');
+ assert.match(page,/id:'suppliers'/);
+ assert.match(page,/id:'goods-receipts'/);
+ assert.match(page,/admin\/estoque\/recebimento/);
 });

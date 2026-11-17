@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState, type ChangeEvent, type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {Boxes, Camera, Images, ChevronDown, Edit3, PackagePlus, Plus, Search, Tag, X, Check, AlertTriangle, Layers3} from 'lucide-react';
+import {Boxes, Camera, Images, FileSpreadsheet, ChevronDown, Edit3, PackagePlus, Plus, Search, Tag, X, Check, AlertTriangle, Layers3} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {formatBRL,productImageSrc} from '@/lib/products';
 import type {AdminProduct, Category} from '@/types/admin';
@@ -199,7 +199,12 @@ export function ProductsManager({initialProducts,categories}:Props){
  }
  return <div className="container admin-workspace">
   <div className="admin-top"><div><div className="section-kicker">CATÁLOGO • POPÊ BEAUTY</div><h1>Produtos e variações 💄</h1><p>Cadastre maquiagens, cosméticos, cores, kits e acessórios.</p></div>
-    <button type="button" className="admin-primary" onClick={startCreate}><PackagePlus size={19}/> Novo produto</button></div>
+    <div className="admin-form-footer">
+     <Link href="/admin/produtos/importar" className="admin-outline">
+      <FileSpreadsheet size={18}/> Importar CSV</Link>
+     <button type="button" className="admin-primary" onClick={startCreate}>
+      <PackagePlus size={19}/> Novo produto</button>
+    </div></div>
   <div className="admin-metric-row">
    <div><Tag/><small>Produtos cadastrados</small><strong>{metrics.all}</strong></div>
    <div><Check/><small>Ativos na vitrine</small><strong>{metrics.active}</strong></div>

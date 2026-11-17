@@ -97,7 +97,7 @@ export function ReplenishmentManager({items,truncated}:{
       <td>{row.minimum}</td>
       <td><strong>{row.suggested}</strong></td>
       <td><Link className="ops-small primary"
-       href={'/admin/estoque?busca='+encodeURIComponent(row.sku)}>
+       href={'/admin/estoque?busca='+encodeURIComponent(row.sku)+'&abrir=entrada'}>
        Registrar entrada</Link></td>
      </tr>)}</tbody>
     </table>

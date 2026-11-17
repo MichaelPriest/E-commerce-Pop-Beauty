@@ -17,12 +17,14 @@ type Stage='loading'|'empty'|'failed'|'loaded';
 type TestOrder={
  order_id:string; expires_at?:string|null; total_cents?:number; status?:string;
  delivery_fee_cents?:number; delivery_name?:string;
+ checkout_url?:string;payment_error?:string;
 };
 export function CheckoutPreviewPage({
- signedIn,isAdmin,addresses,shippingSandboxTokenPresent,shippingOriginConfigured
+ signedIn,isAdmin,addresses,shippingSandboxTokenPresent,shippingOriginConfigured,commercial=false
 }:{
  signedIn:boolean;isAdmin:boolean;addresses:CustomerAddress[];
  shippingSandboxTokenPresent:boolean;shippingOriginConfigured:boolean;
+ commercial?:boolean;
 }){
  const [stage,setStage]=useState<Stage>('loading'),[quote,setQuote]=useState<CheckoutPreview|null>(null);
  const [error,setError]=useState(''),[cartRows,setCartRows]=useState<CartRow[]>([]);
@@ -86,15 +88,15 @@ export function CheckoutPreviewPage({
  },[trigger]);
  const allReady=stage==='loaded'&&!!quote?.ready_for_future_checkout;
  return <div className="container pope-checkout-page">
-  <div className="section-kicker">POPÊ BEAUTY • PRÉVIA DO CHECKOUT</div>
+  <div className="section-kicker">{commercial?'POPÊ BEAUTY • FINALIZAR COMPRA':'POPÊ BEAUTY • PRÉVIA DO CHECKOUT'}</div>
   <h1>Confira seu carrinho <span aria-hidden="true">💖</span></h1>
-  <p>Os preços e a disponibilidade são conferidos novamente no banco de dados. Não é possível pagar nesta etapa.</p>
+  <p>{commercial?'Confira os produtos, escolha a entrega e continue para o pagamento.':'Os preços e a disponibilidade são conferidos novamente antes da compra.'}</p>
   <div className="pope-checkout-steps" aria-label="Etapas do checkout">
    <span className="complete"><ShoppingBag size={17}/> 1. Carrinho</span>
    <ArrowRight size={15}/>
    <span className="current"><ClipboardList size={17}/> 2. Conferência</span>
    <ArrowRight size={15}/>
-   <span className="disabled"><LockKeyhole size={17}/> 3. Pagamento (desativado)</span>
+   <span className={testOrder?.checkout_url?'current':'disabled'}><LockKeyhole size={17}/> 3. Pagamento{commercial?'':' (desativado)'}</span>
   </div>
   <div className="pope-checkout-body">
    <section className="pope-checkout-items" aria-label="Produtos validados">
@@ -132,9 +134,9 @@ export function CheckoutPreviewPage({
     </>:null}
     {stage==='loaded'&&quote&&allReady?<section className="pope-checkout-test">
      <div className="pope-checkout-test-heading"><Clock3 size={20}/>
-      <div><h3>Preparação para pedidos</h3>
-       <p>Cadastro de entrega e reserva temporária apenas para homologação.</p></div></div>
-     {!signedIn?<p>Entre na sua conta para salvar seus endereços.
+      <div><h3>{commercial?'Dados de entrega':'Preparação para pedidos'}</h3>
+       <p>{commercial?'Escolha um endereço da sua conta.':'Cadastro de entrega e reserva temporária em homologação.'}</p></div></div>
+     {!signedIn?<p>Entre na sua conta para escolher o endereço de entrega.
       <Link href="/entrar" className="pope-checkout-link"> Entrar na Popê Beauty</Link></p>:
       <>
        <div className="pope-checkout-delivery-header">
@@ -148,13 +150,13 @@ export function CheckoutPreviewPage({
         </option>)}
        </select>:<p>Você ainda não possui endereço cadastrado.
         <Link href="/conta/enderecos" className="pope-checkout-link"> Cadastrar endereço</Link></p>}
-       {isAdmin&&addresses.length>0?<SandboxShippingQuote
+       {isAdmin&&!commercial&&addresses.length>0?<SandboxShippingQuote
         postalCode={addresses.find(a=>a.id===addressId)?.postal_code||''}
         items={cartApiItems(cartRows)}
         sandboxTokenPresent={shippingSandboxTokenPresent}
         originConfigured={shippingOriginConfigured}
        />:null}
-       {isAdmin?<div className="pope-checkout-admin-test">
+       {!commercial&&(isAdmin?<div className="pope-checkout-admin-test">
         <p><ShieldCheck size={17}/> A reserva de teste dura 15 minutos. Você pode encerrá-la na sua conta.</p>
         {reservationError?<p className="form-error" role="alert">{reservationError}</p>:null}
         {testOrder?<div className="pope-checkout-test-success" role="status">
@@ -176,31 +178,39 @@ export function CheckoutPreviewPage({
          </details>}
        </div>:<p className="pope-checkout-test-notice">
         A etapa de reserva ainda está disponível apenas para administradores durante a homologação.
-        Você pode salvar o endereço, mas a loja não recebe pedidos públicos nesta fase.</p>}
+        A escolha de entrega poderá ser concluída quando a loja abrir o checkout.</p>)}
       </>}
     </section>:null}
    </section>
    <aside className="pope-checkout-summary">
     <h2>Resumo da conferência</h2>
     <div><span>Subtotal no servidor</span><strong>{quote&&stage==='loaded'?formatBRL(quote.subtotal_cents):'—'}</strong></div>
-    {isAdmin&&addressId&&allReady&&quote&&!testOrder?
+    {(commercial||isAdmin)&&signedIn&&addressId&&allReady&&quote&&!testOrder?
      <CheckoutDeliveryPanel key={addressId} addressId={addressId} quote={quote}
-      saving={saving} setSaving={setSaving} onCreated={setTestOrder}/>:
+      saving={saving} setSaving={setSaving} onCreated={setTestOrder} commercial={commercial}
+      recipient={addresses.find(a=>a.id===addressId)?.recipient}/>:
      testOrder?.delivery_name?<>
-      <div><span>Frete de teste</span><strong>{formatBRL(testOrder.delivery_fee_cents??0)}</strong></div>
+      <div><span>{commercial?'Frete':'Frete de teste'}</span><strong>{formatBRL(testOrder.delivery_fee_cents??0)}</strong></div>
       <div><span>Total com entrega</span><strong>{formatBRL(testOrder.total_cents??0)}</strong></div>
      </>:<div><span>Frete</span><strong>{testOrder?'—':'A calcular'}</strong></div>}
+    {commercial&&testOrder?<>
+     <p role="status">Pedido #{testOrder.order_id.slice(0,8).toUpperCase()} registrado.</p>
+     {testOrder.payment_error?<p className="form-error">{testOrder.payment_error}</p>:null}
+     {testOrder.checkout_url?<a href={testOrder.checkout_url} className="admin-primary">Pagar no Mercado Pago</a>:null}
+     <Link className="pope-checkout-back" href="/conta">Acompanhar em Minha conta</Link>
+    </>:null}
+    {!commercial&&<>
     <div><span>Pagamento</span><strong>Indisponível</strong></div>
     <p className="pope-checkout-caution"><LockKeyhole size={18}/>
      Para clientes, esta página é apenas uma conferência, sem reserva de estoque ou cobrança.
      Administradores podem criar reservas temporárias de homologação. O preço final depende do frete e do gateway escolhido.</p>
     <button type="button" className="add-button" disabled>
      <LockKeyhole size={17}/> Pagamento ainda não liberado
-    </button>
+    </button></>}
     <Link href="/carrinho" className="pope-checkout-back"><ArrowLeft size={16}/> Voltar ao carrinho</Link>
     <Link href="/" className="pope-checkout-back"><ShoppingBag size={16}/> Continuar explorando</Link>
     <div className="pope-checkout-trust"><span><ShieldCheck size={17}/> Preços conferidos no servidor</span>
-     <span><Truck size={17}/> Frete não contratado</span>
+     <span><Truck size={17}/> {commercial?'Entrega calculada por CEP':'Frete em conferência'}</span>
      <span><CreditCard size={17}/> Sem coleta de dados de cartão</span></div>
    </aside>
   </div>

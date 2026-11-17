@@ -3,6 +3,7 @@ import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
 import type {CustomerAddress} from '@/types/customer-address';
 import {CheckoutPreviewPage} from './preview-page';
+import {mpLivePaymentConfig} from '@/lib/payments/mercado-pago-live';
 
 export const dynamic='force-dynamic';
 export const metadata:Metadata={
@@ -10,12 +11,14 @@ export const metadata:Metadata={
  robots:{index:false,follow:false}
 };
 export default async function CheckoutPage(){
- let signedIn=false,isAdmin=false,shippingOriginConfigured=false;
+ let signedIn=false,isAdmin=false,shippingOriginConfigured=false,commercial=false;
  let addresses:CustomerAddress[]=[];
  if(isSupabaseConfigured()){
   try{
    const sb=await createClient();
-   const {data:claims}=await sb.auth.getClaims();
+   const [{data:claims},settings]=await Promise.all([sb.auth.getClaims(),mpLivePaymentConfig()?.linkOrigin?
+    sb.from('store_settings').select('commercial_checkout_enabled').eq('id',1).maybeSingle():null]);
+   commercial=settings?.data?.commercial_checkout_enabled===true;
    if(claims?.claims?.sub){
     signedIn=true;
     const [p,a]=await Promise.all([
@@ -36,6 +39,7 @@ export default async function CheckoutPage(){
  }
  return <CheckoutPreviewPage
   signedIn={signedIn} isAdmin={isAdmin} addresses={addresses}
+  commercial={commercial}
   shippingSandboxTokenPresent={isAdmin&&Boolean(process.env.MELHOR_ENVIO_SANDBOX_TOKEN?.trim())}
   shippingOriginConfigured={shippingOriginConfigured}
  />;

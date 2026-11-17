@@ -12,6 +12,8 @@ Este é o **documento principal do projeto**. Reúne recursos, URLs, arquitetura
 
 Em 17/11/2026, o checkout administrativo passou a conferir o total com as tarifas por CEP, com origem em **04431-080**. Em seguida, foram desenvolvidos os links para pedidos internos e a conciliação pelo Mercado Pago. A ativação dos links e o checkout público estão pendentes. Consulte [pagamento de pedidos internos](#114-pagamento-de-pedidos-internos-pelo-checkout-pro).
 
+A operação de **checkout, estorno, NF-e e etiqueta** está integrada ao pedido. A configuração e os ambientes constam em [ativação dos provedores](#115-operação-comercial-e-ativação-dos-provedores).
+
 | Área | Situação em 11/11/2026 | Observações |
 | --- | --- | --- |
 | Hospedagem e build | ⚠️ Site publicado; commits mais recentes ainda não implantados | Vercel Hobby atingiu limite diário de deploy em 11/11; verificar retomada antes de considerar a versão atual publicada |
@@ -444,9 +446,28 @@ A migração `supabase/commercial_order_payments_v1.sql` é aplicada após `chec
 
 O webhook `POST /api/webhooks/mercadopago/orders` valida a assinatura e consulta `GET /v1/payments/{id}`. A conciliação exige conta vendedora correspondente, BRL, referência do link, pagamento comercial aprovado dentro da validade e total idêntico ao pedido. A gravação do pagamento, a mudança para `paid` e o evento do pedido ocorrem na mesma transação. O saldo reservado é consumido na expedição. A tela também consulta e concilia pelo ID do Mercado Pago para recuperar notificações ausentes.
 
-A confirmação local é única por pedido. Retornos repetidos ou fora de ordem respeitam a última atualização do pagamento. Valores divergentes, aprovações tardias, pagamentos adicionais e contestações ficam disponíveis em **Financeiro → Pagamentos para conferir**. Um estorno ou uma contestação do pagamento que confirmou a venda exige conferência antes de novo despacho. O sistema ainda precisa de fluxo de estorno pela loja, conciliação dos repasses e tratamento da devolução do estoque.
+A confirmação local é única por pedido. Retornos repetidos ou fora de ordem respeitam a última atualização do pagamento. Valores divergentes, aprovações tardias, pagamentos adicionais e contestações ficam disponíveis em **Financeiro → Pagamentos para conferir**. Um estorno ou uma contestação do pagamento que confirmou a venda exige conferência antes de novo despacho. A conferência de tarifas e repasses acompanha o extrato do provedor.
 
 Para homologação, configure `MP_LIVE_ACCESS_TOKEN`, `MP_LIVE_SELLER_ID`, `MP_LIVE_WEBHOOK_SECRET` e `SUPABASE_SERVICE_ROLE_KEY` no servidor. No painel do Mercado Pago, configure o tópico **Pagamentos** na URL HTTPS comercial do webhook e valide a entrega ao ambiente escolhido. A variável `MP_LIVE_WEBHOOK_ENABLED=verified-live-account-only` habilita a conciliação. A criação de links depende também de `MP_LIVE_SITE_ORIGIN` e `MP_LIVE_PAYMENT_LINKS_ENABLED=internal-orders`. A retirada da flag de links suspende novas gerações e preserva a consulta de pagamentos recebidos enquanto o webhook estiver habilitado. Confira os meios de pagamento da conta e homologue o retorno, o repasse e o tratamento de divergências antes de operar.
+
+### 11.5. Operação comercial e ativação dos provedores
+
+Em `/checkout`, um cliente com e-mail confirmado pode selecionar seu endereço e uma tarifa por CEP, informar o nome e CPF para a NF-e e pagar no Mercado Pago quando a loja for habilitada. O PostgreSQL confere versão do endereço, revisão da tarifa, preços e saldo por SKU na mesma transação. O frete integra o total. `orders.storefront_order` identifica a compra online e integra os pedidos da vitrine ao estoque, fiscal e logística existentes. O prazo da reserva comercial é de 40 minutos, com até 30 minutos para pagamento e um intervalo para conciliação. O cliente acompanha o pedido, retoma o link e solicita cancelamento em **Minha conta**.
+
+Em **Pedidos → Central do pedido → Estorno, NF-e e etiqueta**, o operador pode executar estas etapas:
+
+1. **Cancelar e estornar.** Se houver possibilidade de pagamento em andamento, o sistema registra a solicitação para conferência. O estorno usa o ID do pagamento Mercado Pago e uma chave de idempotência persistida. A baixa do pedido e a liberação da reserva aguardam confirmação do estorno total. Em pedidos postados, o recebimento e a conferência dos itens antecedem a entrada física no estoque. A situação do envio e da NF-e pode ser tratada pelas respectivas ações.
+2. **Emitir NF-e 55.** Carregue o rascunho de um pedido pago, complete o JSON com os dados fiscais aprovados e informe os meios de pagamento. O Focus NFe usa uma referência persistida por ambiente. A consulta mostra processamento, rejeição ou autorização, com acesso autenticado ao XML e DANFE. O cancelamento fiscal é solicitado separadamente ao emissor e respeita a situação da postagem. Dados de homologação ficam separados dos documentos de produção.
+3. **Contratar e imprimir a etiqueta.** Confira remetente, destinatário e volumes. Selecione a cotação, adicione ao carrinho Melhor Envio e confira o custo antes de comprar. A geração e impressão ocorrem após a compra, com consulta de rastreio e opção de cancelar a etiqueta. A postagem de uma compra online usa a confirmação do Melhor Envio vinculada à NF-e autorizada em produção. O painel oferece PDF quando o serviço disponibiliza o arquivo e impressão pelo link privado do provedor. A integração não oferece Azul Cargo, que exige XML da NF-e no formato específico da transportadora. Para Correios, J&T e Loggi, a contratação por este fluxo cobre um volume por envio.
+
+| Integração | Dados e variáveis do servidor |
+| --- | --- |
+| Mercado Pago | Variáveis da seção 11.4 e conta vendedora homologada. `SUPABASE_SERVICE_ROLE_KEY` é compartilhada pelos serviços do servidor. |
+| Focus NFe | `FOCUS_NFE_ENVIRONMENT` e o token correspondente, `FOCUS_NFE_HOMOLOGACAO_TOKEN` ou `FOCUS_NFE_PRODUCAO_TOKEN`. Cadastro do emitente e certificado configurados no provedor, destinatário, tributação por item e meio de pagamento. |
+| Melhor Envio | `MELHOR_ENVIO_LABEL_ENVIRONMENT`, token `MELHOR_ENVIO_SANDBOX_TOKEN` ou `MELHOR_ENVIO_PRODUCTION_TOKEN`, `MELHOR_ENVIO_CONTACT_EMAIL` e `MELHOR_ENVIO_SENDER_PHONE`. O endereço do emitente é usado como remetente e deve corresponder ao CEP de postagem configurado. |
+| Abertura da vitrine | `public.store_settings.commercial_checkout_enabled` começa em `false`. Habilite só após a homologação de pagamento, NF-e e etiqueta com a conta da loja, a revisão das tarifas e a publicação das políticas comerciais. |
+
+Aplique, na ordem, `storefront_orders_v1.sql`, `store_order_refunds_v1.sql` e `store_order_fulfillment_v1.sql` após as migrações de checkout, pagamento e preparação fiscal. As variáveis privadas permanecem no servidor. Os testes simulam respostas dos provedores e verificam as regras de pedido, estoque, NF-e e envio. A autorização fiscal, a cobrança, o estorno e a postagem reais dependem da homologação das contas e dos dados comerciais.
 
 ## 12. Pedidos internos, faturamento operacional e notificações
 
@@ -532,6 +553,9 @@ A pasta `supabase/` contém os seguintes scripts; alguns são **correções incr
 | `mercado_pago_test_preference_domain_fix.sql` | Restrição de domínio do checkout TEST |
 | `mercado_pago_test_webhook_audit.sql` | Campos de auditoria Mercado Pago |
 | `commercial_order_payments_v1.sql` | Links de pagamento e conciliação de pedidos internos |
+| `storefront_orders_v1.sql` | Pedidos da vitrine, entrega, reservas e acesso do titular |
+| `store_order_refunds_v1.sql` | Cancelamento, estorno e liberação de estoque |
+| `store_order_fulfillment_v1.sql` | Emissão de NF-e, compra de etiquetas e validação da postagem |
 
 Para implantações novas, **não executar manualmente todos em ordem alfabética**. Planejar sequência validada, backup, homologação e versão de schema; alguns scripts esperam objetos criados por outros ou reimplementam funções corrigidas por migrations posteriores.
 

@@ -32,5 +32,5 @@ test('frete homologado reusa a transação de reserva e revalida preço e prazo'
  assert.match(sql,/expected\.unit_price_cents is distinct from oi\.unit_price_cents/);
  assert.match(sql,/o\.total_cents::bigint\+v_rate\.price_cents/);
  assert.match(sql,/v_order\.checkout_delivery_snapshot->>'request_hash' is distinct from v_item_hash/);
- assert.match(read('src/app/checkout/preview-page.tsx'),/isAdmin&&addressId&&allReady&&quote&&!testOrder/);
+ assert.match(read('src/app/checkout/preview-page.tsx'),/\(commercial\|\|isAdmin\)&&signedIn&&addressId&&allReady&&quote&&!testOrder/);
 });

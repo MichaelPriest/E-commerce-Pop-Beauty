@@ -7,6 +7,8 @@ import {requireAdmin} from '@/lib/admin';
 import {sandboxPreferenceEnabled} from '@/lib/payments/mercado-pago-test';
 import {mpTestWebhookEnabled} from '@/lib/payments/mp-webhook-test';
 import {mpLivePaymentConfig} from '@/lib/payments/mercado-pago-live';
+import {focusConfig} from '@/lib/fiscal/focus-nfe';
+import {labelConfig} from '@/lib/shipping/melhor-envio-label';
 import {
  READINESS_LABELS,summarizeReadiness,type ReadinessItem,type ReadinessState
 } from '@/lib/release-readiness';
@@ -28,7 +30,7 @@ export default async function AdminReadinessPage(){
   sb.from('checkout_delivery_rates').select('id',{head:true,count:'exact'}).eq('active',true),
   sb.from('payment_gateway_settings').select('provider')
    .eq('preferred_for_sandbox',true).limit(1),
-  sb.from('store_settings').select('checkout_reservations_enabled').eq('id',1).maybeSingle(),
+  sb.from('store_settings').select('checkout_reservations_enabled,commercial_checkout_enabled').eq('id',1).maybeSingle(),
   sb.from('suppliers').select('id',{head:true,count:'exact'}).eq('active',true),
   sb.from('goods_receipts').select('id,status').order('created_at',{ascending:false}).limit(150)
  ]);
@@ -49,6 +51,8 @@ export default async function AdminReadinessPage(){
  const gatewayCandidate=!gateways.error&&!!gateways.data?.length;
  const checkoutDisabled=!settings.error&&settings.data?.checkout_reservations_enabled===false;
  const livePayments=mpLivePaymentConfig();
+ const focus=focusConfig(),labels=labelConfig();
+ const checkoutOpen=Boolean(livePayments?.linkOrigin&&settings.data?.commercial_checkout_enabled);
 
  const checks:ReadinessItem[]=[
   {id:'build',group:'Técnico',title:'Dependências e testes automatizados',
@@ -75,13 +79,14 @@ export default async function AdminReadinessPage(){
     'CEP de origem ainda não cadastrado ou não pôde ser verificado.',
    state:originReady?'ready':'pending',
    href:'/admin/frete',action:'Cadastrar origem'},
-  {id:'delivery-rates',group:'Logística',title:'Tarifas por CEP em homologação',
+  {id:'delivery-rates',group:'Logística',title:'Tarifas por CEP',
    detail:deliveryRates.error?'Não foi possível consultar as faixas.':
-    (deliveryRates.count??0)+' faixa(s) ativa(s) para conferir no checkout de teste.',
+    (deliveryRates.count??0)+' faixa(s) ativa(s) para cálculo da entrega no checkout.',
    state:(deliveryRates.count??0)>0?'ready':'pending',href:'/admin/frete/tarifas',action:'Ver tarifas'},
   {id:'shipping-prod',group:'Logística',title:'Frete e etiquetas em produção',
-   detail:'A cotação atual é de sandbox; faltam integração comercial, revalidação de frete e geração de etiquetas.',
-   state:'blocked',href:'/admin/frete',action:'Ver módulo de frete'},
+   detail:labels?'Melhor Envio configurado em '+labels.environment+'. Confira uma compra de frete com NF-e autorizada.':
+    'Cotação, compra, impressão e rastreio desenvolvidos. Aguardando credenciais e dados do remetente.',
+   state:labels?.environment==='producao'?'manual':'blocked',href:'/admin/pedidos',action:'Abrir operação de pedidos'},
   {id:'gateway-test',group:'Pagamentos',title:'Gateway candidato à homologação',
    detail:gatewayCandidate?'Há um candidato para testes; isto não habilita cobrança.':
     'Nenhum provedor foi selecionado para homologação.',
@@ -102,8 +107,9 @@ export default async function AdminReadinessPage(){
     'Geração e conciliação desenvolvidas. Aguardando credenciais e homologação com a conta vendedora.',
    state:livePayments?.linkOrigin?'manual':'pending',href:'/admin/pedidos',action:'Abrir pedidos internos'},
   {id:'checkout-prod',group:'Pagamentos',title:'Checkout público comercial',
-   detail:'Faltam a abertura de pedidos comerciais pela vitrine, a homologação da conta vendedora e o fluxo de cancelamento e estorno.',
-   state:'blocked',href:'/checkout',action:'Ver prévia atual'},
+   detail:checkoutOpen?'Pedidos públicos habilitados com pagamento pelo Mercado Pago.':
+    'Pedido com entrega, pagamento, cancelamento e estorno desenvolvidos. A abertura aguarda homologação e configuração.',
+   state:checkoutOpen?'ready':'blocked',href:'/checkout',action:'Ver checkout'},
   {id:'smtp',group:'Operação',title:'Notificações por e-mail',
    detail:smtpCount+' de '+smtpKeys.length+' variáveis SMTP de pedidos presentes. A entrega precisa de teste real.',
    state:smtpCount===smtpKeys.length?'ready':'pending',
@@ -121,9 +127,10 @@ export default async function AdminReadinessPage(){
     ' entrada(s) contabilizada(s), até 150 últimas.',
    state:receipts.error?'pending':(receipts.data??[]).some(r=>r.status==='draft')?
     'pending':'ready',href:'/admin/estoque/recebimento',action:'Conferir recebimentos'},
-  {id:'fiscal',group:'Operação',title:'Emissão fiscal',
-   detail:'Definir com a contabilidade a emissão aplicável (NF-e/NFC-e) e integrar o processo aos pedidos.',
-   state:'manual'},
+  {id:'fiscal',group:'Operação',title:'Emissão de NF-e modelo 55',
+   detail:focus?'Focus NFe configurado em '+focus.environment+'. Confira emitente, produtos e autorização fiscal.':
+    'Emissão, consulta, XML, DANFE e cancelamento desenvolvidos. Aguardando credenciais e cadastro fiscal.',
+   state:focus?'manual':'pending',href:'/admin/fiscal',action:'Conferir cadastro fiscal'},
   {id:'legal',group:'Operação',title:'Políticas e atendimento ao consumidor',
    detail:'Publicar termos, privacidade/LGPD, trocas, devoluções, frete, contatos e identificação do fornecedor.',
    state:'manual'},
@@ -143,9 +150,8 @@ export default async function AdminReadinessPage(){
   </div>
   <section className="pope-readiness-banner" role="status">
    <ShieldAlert size={28}/>
-   <div><h2>Vendas reais ainda não autorizadas</h2>
-    <p>Esta página não libera pagamentos, reservas públicas ou expedição.
-     Configurações presentes não substituem testes com provedores e aprovação operacional.</p></div>
+   <div><h2>{checkoutOpen?'Checkout comercial habilitado':'Checkout comercial aguardando abertura'}</h2>
+    <p>Confira a configuração dos provedores e a operação da loja antes do lançamento.</p></div>
   </section>
   <div className="admin-metric-row">
    <div><ShieldCheck/><small>Itens verificados</small><strong>{summary.ready}</strong></div>

@@ -99,6 +99,8 @@ test('reposição desconta lotes vencidos e reservas, sem confundir físico e ve
  assert.equal(rows[0].minimum,5);
  assert.equal(rows[0].suggested,5);
  assert.equal(computeReplenishment([variant],'2026-11-16',1)[0].suggested,0);
+ assert.equal(computeReplenishment([{...variant,active:false}],'2026-11-16',2)[0].suggested,0);
+ assert.equal(computeReplenishment([{...variant,products:{...variant.products,active:false}}],'2026-11-16',2)[0].suggested,0);
 });
 test('lista CSV de reposição não executa fórmulas vindas de nomes maliciosos',()=>{
  const row=computeReplenishment([{...variant,products:{...variant.products,name:'=1+1'}}],
@@ -116,4 +118,7 @@ test('área de estoque oferece busca por EAN e link de reposição',()=>{
  assert.match(ui,/new URLSearchParams\(window\.location\.search\)/);
  assert.match(ui,/admin\/estoque\/reposicao/);
  assert.match(page,/requireAdmin\(\)/);
+ assert.match(ui,/params\.get\('abrir'\)!=='entrada'/);
+ const restock=read('src/app/admin/estoque/reposicao/replenishment-manager.tsx');
+ assert.match(restock,/abrir=entrada/);
 });

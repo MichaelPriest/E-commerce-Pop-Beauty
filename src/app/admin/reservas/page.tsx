@@ -9,7 +9,7 @@ export default async function AdminReservationsPage(){
  const sb=await requireAdmin();
  const [orders,setting]=await Promise.all([
   sb.from('orders')
-   .select('id,customer_id,status,total_cents,created_at,reservation_expires_at,shipping_address_snapshot,order_items(title_snapshot,quantity,sku_snapshot)')
+   .select('id,status,total_cents,created_at,reservation_expires_at,checkout_delivery_fee_cents,checkout_delivery_snapshot,order_items(title_snapshot,quantity,sku_snapshot)')
    .eq('origin','store_api').order('created_at',{ascending:false}).limit(100),
   sb.from('store_settings').select('checkout_reservations_enabled').eq('id',1).maybeSingle()
  ]);
@@ -42,12 +42,15 @@ export default async function AdminReservationsPage(){
    Esses registros não representam vendas nem pagamentos recebidos.
   </p>
   <div className="ops-table-scroll"><table className="ops-table">
-   <thead><tr><th>Criação</th><th>Reserva</th><th>Itens</th><th>Subtotal teste</th><th>Status</th><th>Expira em</th></tr></thead>
+   <thead><tr><th>Criação</th><th>Reserva</th><th>Itens</th><th>Frete de teste</th><th>Total</th><th>Status</th><th>Expira em</th></tr></thead>
    <tbody>{rows.map(r=><tr key={r.id}>
     <td>{dateTimeBR(r.created_at)}</td>
     <td><strong>#{r.id.slice(0,8).toUpperCase()}</strong></td>
     <td>{(r.order_items??[]).map(i=><small key={i.sku_snapshot}>
      {i.quantity}× {i.title_snapshot} ({i.sku_snapshot})</small>)}</td>
+    <td>{r.checkout_delivery_snapshot?<>
+     {formatBRL(r.checkout_delivery_fee_cents)}<small>{r.checkout_delivery_snapshot.name}</small>
+    </>:'—'}</td>
     <td>{formatBRL(r.total_cents)}</td>
     <td><span className={'ops-tag status-'+(r.status==='pending'?'pending':'cancelled')}>
      {r.status==='pending'?

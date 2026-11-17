@@ -6,6 +6,8 @@ import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { signOutAction } from '@/app/actions';
 import {getAdultStatus} from '@/lib/adult';
 import {CancelTestReservation} from '@/components/cancel-test-reservation';
+import {formatBRL} from '@/lib/products';
+import {dateTimeBR} from '@/types/operations';
 export default async function AccountPage(){
  if(!isSupabaseConfigured()) return <div className="container account-page"><h1>Minha conta</h1><p>O cadastro estará disponível assim que o Supabase for conectado.</p><Link href="/entrar">Voltar</Link></div>;
  const supabase=await createClient();
@@ -15,7 +17,7 @@ export default async function AccountPage(){
  const {data:profile}=await supabase.from('profiles').select('display_name,role').eq('id',claims.sub).maybeSingle();
  const role=profile?.role;
  const adult=await getAdultStatus();
- const {data:myOrders}=await supabase.from('orders').select('id,status,origin,total_cents,created_at,reservation_expires_at,order_items(title_snapshot,quantity,unit_price_cents)').eq('customer_id',claims.sub).order('created_at',{ascending:false}).limit(20);
+ const {data:myOrders}=await supabase.from('orders').select('id,status,origin,total_cents,created_at,reservation_expires_at,checkout_delivery_fee_cents,checkout_delivery_snapshot').eq('customer_id',claims.sub).order('created_at',{ascending:false}).limit(20);
  return <div className="container account-page"><div className="section-kicker">MINHA POPÊ</div><h1>Olá, {profile?.display_name||claims.email||'beleza'}! 💖</h1>
  <div className="account-card"><UserRound size={44}/><div><strong>Minha conta</strong><p>{claims.email||''}</p><small>Perfil: {role==='admin'?'Administrador':role==='staff'?'Equipe':'Cliente'}</small></div></div>
  <div className="account-card"><MapPin size={30}/><div><strong>Endereços de entrega</strong>
@@ -30,8 +32,10 @@ export default async function AccountPage(){
    {(o.total_cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
   </p>
   {o.origin==='store_api'?<>
-   <small>Teste sem cobrança, frete ou venda confirmada.</small>
-   {o.reservation_expires_at?<small>Limite da reserva: {new Date(o.reservation_expires_at).toLocaleString('pt-BR')}</small>:null}
+   {o.checkout_delivery_snapshot?
+    <small>{o.checkout_delivery_snapshot.name} · Frete de teste {formatBRL(o.checkout_delivery_fee_cents)}</small>
+    :<small>Reserva de estoque em homologação.</small>}
+   {o.reservation_expires_at?<small>Limite da reserva {dateTimeBR(o.reservation_expires_at)}</small>:null}
    {o.status==='pending'?<CancelTestReservation orderId={o.id}/>:null}
   </>:<small>Pedido registrado na loja</small>}
  </div>):

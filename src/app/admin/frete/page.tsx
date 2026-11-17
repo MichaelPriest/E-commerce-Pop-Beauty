@@ -37,7 +37,10 @@ export default async function ShippingAdminPage(){
    <div className="section-kicker">LOGÍSTICA • HOMOLOGAÇÃO</div>
    <h1><Truck size={30}/> Frete e embalagem</h1>
    <p>Configure origem e dimensões físicas para cotar entregas em um ambiente de testes.</p>
-  </div><Link href="/admin/logistica" className="admin-outline"><ArrowLeft size={16}/> Logística</Link></div>
+  </div><div className="pope-receipt-links">
+   <Link href="/admin/frete/tarifas" className="admin-primary"><Truck size={16}/> Tarifas por CEP</Link>
+   <Link href="/admin/logistica" className="admin-outline"><ArrowLeft size={16}/> Logística</Link>
+  </div></div>
   <div className="admin-metric-row">
    <div><Box/><small>SKUs cadastrados</small><strong>{rows.length}</strong></div>
    <div><PackageCheck/><small>SKUs com dimensões</small><strong>{rows.filter(v=>v.weight_g).length}</strong></div>

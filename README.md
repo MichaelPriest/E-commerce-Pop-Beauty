@@ -247,7 +247,8 @@ Todas as rotas `/admin/*` são para perfil `admin` verificado no banco.
 | `/admin/notificacoes` | Fila de e-mails de pedidos; reprocessamento |
 | `/admin/gateways` | Comparação de dez provedores, credenciais e preferências |
 | `/admin/pagamentos` | Preparação de pagamentos TEST, links TEST e auditoria de webhooks |
-| `/admin/reservas` | Reservas de homologação de checkout |
+| `/admin/reservas` | Reservas de homologação, itens, frete e total |
+| `/admin/frete/tarifas` | Tarifas por faixa de CEP usadas no checkout de teste |
 | `/admin/usuarios` | Diretório e alteração de permissões |
 | `/admin/usuarios-online` | Presença recente / usuários com atividade |
 | `/admin/auditoria` | Auditoria de perfis e configuração +18 |
@@ -322,7 +323,17 @@ O checkout de cliente **não tem botão de pagar ativo**. Frete, descontos, emis
 - `private.expire_checkout_orders` cancela e libera estoque por `pg_cron` a cada minuto.
 - Titular pode cancelar via `cancel_checkout_order`; cancelamento/expiração libera reserva.
 - `orders.origin='store_api'` identifica pedidos TEST; **não entram no financeiro, relatórios comerciais ou fila de e-mails de pedidos**.
-- Estas reservas **não são vendas nem geram obrigação de entrega**. O preço é de itens, sem frete.
+- As reservas criadas em **Simular somente a reserva de estoque** têm subtotal de itens. O checkout com entrega usa o fluxo abaixo.
+
+### 8.4. Pedido de teste com frete e total
+
+Em **Administração → Frete e embalagem → Tarifas por CEP**, cadastre o nome, a faixa de CEP, o valor e o prazo da entrega. Uma tarifa pode ser desativada na edição. As opções correspondentes aparecem quando o administrador seleciona um endereço próprio com o carrinho apto para conferência.
+
+Ao clicar em **Criar pedido de teste**, o banco revalida a versão do endereço e da tarifa, confere os preços dos itens e reserva o estoque na mesma transação. O pedido registra os valores de itens, entrega e total. O prazo da reserva continua em 15 minutos. Cancelamento e expiração liberam o estoque pelo fluxo já utilizado em homologação. Uma repetição da mesma confirmação recupera o pedido registrado.
+
+O resultado fica em **Minha conta** e em **Administração → Reservas**. A preparação de pagamento de teste recebe o total completo. A homologação de cobrança, a cotação comercial da transportadora e a abertura ao público são etapas do lançamento.
+
+Aplique `supabase/checkout_delivery_rates_v1.sql` após `checkout_variant_resolution_guard_v2.sql` e antes de implantar as telas. Cadastre as tarifas que deseja testar no painel.
 
 Não definir `checkout_reservations_enabled=true` até existir checkout comercial seguro, gateway homologado, cálculo de frete, antifraude, estornos e regras de venda.
 
@@ -499,6 +510,7 @@ A pasta `supabase/` contém os seguintes scripts; alguns são **correções incr
 | `preview_checkout_cart.sql` | Prévia de preço e estoque |
 | `preview_checkout_cart_uuid_selection_fix.sql` | Correção da seleção de UUID |
 | `checkout_addresses_reservations.sql` | Endereços, reservas, expiração e Cron |
+| `checkout_delivery_rates_v1.sql` | Faixas de CEP, escolha de entrega e total das reservas administrativas |
 | `exclude_checkout_test_from_financial_metrics.sql` | Exclui TEST dos relatórios financeiros |
 | `shipping_sandbox_setup.sql` | CEP da loja e especificações por SKU |
 | `sandbox_payment_attempts.sql` | Preparações multi-gateway e inbox de webhooks |

@@ -759,6 +759,24 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 .pope-checkout-admin-test>p{display:flex;align-items:flex-start;gap:8px;color:#7a6282;font-size:11px;line-height:1.65}
 .pope-checkout-admin-test>p svg{flex-shrink:0}
 .pope-checkout-admin-test button{margin-top:12px;display:flex;align-items:center;gap:8px}
+.pope-checkout-admin-test summary{cursor:pointer;color:var(--purple);font-weight:700;font-size:.83rem}
+.pope-checkout-rate-options{display:grid;gap:10px;padding:14px 0}
+.pope-checkout-rate-options h3{display:flex;align-items:center;gap:7px;color:var(--purple);margin:0;font-size:1rem}
+.pope-checkout-rate-options p{font-size:.85rem;margin:0;line-height:1.5}
+.pope-checkout-rate-options fieldset{display:grid;gap:6px;border:0;min-width:0;padding:0;margin:0}
+.pope-checkout-rate-options legend{font-size:.8rem;margin-bottom:7px}
+.pope-checkout-rate-options fieldset label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+ align-items:center;gap:8px;padding:9px;border:1px solid #ecd9e8;border-radius:9px;font-size:.82rem}
+.pope-checkout-rate-options fieldset input{accent-color:#ad3a80}
+.pope-checkout-rate-options fieldset small{display:block;color:#775e73}
+.pope-checkout-rate-options button{justify-self:start}
+.pope-checkout-rate-total{display:grid;gap:7px;margin:4px 0;color:var(--purple)}
+.pope-checkout-rate-total>div{display:flex;justify-content:space-between;gap:8px}
+.pope-checkout-rate-total dd{margin:0;font-weight:800}
+.pope-rate-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,12rem),1fr));
+ gap:13px;border:0;min-width:0;padding:0;margin:0 0 14px}
+.pope-rate-form .pope-rate-active{display:flex;gap:8px;align-items:center;align-self:end;min-height:43px}
+.pope-rate-form .pope-rate-active input{width:17px;height:17px;accent-color:#ad3a80}
 .pope-checkout-test-success{display:flex;align-items:flex-start;gap:10px;color:#217b50;background:#e9f9f0;padding:13px;border-radius:10px;margin-top:12px}
 .pope-checkout-test-success div{display:flex;flex-direction:column;gap:5px}
 .pope-checkout-test-success small{font-size:11px;color:#488665}

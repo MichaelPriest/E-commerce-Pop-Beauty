@@ -711,6 +711,10 @@ Sempre revisar PRs que alterem `package.json` ou `package-lock.json`, executar `
 
 A rota **`/admin/prontidao`** foi incluída no menu Sistema, com acesso restrito à função `requireAdmin()`. Ela permite acompanhar, **somente por leitura**, o catálogo comum, presença de medidas e CEP de origem, configuração de SMTP, escolha de gateway e configuração do Mercado Pago TEST, além dos bloqueios de checkout/frete comerciais e validações manuais.
 
+Em **Conexão com os provedores**, confira as variáveis pendentes por ambiente e cadastre as credenciais em [Vercel → Environment Variables](https://vercel.com/michael-raimundos-projects/e-commerce-pope-beauty/settings/environment-variables). Use variáveis sensíveis para os tokens e segredos. A nova configuração entra em vigor no próximo deploy. Os testes consultam a conta vendedora do Mercado Pago, o catálogo de serviços do Melhor Envio, o cadastro fiscal protegido no Supabase e o status de uma NF-e no Focus NFe. O Focus NFe depende de uma referência fiscal do ambiente para confirmar a consulta ao documento. As verificações de consulta fazem parte da preparação para os testes transacionais.
+
+O painel informa também as pendências do emitente e do preenchimento fiscal dos produtos publicados. Os dados são conferidos em **Administração → Fiscal**. O preenchimento cadastral e a autorização de uma NF-e de homologação são etapas da conferência com a contabilidade.
+
 - Nenhum token, segredo, senha ou valor de variável de ambiente é enviado ao navegador. O painel apenas indica ausência/presença de configurações.
 - As consultas ao banco são feitas com a sessão administrativa e RLS; erros não são tratados como aprovação.
 - O indicador **“Verificado”** significa que uma condição técnica local foi observada; não garante entrega SMTP, integração externa, pagamento conciliado ou liberação comercial.

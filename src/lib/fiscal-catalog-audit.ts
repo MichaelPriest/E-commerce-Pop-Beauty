@@ -19,8 +19,8 @@ export function auditFiscalCatalog(
   ['cfop_sale','CFOP de referência'],['pis_cst','CST PIS'],
   ['cofins_cst','CST COFINS']
  ];
- const taxCode:[string,string]|null=taxRegime===1||taxRegime===2?
-  ['csosn','CSOSN']:taxRegime===3?
+ const taxCode:[string,string]|null=taxRegime===1||taxRegime===4?
+  ['csosn','CSOSN']:taxRegime===2||taxRegime===3?
    ['icms_cst','CST ICMS']:null;
  return products.map(product=>{
   const raw=product.product_fiscal_details;

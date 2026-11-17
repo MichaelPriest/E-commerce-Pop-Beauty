@@ -35,12 +35,7 @@ export function isCpfValid(value:string|null|undefined){
  }
  return true;
 }
-export function fiscalChecklist(input:{
- issuer:FiscalIssuer|null;recipient:FiscalRecipient|null;
- lines:FiscalItem[];model:'55'|'65';status:string;
- shippingAddressPresent:boolean;
-}):string[]{
- const {issuer,recipient,lines,model,status,shippingAddressPresent}=input;
+export function fiscalIssuerIssues(issuer:FiscalIssuer|null):string[]{
  const issues:string[]=[];
  if(!issuer||!issuer.legal_name?.trim()||!isCnpjValid(issuer.cnpj))
   issues.push('Razão social e CNPJ válido do emitente');
@@ -50,6 +45,16 @@ export function fiscalChecklist(input:{
   !taxDigits(issuer?.postal_code,8)||!issuer?.street?.trim()||
   !issuer?.house_number?.trim()||!issuer?.district?.trim())
   issues.push('Endereço fiscal completo e município IBGE do emitente');
+ return issues;
+}
+
+export function fiscalChecklist(input:{
+ issuer:FiscalIssuer|null;recipient:FiscalRecipient|null;
+ lines:FiscalItem[];model:'55'|'65';status:string;
+ shippingAddressPresent:boolean;
+}):string[]{
+ const {issuer,recipient,lines,model,status,shippingAddressPresent}=input;
+ const issues=fiscalIssuerIssues(issuer);
  if(!recipient?.full_name?.trim())
   issues.push('Destinatário identificado e conferido');
  if(model==='55'&&(!recipient?.tax_id||

@@ -2,11 +2,14 @@ import Link from 'next/link';
 import {notFound} from 'next/navigation';
 import {
  ArrowLeft,ArrowUpRight,ClipboardList,CreditCard,FileText,
- History,Mail,Package,ShieldAlert,ShoppingBag,Truck,UserRound,CheckCircle2
+ History,Mail,Package,ShoppingBag,Truck,UserRound,CheckCircle2
 } from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {formatBRL} from '@/lib/products';
 import {ORDER_LABELS,CHANNEL_LABELS,dateTimeBR} from '@/types/operations';
+import {COMMERCIAL_PAYMENT_RESULTS,type CommercialPaymentResult} from '@/lib/payments/commercial-payment';
+import {mpLivePaymentConfig} from '@/lib/payments/mercado-pago-live';
+import {OrderPaymentActions} from './order-payment-actions';
 import {
  summarizeOrderCenter,nextOrderCenterStep,ORDER_CENTER_TONE_LABEL,
  type OrderCenterStepId,type OrderCenterTone
@@ -43,7 +46,7 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
  const sb=await requireAdmin();
  const [order,items,events,notices,draft,recipient,integration,packing,
   volumes,requests,documents,tracking,attempts,plan,preflight]=await Promise.all([
-  sb.from('orders').select('id,customer_id,origin,channel,status,total_cents,created_at,updated_at,payment_reference,carrier,tracking_code,shipped_at,delivered_at,shipping_address_snapshot')
+  sb.from('orders').select('id,customer_id,origin,channel,status,total_cents,created_at,updated_at,payment_reference,carrier,tracking_code,shipped_at,delivered_at,shipping_address_snapshot,checkout_delivery_fee_cents')
    .eq('id',id).maybeSingle(),
   sb.from('order_items').select('id,sku_snapshot,title_snapshot,quantity,unit_price_cents')
    .eq('order_id',id).order('sku_snapshot'),
@@ -82,8 +85,13 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
  if(failed?.error)throw new Error('Falha ao consultar o acompanhamento do pedido: '+failed.error.message);
 
  const o=order.data;
- const customer=o.customer_id?await sb.from('profiles').select('display_name')
-  .eq('id',o.customer_id).maybeSingle():null;
+ const isManual=o.origin==='admin_manual';
+ const [customer,commercial]=await Promise.all([
+  o.customer_id?sb.from('profiles').select('display_name').eq('id',o.customer_id).maybeSingle():null,
+  isManual?sb.from('commercial_payment_checkouts')
+   .select('id,checkout_url,expires_at,commercial_provider_payments(payment_id,status,result,amount_cents,refunded_cents,observed_at)')
+   .eq('order_id',id).order('created_at',{ascending:false}).limit(20):null
+ ]);
  if(customer?.error)throw new Error('Não foi possível consultar o vínculo do cliente.');
  const attemptsList=attempts.data??[];
  const attemptIds=attemptsList.map(a=>a.id);
@@ -96,9 +104,18 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
  const sent=notificationList.filter(n=>n.status==='sent').length;
  const pending=notificationList.filter(n=>n.status==='pending').length;
  const failedNotices=notificationList.filter(n=>n.status==='failed').length;
+ const checkoutHistory=commercial?.data??[];
+ const providerPayments=checkoutHistory.flatMap(c=>c.commercial_provider_payments)
+  .sort((a,b)=>b.observed_at.localeCompare(a.observed_at));
+ const paymentState=providerPayments.some(p=>p.result!=='not_paid'&&p.result!=='awaiting'&&p.result!=='confirmed')?
+  'review':providerPayments.some(p=>p.result==='confirmed')?'confirmed':
+  providerPayments.some(p=>p.result==='awaiting')?'awaiting':undefined;
+ const activeCheckout=checkoutHistory.find(c=>Date.parse(c.expires_at)>Date.now())??null;
+ const liveConfig=mpLivePaymentConfig();
  const steps=summarizeOrderCenter({
   origin:o.origin,status:o.status,itemCount:(items.data??[]).length,
   hasManualPaymentReference:Boolean(o.payment_reference),
+  gatewayPaymentState:paymentState??(activeCheckout?'awaiting':undefined),
   hasManualCarrierTracking:Boolean(o.tracking_code),
   sandboxPaymentAttempts:attemptsList.length,
   sandboxWebhookReceipts:webhooks?.data?.length??0,
@@ -111,12 +128,11 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
   sentNotifications:sent,pendingNotifications:pending,failedNotifications:failedNotices
  });
  const next=nextOrderCenterStep(steps,o.status);
- const isManual=o.origin==='admin_manual';
  const fiscalHref=isManual?'/admin/fiscal?pedido='+id:'/admin/pagamentos';
  const actionLinks:Record<OrderCenterStepId,string>={
   ...destinations,
   order:'/admin/pedidos?pedido='+id,
-  payment:isManual?'/admin/pedidos?pedido='+id:'/admin/pagamentos',
+  payment:isManual?'#etapa-payment':'/admin/pagamentos',
   fiscal:fiscalHref,
   packing:isManual?'/admin/logistica/volumes/'+id:'/admin/logistica',
   shipping:isManual?'/admin/logistica/volumes/'+id:'/admin/remessas',
@@ -140,7 +156,7 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
   <div className="pope-oc-overview">
    <div><small>Status do pedido</small>
     <strong>{ORDER_LABELS[o.status as keyof typeof ORDER_LABELS]??o.status}</strong>
-    <span>{isManual?'Movimentação administrativa manual':'Origem loja / homologação'}</span>
+    <span>{isManual?'Pedido interno':'Origem loja / homologação'}</span>
    </div>
    <div><small>Valor registrado</small><strong>{formatBRL(o.total_cents)}</strong>
     <span>Não equivale a recebimento bancário</span></div>
@@ -149,11 +165,6 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
    <div><small>Pendências de conferência</small><strong>{badges}</strong>
     <span>Indicadores internos, não autorizações oficiais</span></div>
   </div>
-  <p className="ops-info"><ShieldAlert size={19}/>
-   Esta página é uma <strong>consolidação somente leitura</strong>.
-   Pedidos marcados como pagos, enviados ou entregues manualmente não representam
-   confirmação do gateway, emissão fiscal ou rastreamento autenticado.
-   Nada nesta tela cobra, estorna, gera etiqueta ou modifica o estoque.</p>
   {next?<section className="pope-oc-next" aria-label="Próxima pendência">
    <div><span className="section-kicker">PRÓXIMA CONFERÊNCIA SUGERIDA</span>
     <h2>{next.title}: {next.label}</h2><p>{next.description}</p></div>
@@ -179,7 +190,24 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
       <h3>{stage.label}</h3>
       <p>{stage.description}</p>
       {stage.id==='payment'&&o.payment_reference?<p className="pope-oc-evidence">
-       Referência informada: {o.payment_reference} (não verificada automaticamente)</p>:null}
+       Referência de pagamento: {o.payment_reference}</p>:null}
+      {stage.id==='payment'&&isManual&&<>
+       {commercial?.error?<p className="form-error" role="alert">Histórico do provedor indisponível.</p>:null}
+       {!liveConfig?.linkOrigin&&o.status==='pending'?<p className="admin-help">
+        Links Mercado Pago aguardam habilitação. <Link href="/admin/prontidao">Ver prontidão</Link>
+       </p>:null}
+       <OrderPaymentActions orderId={id} activeCheckout={activeCheckout}
+        canCreate={Boolean(liveConfig?.linkOrigin&&o.status==='pending'&&!paymentState&&!commercial?.error)}
+        canReconcile={Boolean(liveConfig&&checkoutHistory.length)}/>
+       {providerPayments.length>0?<div className="ops-table-scroll"><table className="ops-table">
+        <thead><tr><th>Pagamento</th><th>Valor</th><th>Retorno</th><th>Conciliação</th></tr></thead>
+        <tbody>{providerPayments.map(p=><tr key={p.payment_id}>
+         <td>#{p.payment_id}</td><td>{formatBRL(p.amount_cents)}
+          {p.refunded_cents>0?<small>Estorno {formatBRL(p.refunded_cents)}</small>:null}</td>
+         <td>{p.status}</td><td>{COMMERCIAL_PAYMENT_RESULTS[p.result as CommercialPaymentResult]}</td>
+        </tr>)}</tbody>
+       </table></div>:null}
+      </>}
       {stage.id==='fiscal'&&draft.data?<p className="pope-oc-evidence">
        Rascunho {draft.data.fiscal_model==='65'?'NFC-e 65':'NF-e 55'} ·
        Status interno: {draft.data.status} · Sem protocolo de autorização SEFAZ.</p>:null}
@@ -196,12 +224,13 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
         {(documents.data??[]).length} documento(s) do provedor armazenado(s).
         Confira na central de evidências.</p>:null}
       <div className="pope-oc-actions">
-       <Link className="admin-outline" href={actionLinks[stage.id]}>
+       <Link className="admin-outline" href={stage.id==='payment'&&isManual?
+        '/admin/pedidos?pedido='+id:actionLinks[stage.id]}>
         {stage.id==='fiscal'?'Conferir preparação fiscal':
          stage.id==='packing'?'Abrir preparação de volumes':
          stage.id==='shipping'?'Abrir logística':
          stage.id==='notifications'?'Ver fila de comunicação':
-         stage.id==='payment'?'Conferir pagamento':'Ver operações do pedido'}
+         stage.id==='payment'?(isManual?'Operações do pedido':'Conferir pagamento'):'Ver operações do pedido'}
         <ArrowUpRight size={16}/></Link>
        {stage.id==='fiscal'&&isManual?<Link className="admin-outline"
         href={'/admin/fiscal/documentos/'+id+'?tipo=conferencia'}>
@@ -226,8 +255,9 @@ export default async function AdminOrderDetails({params}:{params:Promise<{id:str
     </table></div>
     {!items.data?.length?<p className="admin-help">Itens ainda não localizados.</p>:null}
     <p className="admin-help">Soma dos itens: {formatBRL(lineTotal)} ·
+     {o.checkout_delivery_fee_cents>0?` Entrega: ${formatBRL(o.checkout_delivery_fee_cents)} · `:null}
      Total registrado: {formatBRL(o.total_cents)}.
-     {lineTotal!==o.total_cents?' Diferença encontrada: verifique descontos e lançamentos.':''}</p>
+     {lineTotal+o.checkout_delivery_fee_cents!==o.total_cents?' Diferença encontrada: verifique descontos e lançamentos.':''}</p>
    </section>
    <section className="admin-panel">
     <h2><UserRound size={20}/> Destinatário e comunicação</h2>

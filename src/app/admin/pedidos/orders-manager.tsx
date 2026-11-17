@@ -101,7 +101,7 @@ export function OrdersManager({orders,variants,customers}:Props){
    <div><Clock/><small>Aguardando pagamento</small><strong>{stats.pending}</strong></div>
    <div><Boxes/><small>Pagos / separando</small><strong>{stats.processing}</strong></div>
    <div><Truck/><small>Em transporte</small><strong>{stats.shipped}</strong></div></div>
-  <p className="ops-info"><BadgeCheck size={18}/> Pedidos nesta área são manuais e administrativos. Não existe cobrança automática, checkout público nem confirmação bancária. A marcação de pagamento exige conferência de comprovante externo.</p>
+  <p className="ops-info"><BadgeCheck size={18}/> Abra a central do pedido para conferir pagamentos pelo provedor. Para recebimentos manuais, confira o comprovante antes de atualizar o status.</p>
   <div className="admin-filterbar"><label className="admin-search"><Search size={17}/><input placeholder="Pesquisar código, SKU, cliente ou rastreio" value={query} onChange={e=>setQuery(e.target.value)}/></label>
    <select value={filter} onChange={e=>setFilter(e.target.value)}><option value="todos">Todos os status</option>
     {Object.entries(ORDER_LABELS).map(([code,label])=><option key={code} value={code}>{label}</option>)}</select>

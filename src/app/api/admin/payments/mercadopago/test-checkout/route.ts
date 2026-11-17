@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from 'next/server';
 import {createClient} from '@/lib/supabase/server';
+import {checkoutAmountsMatch} from '@/lib/payments/checkout-amounts';
 import {sandboxPreferenceEnabled,verifyMercadoPagoTestSeller,createMpTestPreference}
  from '@/lib/payments/mercado-pago-test';
 
@@ -38,7 +39,7 @@ export async function POST(request:NextRequest){
   return reject('Esta tentativa já iniciou a criação de um checkout. Não é permitido repetir.',409);
  }
  const {data:order,error:orderError}=await sb.from('orders')
-  .select('id,status,origin,total_cents,reservation_expires_at,order_items(sku_snapshot,title_snapshot,quantity,unit_price_cents)')
+  .select('id,status,origin,total_cents,checkout_delivery_fee_cents,reservation_expires_at,order_items(sku_snapshot,title_snapshot,quantity,unit_price_cents)')
   .eq('id',attempt.order_id).maybeSingle();
  if(orderError||!order||order.status!=='pending'||order.origin!=='store_api'||
   !order.reservation_expires_at||
@@ -52,8 +53,11 @@ export async function POST(request:NextRequest){
    !Number.isInteger(i.quantity)||i.quantity<1||i.quantity>30)){
   return reject('Produtos da reserva inválidos.',400);
  }
- const price=items.reduce((sum,i)=>sum+i.unit_price_cents*i.quantity,0);
- if(price!==order.total_cents)return reject('Subtotal inconsistente; nenhum checkout foi criado.',409);
+ const paymentItems=items.map(i=>({
+  sku:i.sku_snapshot,title:i.title_snapshot,quantity:i.quantity,priceCents:i.unit_price_cents
+ }));
+ if(!checkoutAmountsMatch(paymentItems,order.checkout_delivery_fee_cents,order.total_cents))
+  return reject('O total da reserva diverge da soma dos itens e da entrega.',409);
  let verified;
  try{verified=await verifyMercadoPagoTestSeller();}
  catch(e){return reject(e instanceof Error?e.message:'Conta TEST não validada.',403);}
@@ -63,10 +67,7 @@ export async function POST(request:NextRequest){
  try{
   const created=await createMpTestPreference({
    ...verified,attemptId:id,orderId:order.id,expiresAt:order.reservation_expires_at,
-   items:items.map(i=>({
-    sku:i.sku_snapshot,title:i.title_snapshot,quantity:i.quantity,
-    priceCents:i.unit_price_cents
-   }))
+   items:paymentItems,deliveryFeeCents:order.checkout_delivery_fee_cents,totalCents:order.total_cents
   });
   const {error:completeError}=await sb.rpc('finish_mp_test_checkout',{
    p_attempt_id:id,p_preference_id:created.id,p_checkout_url:created.init_point

@@ -1,4 +1,5 @@
 import 'server-only';
+import {checkoutAmountsMatch,mercadoPagoCheckoutAmounts,type CheckoutPaymentItem} from './checkout-amounts';
 const mpApi='https://api.mercadopago.com';
 const testSellerNick=/^TEST[A-Z0-9_-]{4,50}$/i;
 export type TestSeller={id:number;nickname:string;site_id:string};
@@ -37,11 +38,10 @@ export async function verifyMercadoPagoTestSellerCredentials():Promise<{token:st
 }
 export async function createMpTestPreference(params:{
  token:string;seller:TestSeller;attemptId:string;orderId:string;
- items:Array<{title:string;quantity:number;priceCents:number;sku:string}>;
+ items:CheckoutPaymentItem[];deliveryFeeCents:number;totalCents:number;
  expiresAt:string;
 }):Promise<MpTestPreference>{
- const total= params.items.reduce((sum,x)=>sum+x.priceCents*x.quantity,0);
- if(!Number.isSafeInteger(total)||total<=0||params.items.length===0)
+ if(!checkoutAmountsMatch(params.items,params.deliveryFeeCents,params.totalCents))
   throw new Error('Produtos inválidos para o teste.');
  const now=new Date();
  const expires=new Date(params.expiresAt);
@@ -49,10 +49,7 @@ export async function createMpTestPreference(params:{
   throw new Error('Reserva sem tempo suficiente para testes.');
  const origin='https://e-commerce-pope-beauty.vercel.app';
  const preference={
-  items:params.items.map(i=>({
-   id:i.sku.slice(0,100),title:i.title.slice(0,120),
-   quantity:i.quantity,currency_id:'BRL',unit_price:i.priceCents/100
-  })),
+  ...mercadoPagoCheckoutAmounts(params.items,params.deliveryFeeCents),
   external_reference:'pope-sandbox:'+params.attemptId,
   metadata:{pope_environment:'sandbox',pope_attempt_id:params.attemptId,
    pope_order_id:params.orderId},

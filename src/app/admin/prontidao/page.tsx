@@ -6,6 +6,7 @@ import {
 import {requireAdmin} from '@/lib/admin';
 import {sandboxPreferenceEnabled} from '@/lib/payments/mercado-pago-test';
 import {mpTestWebhookEnabled} from '@/lib/payments/mp-webhook-test';
+import {mpLivePaymentConfig} from '@/lib/payments/mercado-pago-live';
 import {
  READINESS_LABELS,summarizeReadiness,type ReadinessItem,type ReadinessState
 } from '@/lib/release-readiness';
@@ -18,12 +19,13 @@ function statusClass(state:ReadinessState){
 }
 export default async function AdminReadinessPage(){
  const sb=await requireAdmin();
- const [productCount,variantData,shippingOrigin,gateways,settings,suppliers,receipts]=await Promise.all([
+ const [productCount,variantData,shippingOrigin,deliveryRates,gateways,settings,suppliers,receipts]=await Promise.all([
   sb.from('products').select('id',{head:true,count:'exact'}).eq('active',true).eq('is_adult',false),
   sb.from('variants').select(
    'id,variant_shipping_specs(weight_g,height_cm,width_cm,length_cm)'
   ).eq('active',true).limit(501),
   sb.from('shipping_origin_settings').select('origin_postal_code').eq('id',1).maybeSingle(),
+  sb.from('checkout_delivery_rates').select('id',{head:true,count:'exact'}).eq('active',true),
   sb.from('payment_gateway_settings').select('provider')
    .eq('preferred_for_sandbox',true).limit(1),
   sb.from('store_settings').select('checkout_reservations_enabled').eq('id',1).maybeSingle(),
@@ -46,6 +48,7 @@ export default async function AdminReadinessPage(){
  const smtpCount=smtpKeys.filter(key=>Boolean(process.env[key]?.trim())).length;
  const gatewayCandidate=!gateways.error&&!!gateways.data?.length;
  const checkoutDisabled=!settings.error&&settings.data?.checkout_reservations_enabled===false;
+ const livePayments=mpLivePaymentConfig();
 
  const checks:ReadinessItem[]=[
   {id:'build',group:'Técnico',title:'Dependências e testes automatizados',
@@ -72,6 +75,10 @@ export default async function AdminReadinessPage(){
     'CEP de origem ainda não cadastrado ou não pôde ser verificado.',
    state:originReady?'ready':'pending',
    href:'/admin/frete',action:'Cadastrar origem'},
+  {id:'delivery-rates',group:'Logística',title:'Tarifas por CEP em homologação',
+   detail:deliveryRates.error?'Não foi possível consultar as faixas.':
+    (deliveryRates.count??0)+' faixa(s) ativa(s) para conferir no checkout de teste.',
+   state:(deliveryRates.count??0)>0?'ready':'pending',href:'/admin/frete/tarifas',action:'Ver tarifas'},
   {id:'shipping-prod',group:'Logística',title:'Frete e etiquetas em produção',
    detail:'A cotação atual é de sandbox; faltam integração comercial, revalidação de frete e geração de etiquetas.',
    state:'blocked',href:'/admin/frete',action:'Ver módulo de frete'},
@@ -90,8 +97,12 @@ export default async function AdminReadinessPage(){
     'Webhook de teste continua bloqueado até configurar segredo, conta TEST e acesso de servidor.',
    state:mpTestWebhookEnabled()?'ready':'pending',
    href:'/admin/pagamentos',action:'Conferir auditoria'},
-  {id:'checkout-prod',group:'Pagamentos',title:'Checkout comercial e conciliação financeira',
-   detail:'Faltam pedidos reais com total final, confirmação de pagamento pelo provedor, estornos e proteção contra atrasos de liquidação.',
+  {id:'mp-order-links',group:'Pagamentos',title:'Links de pagamento para pedidos internos',
+   detail:livePayments?.linkOrigin?'Configuração presente. Confira os retornos no provedor antes de usar.':
+    'Geração e conciliação desenvolvidas. Aguardando credenciais e homologação com a conta vendedora.',
+   state:livePayments?.linkOrigin?'manual':'pending',href:'/admin/pedidos',action:'Abrir pedidos internos'},
+  {id:'checkout-prod',group:'Pagamentos',title:'Checkout público comercial',
+   detail:'Faltam a abertura de pedidos comerciais pela vitrine, a homologação da conta vendedora e o fluxo de cancelamento e estorno.',
    state:'blocked',href:'/checkout',action:'Ver prévia atual'},
   {id:'smtp',group:'Operação',title:'Notificações por e-mail',
    detail:smtpCount+' de '+smtpKeys.length+' variáveis SMTP de pedidos presentes. A entrega precisa de teste real.',

@@ -11,6 +11,7 @@ export type OrderCenterInput={
  origin:string;status:string;
  itemCount:number;
  hasManualPaymentReference:boolean;hasManualCarrierTracking:boolean;
+ gatewayPaymentState?:'confirmed'|'review'|'awaiting';
  sandboxPaymentAttempts:number;sandboxWebhookReceipts:number;
  hasFiscalDraft:boolean;hasFiscalRecipient:boolean;
  fiscalIntegrationStatus:string|null;
@@ -31,7 +32,13 @@ export function summarizeOrderCenter(data:OrderCenterInput):OrderCenterStep[]{
   data.itemCount>0?`${data.itemCount} item(ns) cadastrado(s) no pedido.`:
    'Confira os produtos e a integridade do registro.');
  let payment:OrderCenterStep;
- if(cancelled)payment=step('payment','Pagamento','not_applicable','Pedido cancelado',
+ if(data.gatewayPaymentState==='review')payment=step('payment','Pagamento','pending','Conferência do provedor pendente',
+  'Consulte os retornos do Mercado Pago e confira as divergências deste pedido.');
+ else if(data.gatewayPaymentState==='confirmed')payment=step('payment','Pagamento','complete_internal','Aprovado pelo Mercado Pago',
+  'O valor foi conferido com o pedido. A liquidação segue o extrato do provedor.');
+ else if(data.gatewayPaymentState==='awaiting')payment=step('payment','Pagamento','pending','Aguardando aprovação',
+  'Confira o retorno do provedor antes de confirmar outro recebimento.');
+ else if(cancelled)payment=step('payment','Pagamento','not_applicable','Pedido cancelado',
   'Não deduzir recebimento nem estorno a partir do cancelamento.');
  else if(manual)payment=manualProgress?
   step('payment','Pagamento','manual_review','Marcação administrativa',

@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
-import {ArrowDown,ArrowUp,Boxes,CalendarClock,PackageSearch,Search,ShieldAlert,Warehouse, X, Clock, CheckCircle2, History} from 'lucide-react';
+import {ArrowDown,ArrowUp,Boxes,CalendarClock,PackageSearch,Search,ShieldAlert,Warehouse, X, Clock, CheckCircle2, History,Barcode} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import type {StockVariant,StockMovement} from '@/types/admin';
 type Props={variants:StockVariant[];movements:StockMovement[]};
@@ -82,6 +82,8 @@ export function StockManager({variants,movements}:Props){
  const lotChoices=selected?.inventory_lots?.filter(l=>l.on_hand>0)??[];
  return <div className="container admin-workspace">
   <div className="admin-top"><div><div className="section-kicker">GESTÃO • POPÊ BEAUTY</div><h1>Central de estoque 📦</h1><p>Saldo por SKU, lotes, validade e movimentações registradas.</p></div><div className="admin-form-footer">
+  <Link href="/admin/estoque/recebimento" className="admin-outline">
+   <Barcode size={17}/> Receber mercadorias</Link>
   <Link href="/admin/estoque/reposicao" className="admin-outline">
    Planejar reposição</Link>
   <Link href="/admin/produtos" className="admin-primary">

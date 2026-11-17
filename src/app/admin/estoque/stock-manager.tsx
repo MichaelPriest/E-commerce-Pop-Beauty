@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState,type FormEvent} from 'react';
+import {useEffect,useMemo,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {ArrowDown,ArrowUp,Boxes,CalendarClock,PackageSearch,Search,ShieldAlert,Warehouse, X, Clock, CheckCircle2, History} from 'lucide-react';
@@ -19,6 +19,12 @@ function statusFor(v:StockVariant){
 function readableDate(value:string|null){if(!value)return 'Sem validade';const [y,m,d]=value.split('-');return [d,m,y].join('/');}
 export function StockManager({variants,movements}:Props){
  const router=useRouter(),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos');
+ useEffect(()=>{
+  try{
+   const sku=new URLSearchParams(window.location.search).get('busca');
+   if(sku)setQuery(sku.slice(0,80));
+  }catch{/* Busca opcional vinda do planejamento de reposição. */}
+ },[]);
  const [selected,setSelected]=useState<StockVariant|null>(null),[direction,setDirection]=useState<'in'|'out'>('in');
  const [amount,setAmount]=useState('1'),[reason,setReason]=useState('Entrada de mercadorias');
  const [lotCode,setLotCode]=useState('SEM-LOTE'),[expiry,setExpiry]=useState('');
@@ -31,7 +37,7 @@ export function StockManager({variants,movements}:Props){
   return {all,units,low,expiring,expired};
  },[variants]);
  const visible=useMemo(()=>variants.filter(v=>{
-  const s=[v.sku,v.name,v.shade,v.products?.name,v.products?.brand].join(' ').toLocaleLowerCase('pt-BR');
+  const s=[v.sku,v.ean,v.name,v.shade,v.products?.name,v.products?.brand].join(' ').toLocaleLowerCase('pt-BR');
   return (!query||s.includes(query.toLocaleLowerCase('pt-BR')))&&(filter==='todos'||statusFor(v)===filter);
  }),[query,filter,variants]);
  function start(v:StockVariant,type:'in'|'out'){
@@ -66,7 +72,12 @@ export function StockManager({variants,movements}:Props){
  }
  const lotChoices=selected?.inventory_lots?.filter(l=>l.on_hand>0)??[];
  return <div className="container admin-workspace">
-  <div className="admin-top"><div><div className="section-kicker">GESTÃO • POPÊ BEAUTY</div><h1>Central de estoque 📦</h1><p>Saldo por SKU, lotes, validade e movimentações registradas.</p></div><Link href="/admin/produtos" className="admin-primary"><PackageSearch size={18}/> Produtos</Link></div>
+  <div className="admin-top"><div><div className="section-kicker">GESTÃO • POPÊ BEAUTY</div><h1>Central de estoque 📦</h1><p>Saldo por SKU, lotes, validade e movimentações registradas.</p></div><div className="admin-form-footer">
+  <Link href="/admin/estoque/reposicao" className="admin-outline">
+   Planejar reposição</Link>
+  <Link href="/admin/produtos" className="admin-primary">
+   <PackageSearch size={18}/> Produtos</Link>
+ </div></div>
   <div className="admin-metric-row stock-metrics">
    <div><Boxes/><small>SKUs cadastrados</small><strong>{metrics.all}</strong></div>
    <div><Warehouse/><small>Unidades físicas</small><strong>{metrics.units}</strong></div>
@@ -75,7 +86,7 @@ export function StockManager({variants,movements}:Props){
    <div><Clock/><small>Com lotes vencidos</small><strong>{metrics.expired}</strong></div>
   </div>
   <div className="demo-alert">O estoque registrado aqui é local ao sistema Popê. A sincronização com Shopee e Mercado Livre ainda não está ativada; não altere estoques nos marketplaces esperando atualização automática.</div>
-  <div className="admin-filterbar"><label className="admin-search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por produto, SKU, tonalidade ou marca"/></label>
+  <div className="admin-filterbar"><label className="admin-search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar produto, SKU, EAN/código de barras ou marca"/></label>
    <select value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Filtro de estoque">
     <option value="todos">Todos os SKUs</option><option value="baixo">Abaixo do mínimo</option><option value="vencendo">Próximos do vencimento</option><option value="vencido">Com lote vencido</option><option value="ok">Situação normal</option>
    </select></div>

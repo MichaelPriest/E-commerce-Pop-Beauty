@@ -1,15 +1,16 @@
 'use client';
-import {useMemo,useState,type FormEvent} from 'react';
+import {useMemo,useState,type FormEvent,type ChangeEvent} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {
  Barcode,Boxes,CheckCircle2,ClipboardCheck,PackagePlus,Plus,
- Save,Search,ShieldCheck,Trash2,Truck,AlertTriangle
+ Save,ShieldCheck,Trash2,Truck,AlertTriangle,FileCode2
 } from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {
  goodsReceiptPayload,validateReceiptLines,type ReceiptLine
 } from '@/lib/goods-receipts-core';
+import {parseSupplierNfeXml} from '@/lib/supplier-nfe-preview';
 import {brazilTodayISO} from '@/lib/catalog-quality';
 
 type Supplier={id:string;name:string;tax_id:string|null;active:boolean};
@@ -42,6 +43,7 @@ export function GoodsReceiptManager({
  const [reference,setReference]=useState(''),[documentDate,setDocumentDate]=useState('');
  const [notes,setNotes]=useState('');
  const [barcode,setBarcode]=useState(''),[lines,setLines]=useState<ReceiptLine[]>([]);
+ const [xmlWarnings,setXmlWarnings]=useState<string[]>([]);
  const [draftId,setDraftId]=useState<string|null>(null);
  const [lastSaved,setLastSaved]=useState<string|null>(null);
  const [dirty,setDirty]=useState(false);
@@ -58,7 +60,7 @@ export function GoodsReceiptManager({
  const itemsCount=lines.reduce((sum,line)=>sum+(Number(line.quantity)||0),0);
  const todayString=today();
  const problems=validateReceiptLines(lines,todayString);
- const canSave=lines.length>0&&!problems.length&&supplierLabel.trim().length>=2&&
+ const canSave=lines.length>0&&!problems.length&&!xmlWarnings.length&&supplierLabel.trim().length>=2&&
   supplierLabel.trim().length<=180&&reference.length<=100&&notes.length<=1000;
  const saved=!!draftId&&lastSaved===draftId&&!dirty;
  const allDrafts=receipts.filter(receipt=>receipt.status==='draft');
@@ -72,7 +74,7 @@ export function GoodsReceiptManager({
  function clear(){
   setSupplierId('');setSupplierLabel('');setReference('');setDocumentDate('');
   setNotes('');setBarcode('');setLines([]);setDraftId(null);
-  setLastSaved(null);setDirty(false);setError('');setNotice('');
+  setLastSaved(null);setDirty(false);setError('');setNotice('');setXmlWarnings([]);
  }
  function addLine(event?:FormEvent){
   event?.preventDefault();setError('');setNotice('');
@@ -92,6 +94,54 @@ export function GoodsReceiptManager({
    setError('Este SKU e lote já estão na lista. Altere a quantidade ou use outro lote.');return;
   }
   setLines(x=>[...x,line]);setBarcode('');changed();
+ }
+ async function importNfe(event:ChangeEvent<HTMLInputElement>){
+  const file=event.target.files?.[0];event.target.value='';
+  if(!file)return;
+  if(file.size>2_000_000){setError('XML deve ter até 2 MB.');return;}
+  if(lines.length&&
+   !window.confirm('Substituir os itens atuais pelos itens identificados no XML?'))return;
+  if(busy)return;
+  setBusy(true);setError('');setNotice('');setXmlWarnings([]);
+  try{
+   const preview=parseSupplierNfeXml(await file.text());
+   const issues=[...preview.warnings];
+   const identified:ReceiptLine[]=[];
+   for(const [index,item] of preview.items.entries()){
+    const id=item.barcode||item.productCode;
+    const variant=byBarcode.get(id.toLowerCase());
+    if(!variant){
+     issues.push('Linha '+(index+1)+': '+item.description+
+      ' (EAN/cProd '+id+') não corresponde a um SKU ativo.');continue;
+    }
+    identified.push({
+     variant_id:variant.id,sku:variant.sku,product:variant.products?.name??variant.name,
+     shade:variant.shade||variant.name,lot_code:item.lotCode,
+     expires_at:item.expiresAt,quantity:String(item.quantity),
+     unit_cost:item.unitCost
+    });
+   }
+   if(!identified.length){
+    setError('O XML não apresentou SKUs identificados no catálogo. '+
+     'Cadastre os códigos de barras dos produtos antes de importar.');
+    setXmlWarnings(issues);return;
+   }
+   setSupplierLabel(preview.issuer);
+   const supplier=suppliers.find(s=>
+    s.tax_id===preview.issuerTaxId||
+    s.name.toLocaleLowerCase('pt-BR')===preview.issuer.toLocaleLowerCase('pt-BR'));
+   setSupplierId(supplier?.active?supplier.id:'');
+   setReference(preview.document);setDocumentDate(preview.date);
+   setLines(identified.slice(0,25));
+   if(identified.length>25)issues.push('Somente os primeiros 25 itens foram incluídos.');
+   setXmlWarnings(issues);
+   changed();
+   setNotice('Dados do XML carregados somente para conferência. '+
+    'Verifique itens, quantidades, lotes e fornecedor. '+
+    'A autenticidade fiscal da NF-e NÃO foi validada.');
+  }catch(err){
+   setError(err instanceof Error?err.message:'Não foi possível ler o XML.');
+  }finally{setBusy(false);}
  }
  function updateLine(index:number,field:keyof ReceiptLine,value:string){
   setLines(old=>old.map((item,i)=>i===index?{...item,[field]:value}:item));
@@ -208,6 +258,15 @@ export function GoodsReceiptManager({
     <h2>Adicionar mercadoria por SKU ou EAN</h2>
     <Link href="/admin/fornecedores" className="admin-outline">Cadastrar fornecedor</Link>
    </div>
+   <div className="pope-receipt-xml">
+    <label><FileCode2 size={19}/> Pré-preencher pela NF-e do fornecedor (XML)
+     <input type="file" accept=".xml,text/xml,application/xml"
+      disabled={busy} onChange={e=>void importNfe(e)}/>
+    </label>
+    <p className="admin-help">Leitura local do arquivo, sem enviar o XML ao sistema,
+     consultar SEFAZ ou gerar uma nota fiscal. O vínculo ocorre por EAN/GTIN
+     ou código do produto igual ao SKU. Todos os campos exigem conferência.</p>
+   </div>
    <form className="pope-receipt-barcode" onSubmit={addLine}>
     <label className="admin-search"><Barcode size={19}/>
      <input autoComplete="off" value={barcode}
@@ -251,6 +310,10 @@ export function GoodsReceiptManager({
    {!!problems.length?<div role="alert" className="form-error">
     <strong>Corrija os itens antes de salvar:</strong>
     <ul>{problems.map((p,i)=><li key={i}>{p}</li>)}</ul>
+   </div>:null}
+   {xmlWarnings.length?<div className="form-error" role="alert">
+    <strong>Pendências do XML:</strong>
+    <ul>{xmlWarnings.map((w,i)=><li key={i}>{w}</li>)}</ul>
    </div>:null}
    {error?<p role="alert" className="form-error"><AlertTriangle size={16}/> {error}</p>:null}
    {notice?<p role="status" className="form-success"><CheckCircle2 size={16}/> {notice}</p>:null}

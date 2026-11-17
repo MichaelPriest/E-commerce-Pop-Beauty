@@ -67,6 +67,7 @@ export function ProductCard({product,demo}:{product:Product;demo:boolean}){
    localStorage.setItem('pope-cart',JSON.stringify(updated));
    window.dispatchEvent(new Event('pope-cart-updated'));
    setAdded(true);
+   setTimeout(()=>setAdded(false),1800);
   }catch{
    setError('Não foi possível atualizar o carrinho neste navegador.');
   }

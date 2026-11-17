@@ -86,7 +86,7 @@ export default async function SandboxPaymentsPage(){
      <td><span className="ops-tag">{event.provider_payment_status??'—'}</span></td>
      <td>{event.provider_amount_cents!=null?formatBRL(Number(event.provider_amount_cents)):'—'}</td>
      <td><span className="ops-muted">
-      {event.relation_status==='matched'?'Vínculo e subtotal conferidos':
+      {event.relation_status==='matched'?'Vínculo e total conferidos':
        event.relation_status==='amount_mismatch'?'Valor divergente — revisar':
        event.relation_status==='inactive_reservation'?'Reserva encerrada/expirada':
        'Sem vínculo confirmado'}

@@ -10,9 +10,14 @@ import {type CartItem,normalizeCart,cartApiItems} from '@/lib/cart-core';
 import {checkoutStatusLabel,type CheckoutPreview} from '@/lib/checkout-preview';
 import type {CustomerAddress} from '@/types/customer-address';
 import {SandboxShippingQuote} from '@/components/checkout/sandbox-shipping-quote';
+import {CheckoutDeliveryPanel} from '@/components/checkout/checkout-delivery-panel';
 
 type CartRow=CartItem;
 type Stage='loading'|'empty'|'failed'|'loaded';
+type TestOrder={
+ order_id:string; expires_at?:string|null; total_cents?:number; status?:string;
+ delivery_fee_cents?:number; delivery_name?:string;
+};
 export function CheckoutPreviewPage({
  signedIn,isAdmin,addresses,shippingSandboxTokenPresent,shippingOriginConfigured
 }:{
@@ -24,7 +29,7 @@ export function CheckoutPreviewPage({
  const [trigger,setTrigger]=useState(0);
  const [addressId,setAddressId]=useState(addresses.find(a=>a.is_default)?.id||addresses[0]?.id||'');
  const [saving,setSaving]=useState(false),[reservationError,setReservationError]=useState('');
- const [testOrder,setTestOrder]=useState<{order_id:string;expires_at?:string;total_cents?:number}|null>(null);
+ const [testOrder,setTestOrder]=useState<TestOrder|null>(null);
  const idempotencyKey=useRef<string|null>(null);
  async function createTestReservation(){
   if(!isAdmin||!quote?.ready_for_future_checkout||!addressId||saving||testOrder)return;
@@ -40,7 +45,7 @@ export function CheckoutPreviewPage({
    });
    const body=await response.json();
    if(!response.ok)throw new Error(body.error||'Não foi possível preparar a reserva.');
-   setTestOrder(body as {order_id:string;expires_at?:string;total_cents?:number});
+   setTestOrder(body as TestOrder);
   }catch(e){
    setReservationError(e instanceof Error?e.message:'Falha no teste.');
   }finally{setSaving(false);}
@@ -95,7 +100,7 @@ export function CheckoutPreviewPage({
    <section className="pope-checkout-items" aria-label="Produtos validados">
     <div className="pope-checkout-head"><h2><ClipboardList size={21}/> Itens conferidos</h2>
      <button type="button" className="admin-outline"
-      onClick={()=>setTrigger(x=>x+1)} disabled={stage==='loading'}>
+      onClick={()=>setTrigger(x=>x+1)} disabled={stage==='loading'||saving||!!testOrder}>
       <RefreshCw size={16}/> Conferir novamente</button></div>
     {stage==='loading'?<p className="pope-checkout-info">Consultando preços, variantes e lotes disponíveis...</p>:null}
     {stage==='failed'?<div className="pope-checkout-warning" role="alert">
@@ -137,7 +142,7 @@ export function CheckoutPreviewPage({
         <Link href="/conta/enderecos">Gerenciar endereços</Link>
        </div>
        {addresses.length?<select value={addressId} onChange={e=>setAddressId(e.target.value)}
-        aria-label="Selecionar endereço de entrega" disabled={!!testOrder}>
+        aria-label="Selecionar endereço de entrega" disabled={!!testOrder||saving}>
         {addresses.map(a=><option key={a.id} value={a.id}>
          {a.recipient} · {a.street}, {a.house_number} · {a.city}/{a.state_code}
         </option>)}
@@ -150,18 +155,25 @@ export function CheckoutPreviewPage({
         originConfigured={shippingOriginConfigured}
        />:null}
        {isAdmin?<div className="pope-checkout-admin-test">
-        <p><ShieldCheck size={17}/> Teste administrativo: esta ação reserva estoque real por 15 minutos,
-         sem cobrança, frete ou confirmação de venda. Uma única reserva ativa por conta.</p>
+        <p><ShieldCheck size={17}/> A reserva de teste dura 15 minutos. Você pode encerrá-la na sua conta.</p>
         {reservationError?<p className="form-error" role="alert">{reservationError}</p>:null}
         {testOrder?<div className="pope-checkout-test-success" role="status">
-         <CheckCircle2 size={22}/><div><strong>Reserva de homologação criada</strong>
+         <CheckCircle2 size={22}/><div><strong>
+          {testOrder.status==='cancelled'?'Reserva de teste encerrada':'Reserva de homologação criada'}
+         </strong>
           <small>#{testOrder.order_id.slice(0,8).toUpperCase()}
-           {testOrder.expires_at?' · até '+new Date(testOrder.expires_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''}
+           {testOrder.expires_at&&testOrder.status!=='cancelled'?' · até '+new Date(testOrder.expires_at).toLocaleTimeString('pt-BR',{
+            hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'
+           }):''}
           </small>
+          {testOrder.delivery_name&&<small>{testOrder.delivery_name} · {formatBRL(testOrder.total_cents??0)}</small>}
           <Link href="/conta">Acompanhar ou cancelar na minha conta</Link>
          </div></div>:
-         <button type="button" className="admin-primary" onClick={createTestReservation}
-          disabled={!addressId||saving}>{saving?'Reservando...':'Simular reserva por 15 minutos'}</button>}
+         <details>
+          <summary>Simular somente a reserva de estoque</summary>
+          <button type="button" className="admin-outline" onClick={createTestReservation}
+           disabled={!addressId||saving}>{saving?'Reservando…':'Simular reserva por 15 minutos'}</button>
+         </details>}
        </div>:<p className="pope-checkout-test-notice">
         A etapa de reserva ainda está disponível apenas para administradores durante a homologação.
         Você pode salvar o endereço, mas a loja não recebe pedidos públicos nesta fase.</p>}
@@ -171,7 +183,13 @@ export function CheckoutPreviewPage({
    <aside className="pope-checkout-summary">
     <h2>Resumo da conferência</h2>
     <div><span>Subtotal no servidor</span><strong>{quote&&stage==='loaded'?formatBRL(quote.subtotal_cents):'—'}</strong></div>
-    <div><span>Frete</span><strong>A calcular</strong></div>
+    {isAdmin&&addressId&&allReady&&quote&&!testOrder?
+     <CheckoutDeliveryPanel key={addressId} addressId={addressId} quote={quote}
+      saving={saving} setSaving={setSaving} onCreated={setTestOrder}/>:
+     testOrder?.delivery_name?<>
+      <div><span>Frete de teste</span><strong>{formatBRL(testOrder.delivery_fee_cents??0)}</strong></div>
+      <div><span>Total com entrega</span><strong>{formatBRL(testOrder.total_cents??0)}</strong></div>
+     </>:<div><span>Frete</span><strong>{testOrder?'—':'A calcular'}</strong></div>}
     <div><span>Pagamento</span><strong>Indisponível</strong></div>
     <p className="pope-checkout-caution"><LockKeyhole size={18}/>
      Para clientes, esta página é apenas uma conferência, sem reserva de estoque ou cobrança.

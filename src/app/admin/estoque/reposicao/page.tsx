@@ -18,8 +18,10 @@ export default async function ReplenishmentPage(){
     <h1><ClipboardList size={27}/> Planejamento de reposição</h1>
     <p>Revise o que precisa ser comprado com base no estoque disponível, reservas e lotes válidos.</p>
    </div>
-   <Link href="/admin/estoque" className="admin-outline">
-    <ArrowLeft size={16}/> Estoque e movimentações</Link>
+   <div className="pope-receipt-links">
+    <Link href="/admin/estoque" className="admin-outline"><ArrowLeft size={16}/> Estoque e movimentações</Link>
+    <Link href="/admin/estoque/compras" className="admin-outline">Pedidos de compra</Link>
+   </div>
   </div>
   <ReplenishmentManager items={(data??[]) as unknown as ReplenishmentVariant[]}
    truncated={(count??0)>1000}/>

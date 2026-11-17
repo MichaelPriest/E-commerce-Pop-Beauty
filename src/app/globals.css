@@ -1291,9 +1291,20 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  border-radius:12px;margin:12px 0 18px}
 .pope-receipt-xml label{display:grid;gap:8px;font-weight:750;color:#6d3e5e;font-size:.84rem}
 .pope-receipt-xml input{display:block;max-width:100%;padding:8px;background:#fff;border-radius:8px}
-.pope-receipt-ack{display:flex;gap:9px;align-items:start;margin-top:12px;font-weight:700;
- font-size:.83rem;line-height:1.5}
-.pope-receipt-ack input{width:18px;height:18px;margin-top:2px;accent-color:#a4477f}
+.pope-receipt-links{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.pope-receipt-conference{margin:20px 0}
+.pope-receipt-conference h3{margin:0 0 10px;color:var(--purple);font-size:1rem}
+.pope-receipt-warnings{padding:12px 16px 12px 34px;background:#fff8ed;color:#76471e;
+ border:1px solid #f2dcc1;border-radius:12px;overflow-wrap:anywhere}
+.pope-purchase-details{padding:12px 15px;margin-top:10px;border:1px solid #efd6e5;border-radius:12px}
+.pope-purchase-details summary{cursor:pointer;color:var(--purple);padding:5px 0}
+.pope-purchase-details summary span{display:inline-block;margin-left:10px;font-size:.84rem;color:#65445b}
+.pope-purchase-details[open] summary{margin-bottom:12px}
+.pope-purchase-details>.pope-receipt-links{margin-top:12px}
+.pope-purchase-details input[name=motivo]{max-width:320px}
+.pope-cost-filters{margin:12px 0 20px}
+.pope-cost-filters label{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.pope-receipt-costs strong{overflow-wrap:anywhere;font-size:clamp(1rem,2vw,1.65rem)}
 .pope-fiscal-audit-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
  padding:10px 14px;margin:12px 0 18px;border:1px solid #ead4e2;border-radius:12px;
  background:#fff8fc}

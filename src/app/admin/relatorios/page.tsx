@@ -42,7 +42,10 @@ export default async function ReportsPage(){
    <div><div className="section-kicker">ANÁLISE OPERACIONAL • POPÊ BEAUTY</div>
     <h1><BarChart3 size={30}/> Relatórios da loja</h1>
     <p>Evolução mensal dos pedidos e alertas de estoque, com dados do Supabase.</p></div>
-   <Link href="/admin/financeiro" className="admin-outline"><ReceiptText size={17}/> Financeiro</Link>
+   <div className="pope-receipt-links">
+    <Link href="/admin/financeiro" className="admin-outline"><ReceiptText size={17}/> Financeiro</Link>
+    <Link href="/admin/financeiro/compras" className="admin-outline">Custos de mercadorias</Link>
+   </div>
   </div>
   <div className="admin-metric-row">
    <div><ReceiptText/><small>Pedidos nos últimos 12 meses</small><strong>{totals.orders}</strong></div>

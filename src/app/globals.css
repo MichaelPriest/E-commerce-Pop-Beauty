@@ -1139,3 +1139,32 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  padding:5px 7px;font-size:.75rem;font-weight:750;color:#7f3861;
  background:#fffafc;text-decoration:none}
 .pope-variant-images-link:hover{background:#fae9f3;color:#742957}
+
+/* Popê Beauty — escolha de cor no card e fotografia do SKU no carrinho */
+.pope-swatch-card .product-details{display:flex;flex-direction:column;min-width:0}
+.pope-swatch-card .product-image img{transition:opacity .2s ease;object-fit:contain}
+.pope-card-variants{display:grid;gap:7px;margin:9px 0 5px}
+.pope-card-variant-heading{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px;color:#744061;font-size:.77rem}
+.pope-card-variant-heading strong{font-weight:800}
+.pope-card-variant-heading span{font-size:.75rem;color:#6d5665;line-height:1.4;overflow-wrap:anywhere}
+.pope-card-swatches{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.pope-card-swatch{position:relative;width:43px;height:43px;border-radius:11px;border:2px solid #e8d0dc;background:#fff9fc;display:grid;place-items:center;overflow:hidden;padding:3px;cursor:pointer;color:#804468}
+.pope-card-swatch img{width:100%;height:100%;object-fit:contain;border-radius:6px}
+.pope-card-swatch>span:not(.pope-card-swatch-strike){font-size:.95rem;font-weight:800}
+.pope-card-swatch.selected{border-color:#b42f79;box-shadow:0 0 0 2px #f2c5dc;background:#fff}
+.pope-card-swatch.unavailable{opacity:.58}
+.pope-card-swatch-strike{position:absolute;left:2px;right:2px;top:50%;height:2px;background:#9e5264;transform:rotate(-35deg);pointer-events:none}
+.pope-card-swatch:focus-visible,.pope-card-more-variants:focus-visible{outline:3px solid #a93376;outline-offset:3px}
+.pope-card-more-variants{font-size:.75rem;font-weight:750;color:#8d3f70;text-decoration:underline;align-self:center;padding:7px}
+.pope-card-single-sku{font-size:.75rem;color:#73546b;display:flex;align-items:center;gap:5px;margin:9px 0 0}
+.pope-card-variant-details{font-size:.76rem;color:#8d4170;margin-top:8px;text-decoration:underline;text-align:center}
+.pope-swatch-card .add-button{min-height:43px;margin-top:8px}
+.pope-swatch-card .form-error{font-size:.75rem;line-height:1.45;margin:7px 0}
+.pope-cart-product .pope-cart-thumbnail{display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;text-decoration:none}
+.pope-cart-thumbnail img{width:100%;height:100%;object-fit:contain;border-radius:8px}
+.pope-cart-thumbnail span{display:grid;place-items:center;width:100%;height:100%;font-size:1.9rem}
+.pope-cart-line-info strong{overflow-wrap:anywhere}
+@media(max-width:680px){
+ .pope-card-swatch{width:40px;height:40px}
+ .pope-cart-product .pope-cart-thumbnail{width:72px;height:72px}
+}

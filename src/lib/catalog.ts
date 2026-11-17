@@ -5,6 +5,7 @@ import {
  CATALOG_PAGE_SIZE,normalizeCatalogCategory,normalizeCatalogPage,normalizeCatalogSearch
 } from './catalog-query-core';
 import {matchingCategoryIds,type CatalogCategory} from './catalog-category-core';
+import {cardVariantCover,type CatalogCardVariant} from './catalog-card-preview';
 export {formatBRL} from './products';
 
 type Filters={q?:string;category?:string;page?:number};
@@ -51,20 +52,57 @@ async function attachAvailability(
  sb:Awaited<ReturnType<typeof createClient>>,products:Product[]
 ):Promise<Product[]>{
  if(!products.length)return products;
- const {data,error}=await sb.rpc('catalog_product_availability',{
-  p_product_ids:products.map(p=>p.id)
- });
- if(error){
-  console.error('Disponibilidade da vitrine indisponível:',error.code);
-  return products; // fail closed: não habilitar botões com status desconhecido
+ const ids=products.map(p=>p.id);
+ // Consultas em lote: evita chamadas individuais para cada card.
+ const [availability,variantResult,galleryResult]=await Promise.all([
+  sb.rpc('catalog_product_availability',{p_product_ids:ids}),
+  sb.rpc('catalog_variant_availability',{p_product_ids:ids}),
+  sb.from('product_gallery_images')
+   .select('product_id,variant_id,storage_path')
+   .in('product_id',ids)
+   .order('sort_order',{ascending:true})
+   .order('created_at',{ascending:true}).limit(96)
+ ]);
+ if(availability.error)console.error('Disponibilidade da vitrine indisponível:',availability.error.code);
+ if(variantResult.error)console.error('Cores da vitrine indisponíveis:',variantResult.error.code);
+ if(galleryResult.error)console.error('Fotografias da vitrine indisponíveis:',galleryResult.error.code);
+ const byId=new Map(((availability.data??[]) as Availability[])
+  .map(x=>[x.product_id,x]));
+ const galleryByProduct=new Map<string,{variant_id:string|null;url:string}[]>();
+ if(!galleryResult.error)for(const image of galleryResult.data??[]){
+  const list=galleryByProduct.get(image.product_id)??[];
+  list.push({
+   variant_id:image.variant_id??null,
+   url:sb.storage.from('product-images').getPublicUrl(image.storage_path).data.publicUrl
+  });
+  galleryByProduct.set(image.product_id,list);
  }
- const byId=new Map(((data??[]) as Availability[]).map(x=>[x.product_id,x]));
+ const variantsByProduct=new Map<string,CatalogCardVariant[]>();
+ if(!variantResult.error)for(const variant of
+  (variantResult.data??[]) as CatalogVariant[]){
+  const list=variantsByProduct.get(variant.product_id)??[];
+  const gallery=galleryByProduct.get(variant.product_id)??[];
+  const cover=products.find(p=>p.id===variant.product_id)?.image_url??null;
+  const general=gallery.find(g=>g.variant_id===null)?.url??null;
+  list.push({
+   variant_id:variant.variant_id,sku:variant.sku,name:variant.name,
+   shade:variant.shade,available:variant.available,
+   image_url:cardVariantCover(variant.variant_id,cover,general,gallery)
+  });
+  variantsByProduct.set(variant.product_id,list);
+ }
  return products.map(p=>{
-  const a=byId.get(p.id);
-  return {...p,availability:a?.status??'unavailable',
-   active_variant_count:a?.active_variant_count??0};
+  const data=byId.get(p.id);
+  const photos=galleryByProduct.get(p.id)??[];
+  return {...p,
+   availability:data?.status??'unavailable',
+   active_variant_count:data?.active_variant_count??0,
+   preview_variants:variantsByProduct.get(p.id)??[],
+   preview_general_image_url:photos.find(x=>x.variant_id===null)?.url??null
+  };
  });
 }
+
 export async function getProducts(filters:Filters={}):Promise<CatalogResult>{
  const q=normalizeCatalogSearch(filters.q),category=normalizeCatalogCategory(filters.category);
  const requestedPage=filters.page;

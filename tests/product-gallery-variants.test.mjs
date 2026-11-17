@@ -85,7 +85,9 @@ test('páginas de produto e carrinho usam galeria, SKU e limites de homologaçã
  assert.match(selector,/variant\.available/);
  assert.match(selector,/putCartItem\(stored,item\)/);
  assert.match(cart,/cartIdentity/);
- assert.match(cart,/Trocar cor \/ variação/);
+ assert.match(cart,/Ver fotos ou escolher outra cor/);
+ assert.match(cart,/pope-cart-thumbnail/);
+ assert.match(cart,/item\.image_url/);
  assert.match(preview,/cartApiItems\(cartRows\)/);
  assert.match(api,/variant_id/);
  assert.match(reservation,/variant_id/);

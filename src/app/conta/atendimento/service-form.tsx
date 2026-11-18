@@ -8,11 +8,11 @@ import {
 } from '@/lib/customer-service';
 
 type OrderOption={id:string;created_at:string;status:string};
-export function CustomerServiceForm({userId,orders}:{
- userId:string;orders:OrderOption[];
+export function CustomerServiceForm({userId,orders,defaultOrderId=''}:{
+ userId:string;orders:OrderOption[];defaultOrderId?:string;
 }){
  const router=useRouter();
- const [orderId,setOrderId]=useState('');
+ const [orderId,setOrderId]=useState(defaultOrderId);
  const [category,setCategory]=useState<ServiceCategory>('entrega');
  const [subject,setSubject]=useState(''),[description,setDescription]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');

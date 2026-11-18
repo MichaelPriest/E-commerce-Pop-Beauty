@@ -1427,3 +1427,43 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 @media(prefers-reduced-motion:reduce){
  .pope-admin-nav-chevron{transition:none}
 }
+
+/* Central administrativa de atendimento e pós-venda. */
+.pope-admin-service-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:12px;margin:16px 0 20px}
+.pope-admin-service-overview>div{border:1px solid #ecd8e8;background:#fff;
+ border-radius:15px;padding:17px;display:grid;gap:6px}
+.pope-admin-service-overview small{color:#765e76}
+.pope-admin-service-overview strong{font:900 27px Nunito,sans-serif;color:var(--purple)}
+.pope-support-alert{padding:15px;border:1px solid #ead4e5;border-radius:13px;
+ background:#fff8fd;color:#70586c;display:flex;gap:10px;line-height:1.5;
+ margin:0 0 18px}
+.pope-support-alert svg{flex:none;color:var(--purple)}
+.pope-admin-service-list{display:grid;gap:14px;margin:20px 0}
+.pope-admin-service-ticket{background:#fff;border:1px solid #ebd6e6;
+ padding:20px;border-radius:16px}
+.pope-admin-service-ticket .pope-support-ticket-top{display:flex;flex-wrap:wrap;
+ align-items:flex-start;justify-content:space-between;gap:12px}
+.pope-admin-service-ticket h2{color:var(--ink);font-size:1.1rem;margin:5px 0;
+ overflow-wrap:anywhere}
+.pope-admin-service-ticket small{color:#765e76;line-height:1.45}
+.pope-admin-service-ticket .pope-support-linked-order{margin:12px 0}
+.pope-admin-service-description{overflow-wrap:anywhere;white-space:pre-wrap;
+ line-height:1.6;margin:14px 0}
+.pope-admin-service-ticket .pope-support-reply{display:grid;gap:7px;
+ background:#fff1f9;border-left:3px solid var(--purple);padding:12px;
+ border-radius:8px;overflow-wrap:anywhere;white-space:pre-wrap;margin:15px 0}
+.pope-admin-service-ticket .admin-outline{margin-top:10px}
+.pope-admin-service .admin-filterbar{gap:12px}
+.pope-admin-service .admin-search{flex:1;min-width:210px}
+.pope-admin-service .admin-filterbar select{min-height:42px;border-radius:11px;
+ border:1px solid #e0c9dc;padding:7px 12px;max-width:100%}
+.pope-admin-service .order-status[data-status=open]{color:#70531d;background:#fff1d0}
+.pope-admin-service .order-status[data-status=in_review]{color:#285589;background:#e8f0ff}
+.pope-admin-service .order-status[data-status=resolved]{color:#265e42;background:#e8f8ee}
+.pope-admin-service .order-status[data-status=closed]{color:#60506e;background:#f3edf6}
+@media(max-width:700px){
+ .pope-admin-service-overview{grid-template-columns:1fr 1fr}
+ .pope-admin-service-ticket{padding:15px}
+ .pope-admin-service .admin-filterbar select{width:100%}
+}

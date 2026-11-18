@@ -1,5 +1,3 @@
-import {SERVICE_CATEGORIES,SERVICE_STATUSES} from './customer-service';
-
 export type ServiceConversationMessage={
  id:string;request_id:string;author_id:string|null;
  author_role:'customer'|'staff';body:string;created_at:string;
@@ -16,9 +14,5 @@ export function serviceConversationLabel(role:ServiceConversationMessage['author
  return role==='staff'?'Equipe Popê Beauty':'Cliente';
 }
 export function canReplyToService(status:string){
- return status in SERVICE_STATUSES&&status!=='closed';
-}
-export function serviceConversationCategory(category:string){
- return category in SERVICE_CATEGORIES?
-  SERVICE_CATEGORIES[category as keyof typeof SERVICE_CATEGORIES]:'Atendimento';
+ return status==='open'||status==='in_review'||status==='resolved';
 }

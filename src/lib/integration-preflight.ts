@@ -1,5 +1,5 @@
 export const PROVIDERS = [
- 'supabase', 'mp-test', 'mp-live', 'focus', 'melhor-envio-sandbox', 'melhor-envio-live',
+ 'supabase', 'mp-test', 'mp-live', 'focus', 'melhor-envio-sandbox', 'melhor-envio-live', 'smtp',
 ] as const;
 
 export type PreflightProvider = typeof PROVIDERS[number];
@@ -12,6 +12,22 @@ export type PreflightCard = {
 export type PreflightResult = {state:'ready'|'pending'|'blocked';message:string};
 
 export const PRODUCTION_ENV_URL = 'https://vercel.com/michael-raimundos-projects/e-commerce-pope-beauty/settings/environment-variables';
+export const CREDENTIALS_MANUAL_URL = 'https://github.com/MichaelPriest/E-commerce-Pop-Beauty/blob/main/docs/manual-de-credenciais.md';
+
+const smtpFields = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_FROM_EMAIL'] as const;
+
+export function pendingSmtpFields(env: Record<string, string | undefined>) {
+ return smtpFields.filter(field => {
+  const value = env[field]?.trim();
+  if (!value) return true;
+  if (field === 'SMTP_PORT') {
+   const port = Number(value);
+   return !/^\d+$/.test(value) || port < 1 || port > 65535;
+  }
+  if (field === 'SMTP_FROM_EMAIL') return !/^[^\s@<>,;]+@[^\s@<>,;]+$/u.test(value);
+  return false;
+ });
+}
 
 export function integrationPreflight(env:Record<string,string|undefined>):PreflightCard[]{
  const present=(key:string)=>Boolean(env[key]?.trim());
@@ -29,7 +45,7 @@ export function integrationPreflight(env:Record<string,string|undefined>):Prefli
   ['melhor-envio-live','Melhor Envio — produção',['MELHOR_ENVIO_PRODUCTION_TOKEN'],
    ['MELHOR_ENVIO_LABEL_ENVIRONMENT','MELHOR_ENVIO_CONTACT_EMAIL','MELHOR_ENVIO_SENDER_PHONE']],
  ];
- return definitions.map(([id,title,query,operational])=>{
+ const cards = definitions.map(([id,title,query,operational])=>{
   const configured=(key:string)=>{
    if(key==='FOCUS_NFE_ENVIRONMENT')return focusMode;
    if(key==='MELHOR_ENVIO_LABEL_ENVIRONMENT')return env[key]==='producao';
@@ -40,4 +56,8 @@ export function integrationPreflight(env:Record<string,string|undefined>):Prefli
   };
   return {id,title,missing:[...query,...operational].filter(key=>!configured(key)),canCheck:query.every(configured)};
  });
+ const missing = pendingSmtpFields(env);
+ cards.push({id:'smtp',title:'E-mails de pedidos (SMTP)',missing,
+  canCheck:missing.every(field => field === 'SMTP_FROM_EMAIL')});
+ return cards;
 }

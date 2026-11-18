@@ -2,8 +2,9 @@ import {NextRequest} from 'next/server';
 import {orderResponse,orderService,orderSession} from '@/lib/order-request';
 import {focusConfig,focusRequest} from '@/lib/fiscal/focus-nfe';
 import {mpLiveSellerConfig,verifyMpLiveSeller} from '@/lib/payments/mercado-pago-live';
-import {verifyMercadoPagoTestSellerCredentials} from '@/lib/payments/mercado-pago-test';
+import {TestSellerCredentialError,verifyMercadoPagoTestSellerCredentials} from '@/lib/payments/mercado-pago-test';
 import {labelRequest} from '@/lib/shipping/melhor-envio-label';
+import {verifyOrderSmtp} from '@/lib/order-smtp';
 import {integrationPreflight,PROVIDERS,type PreflightProvider,type PreflightResult} from '@/lib/integration-preflight';
 
 export const runtime='nodejs';
@@ -19,9 +20,11 @@ export async function POST(request:NextRequest){
  const id=input&&typeof input==='object'&&'id' in input?input.id:null;
  if(typeof id!=='string'||!PROVIDERS.includes(id as PreflightProvider))return orderResponse({error:'Selecione uma integração.'},400);
  const integration=integrationPreflight(process.env).find(card=>card.id===id);
- if(!integration?.canCheck)return result('pending','Preencha as variáveis de acesso da integração e atualize o deploy.');
+ if(!integration?.canCheck)return result('pending','Confira os campos pendentes na Vercel e refaça o deploy.');
  try{
   switch(id as PreflightProvider){
+   case 'smtp':
+    return orderResponse(await verifyOrderSmtp());
    case 'supabase': {
     const service=orderService();
     if(!service)return result('pending','Acesso do servidor aguardando configuração.');
@@ -69,7 +72,8 @@ export async function POST(request:NextRequest){
      result('blocked','O Melhor Envio retornou um formato de resposta inesperado.');
    }
   }
- }catch{
+ }catch(error){
+  if(error instanceof TestSellerCredentialError)return result('blocked',error.message);
   return result('blocked','A consulta falhou. Confira a credencial e a disponibilidade do provedor.');
  }
 }

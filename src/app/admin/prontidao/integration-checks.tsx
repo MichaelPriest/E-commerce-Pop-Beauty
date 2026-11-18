@@ -1,8 +1,8 @@
 'use client';
 
 import {useState} from 'react';
-import {Plug,ExternalLink} from 'lucide-react';
-import {PRODUCTION_ENV_URL,type PreflightCard,type PreflightProvider,type PreflightResult} from '@/lib/integration-preflight';
+import {BookOpen,Plug,ExternalLink} from 'lucide-react';
+import {CREDENTIALS_MANUAL_URL,PRODUCTION_ENV_URL,type PreflightCard,type PreflightProvider,type PreflightResult} from '@/lib/integration-preflight';
 
 export function IntegrationChecks({cards}:{cards:PreflightCard[]}){
  const [running,setRunning]=useState<PreflightProvider|null>(null);
@@ -25,11 +25,14 @@ export function IntegrationChecks({cards}:{cards:PreflightCard[]}){
  return <section className="pope-readiness-group" id="integracoes">
   <h2><Plug size={20}/> Conexão com os provedores</h2>
   <p className="pope-readiness-footnote">Cadastre os valores na Vercel, refaça o deploy e teste a consulta.</p>
-  <a className="admin-outline" href={PRODUCTION_ENV_URL} target="_blank" rel="noreferrer noopener">Abrir variáveis da Vercel<ExternalLink size={15}/></a>
+  <div className="settings-actions">
+   <a className="admin-outline" href={CREDENTIALS_MANUAL_URL} target="_blank" rel="noreferrer noopener"><BookOpen size={15}/>Manual de credenciais</a>
+   <a className="admin-outline" href={PRODUCTION_ENV_URL} target="_blank" rel="noreferrer noopener">Abrir variáveis da Vercel<ExternalLink size={15}/></a>
+  </div>
   <div className="pope-readiness-grid pope-preflight-grid">
    {cards.map(card=>{
     const last=results[card.id];
-    return <article key={card.id} className="pope-readiness-item">
+    return <article key={card.id} id={'integracao-'+card.id} className="pope-readiness-item">
      <div className="pope-readiness-item-title"><strong>{card.title}</strong>
       <span className={'pope-readiness-status state-'+(card.missing.length?'pending':'manual')}>
        {card.missing.length?`${card.missing.length} variáve${card.missing.length===1?'l pendente':'is pendentes'}`:'Variáveis presentes'}
@@ -37,7 +40,7 @@ export function IntegrationChecks({cards}:{cards:PreflightCard[]}){
      </div>
      {card.missing.length>0&&<ul className="pope-preflight-vars">{card.missing.map(key=><li key={key}><code>{key}</code></li>)}</ul>}
      <button type="button" className="admin-outline" disabled={!card.canCheck||running!==null} onClick={()=>void verify(card.id)}>
-      {running===card.id?'Consultando…':'Testar consulta'}</button>
+      {running===card.id?'Consultando…':card.id==='smtp'?'Testar autenticação':'Testar consulta'}</button>
      {last&&<p role="status" className={'pope-readiness-status pope-preflight-result state-'+last.state}>{last.message}</p>}
     </article>;
    })}

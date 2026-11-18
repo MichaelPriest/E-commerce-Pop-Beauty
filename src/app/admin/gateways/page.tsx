@@ -3,6 +3,7 @@ import {CreditCard,ShieldCheck,FlaskConical,KeyRound,ArrowLeft} from 'lucide-rea
 import {requireAdmin} from '@/lib/admin';
 import {PAYMENT_GATEWAYS,type PaymentGatewaySetting} from '@/lib/payment-gateways';
 import {paymentGatewayEnvironments} from '@/lib/payment-gateways-server';
+import {CREDENTIALS_MANUAL_URL} from '@/lib/integration-preflight';
 import {GatewayManager} from './gateway-manager';
 
 export const dynamic='force-dynamic';
@@ -27,7 +28,10 @@ export default async function PaymentGatewaysPage(){
    <h1><CreditCard size={29}/> Gateways de pagamento</h1>
    <p>Compare provedores e prepare credenciais de homologação antes de decidir qual utilizar na loja.</p>
   </div>
-   <Link href="/admin/financeiro" className="admin-outline"><ArrowLeft size={16}/> Financeiro</Link>
+   <div className="settings-actions">
+    <a href={CREDENTIALS_MANUAL_URL+'#gateways-opcionais-para-avaliação'} target="_blank" rel="noopener noreferrer" className="admin-outline"><KeyRound size={16}/> Manual de credenciais</a>
+    <Link href="/admin/financeiro" className="admin-outline"><ArrowLeft size={16}/> Financeiro</Link>
+   </div>
   </div>
   <div className="admin-metric-row">
    <div><CreditCard/><small>Provedores no catálogo</small><strong>{PAYMENT_GATEWAYS.length}</strong></div>

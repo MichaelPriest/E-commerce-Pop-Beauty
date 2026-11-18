@@ -6,6 +6,8 @@
 
 Este é o **documento principal do projeto**. Reúne recursos, URLs, arquitetura, tabelas, regras de negócio, configuração, homologação, segurança, limitações, operações e próximos passos. A implementação em código e no banco é a fonte de verdade quando existir divergência; nunca habilite recursos de produção somente com base na presença de uma tela.
 
+Para configurar a loja, consulte o [Manual de credenciais da Popê Beauty](docs/manual-de-credenciais.md). Ele traz os campos da Vercel, os painéis dos provedores, as URLs de retorno e os testes de cada integração.
+
 ## 1. Visão geral e status
 
 ### 1.1. Painel executivo
@@ -174,7 +176,7 @@ As regras de senha do frontend exigem complexidade e 12+ caracteres, mas **as po
 
 ## 4. Variáveis de ambiente
 
-A lista abaixo contém **somente nomes/valores de habilitação**, nunca credenciais reais. `Sensível` = configurar como secret/sensitive no servidor da Vercel.
+A tabela registra a configuração observada em 11/11/2026. Para o cadastro e a validação das integrações atuais, use o [manual de credenciais](docs/manual-de-credenciais.md).
 
 | Variável | Uso | Tipo / situação |
 | --- | --- | --- |
@@ -197,7 +199,7 @@ A lista abaixo contém **somente nomes/valores de habilitação**, nunca credenc
 
 | Provedor | Nomes |
 | --- | --- |
-| Mercado Pago | `MP_TEST_ACCESS_TOKEN` |
+| Mercado Pago | `MP_TEST_ACCESS_TOKEN`, `MP_TEST_SELLER_ID` |
 | PagBank | `PAGBANK_SANDBOX_TOKEN` |
 | Pagar.me | `PAGARME_TEST_SECRET_KEY` |
 | Asaas | `ASAAS_SANDBOX_API_KEY` |
@@ -503,6 +505,8 @@ Em Vercel Production, configurar `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_FR
 
 O Supabase Auth possui SMTP separado para confirmação de cadastro e recuperação; configurar/validar ambos os sistemas independentemente.
 
+Em **Admin → Prontidão → E-mails de pedidos (SMTP)**, **Testar autenticação** abre a conexão TLS e confere o login. A entrega ao cliente é acompanhada em **Admin → Notificações**. [Configuração de e-mail](docs/manual-de-credenciais.md#e-mails-de-pedidos).
+
 ## 13. Modelo de dados e migrations
 
 ### 13.1. Tabelas principais
@@ -739,7 +743,7 @@ Implementadas em 11/11/2026. O módulo `/admin/marketplaces` passou a apresentar
 - Solicitar acesso Shopee Open Platform, criar aplicação com autorizações de **produtos e pedidos**, e obter `Partner ID` e `Partner Key`.
 - Configurar `SHOPEE_PARTNER_ID` e `SHOPEE_PARTNER_KEY` em Vercel → Environment Variables **somente servidor**.
 - Cadastrar o domínio e o retorno: `https://e-commerce-pope-beauty.vercel.app/api/admin/marketplaces/oauth/callback/shopee`.
-- A autorização utiliza o endereço mais recente `https://open.shopee.com.br/auth`, parâmetros `partner_id`, `auth_type=seller`, `response_type=code`, `redirect_uri` e `state`. Tokens são trocados em `/api/v2/auth/token/get`. As chamadas à API utilizam assinatura HMAC-SHA256 sobre os campos de assinatura pública ou de loja.
+- A autorização de loja abre `/api/v2/shop/auth_partner` na Shopee com `partner_id`, timestamp, assinatura e `redirect`. A aplicação adiciona o estado da sessão ao retorno e troca o código em `/api/v2/auth/token/get`.
 - O fluxo de integração foi escrito para uma **conta de loja Shopee com `shop_id`**, não para conta principal que retorna apenas `main_account_id`. A integração de múltiplas lojas em conta master é etapa separada.
 
 **Cofre obrigatório para ambos:**

@@ -52,8 +52,8 @@ export default async function AdminReadinessPage(){
   variants.length<501&&variantsComplete===variants.length;
  const originReady=!shippingOrigin.error&&
   /^\d{8}$/.test(shippingOrigin.data?.origin_postal_code??'');
- const smtpKeys=['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_FROM_EMAIL','SMTP_PASSWORD'];
- const smtpCount=smtpKeys.filter(key=>Boolean(process.env[key]?.trim())).length;
+ const integrationCards=integrationPreflight(process.env);
+ const smtpReady=integrationCards.some(card=>card.id==='smtp'&&card.missing.length===0);
  const gatewayCandidate=!gateways.error&&!!gateways.data?.length;
  const checkoutDisabled=!settings.error&&settings.data?.checkout_reservations_enabled===false;
  const livePayments=mpLivePaymentConfig();
@@ -120,10 +120,11 @@ export default async function AdminReadinessPage(){
    detail:checkoutOpen?'Pedidos públicos habilitados com pagamento pelo Mercado Pago.':
     'Pedido com entrega, pagamento, cancelamento e estorno desenvolvidos. A abertura aguarda homologação e configuração.',
    state:checkoutOpen?'ready':'blocked',href:'/checkout',action:'Ver checkout'},
-  {id:'smtp',group:'Operação',title:'Notificações por e-mail',
-   detail:smtpCount+' de '+smtpKeys.length+' variáveis SMTP de pedidos presentes. A entrega precisa de teste real.',
-   state:smtpCount===smtpKeys.length?'ready':'pending',
-   href:'/admin/notificacoes',action:'Ver notificações'},
+  {id:'smtp',group:'Operação',title:'Entrega de e-mails de pedidos',
+   detail:smtpReady?'Campos SMTP preenchidos. Confirme o recebimento de uma notificação de pedido na caixa de destino.':
+    'Confira os campos indicados na configuração de e-mails de pedidos.',
+   state:smtpReady?'manual':'pending',
+   href:smtpReady?'/admin/notificacoes':'#integracao-smtp',action:smtpReady?'Ver notificações':'Conferir SMTP'},
   {id:'suppliers',group:'Operação',title:'Cadastro de fornecedores',
    detail:suppliers.error?'Não foi possível consultar fornecedores.':
     (suppliers.count??0)+' fornecedor(es) ativo(s). Cadastre fornecedores para rastrear compras e recebimentos.',
@@ -173,7 +174,7 @@ export default async function AdminReadinessPage(){
    <div><h2>{checkoutOpen?'Checkout comercial habilitado':'Checkout comercial aguardando abertura'}</h2>
     <p>Confira a configuração dos provedores e a operação da loja antes do lançamento.</p></div>
   </section>
-  <IntegrationChecks cards={integrationPreflight(process.env)}/>
+  <IntegrationChecks cards={integrationCards}/>
   <div className="admin-metric-row">
    <div><ShieldCheck/><small>Itens verificados</small><strong>{summary.ready}</strong></div>
    <div><AlertTriangle/><small>Pendências técnicas</small><strong>{summary.pending}</strong></div>

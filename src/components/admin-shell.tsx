@@ -95,7 +95,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
  const current=allItems.find(item=>item.href===currentHref)??primaryItems[0];
  const activeGroup=activeAdminSection(pathname,groups);
  const [openedGroup,setOpenedGroup]=useState(activeGroup||'vendas');
- useEffect(()=>{setOpenedGroup(activeGroup||'vendas');},[activeGroup]);
+ useEffect(()=>{setOpenedGroup(activeGroup||'vendas');},[activeGroup,pathname]);
  const shortcuts:NavItem[]=[
   {href:'/admin/pedidos',label:'Novo pedido',icon:ShoppingBag},
   {href:'/admin/produtos',label:'Cadastrar produto',icon:PackagePlus},

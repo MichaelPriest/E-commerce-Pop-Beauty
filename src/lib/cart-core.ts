@@ -64,3 +64,12 @@ export function cartApiItems(items:CartItem[]){
   ...(item.variant_id?{variant_id:item.variant_id}:{})
  }));
 }
+
+export function cartQuantity(items:CartItem[]){
+ return items.reduce((total,item)=>total+item.qty,0);
+}
+
+export function fitsCartQuantity(items:CartItem[],added:CartItem){
+ const current=items.find(item=>cartIdentity(item)===cartIdentity(added));
+ return (current?.qty??0)+added.qty<=99;
+}

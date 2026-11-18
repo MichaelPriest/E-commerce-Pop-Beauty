@@ -34,6 +34,16 @@ jobs:
       - name: Testes automatizados
         run: npm run test
       - name: Compilar Next.js
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:4391
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: fixture-publishable
         run: npm run build
       - name: Validar TypeScript
         run: npm run typecheck
+
+      - name: Conferir carrinho e conta no Chrome com dados de teste locais
+        env:
+          NODE_PATH: ${{ runner.temp }}/pope-playwright/node_modules
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pope-playwright" --no-package-lock --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          node tests/browser/storefront.mjs

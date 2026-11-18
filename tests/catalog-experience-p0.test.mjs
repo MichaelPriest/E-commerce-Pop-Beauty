@@ -82,7 +82,8 @@ test('vitrine impede inserir produto esgotado no carrinho',()=>{
  assert.match(card,/variant_id:chosen\.variant_id/);
  assert.match(card,/Produto de demonstração/);
  assert.match(card,/Esgotado/);
- assert.match(card,/pope-favorites/);
+ assert.match(card,/toggleFavorite\(product\.id\)/);
+ assert.match(read('src/lib/storefront-lists.ts'),/createBrowserList\('pope-favorites'/);
 });
 test('dashboard e cadastro oferecem acesso às pendências',()=>{
  const dash=read('src/app/admin/page.tsx');

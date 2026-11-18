@@ -205,3 +205,17 @@ export async function getProductDetailExtras(productId:string):
   }))
  };
 }
+
+export async function getFavoriteProducts(ids:string[]):Promise<{products:Product[];demo:boolean}>{
+ if(!isSupabaseConfigured()){
+  return {products:demoProducts.filter(p=>ids.includes(p.id)),demo:true};
+ }
+ const productIds=ids.filter(id=>!id.startsWith('demo-'));
+ if(!productIds.length)return {products:[],demo:false};
+ const db=await createClient();
+ const {data,error}=await db.from('products').select(productColumns)
+  .eq('active',true).eq('is_adult',false).in('id',productIds);
+ if(error)throw new Error('Falha ao consultar favoritos.');
+ const products=(data??[]).map(row=>mapRow(row as unknown as Record<string,unknown>));
+ return {products:await attachAvailability(db,products),demo:false};
+}

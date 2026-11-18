@@ -1,16 +1,18 @@
 'use client';
 import Link from 'next/link';
 import {Heart,ShoppingCart,Check,Images} from 'lucide-react';
-import {useEffect,useState} from 'react';
+import {useState,useSyncExternalStore} from 'react';
 import type {Product} from '@/lib/products';
 import {formatBRL,productImageSrc} from '@/lib/products';
-import {normalizeCart,putCartItem} from '@/lib/cart-core';
+import {cartStore,favoritesStore,toggleFavorite} from '@/lib/storefront-lists';
+import {fitsCartQuantity,putCartItem} from '@/lib/cart-core';
 import {cardVariantLabel,selectedCardVariant} from '@/lib/catalog-card-preview';
 
 export function ProductCard({product,demo}:{product:Product;demo:boolean}){
  const variants=product.preview_variants??[];
  const [selectedId,setSelectedId]=useState(variants.length===1?variants[0].variant_id:'');
- const [favorite,setFavorite]=useState(false);
+ const favorite=useSyncExternalStore(favoritesStore.subscribe,
+  ()=>favoritesStore.getSnapshot().includes(product.id),()=>false);
  const [added,setAdded]=useState(false);
  const [error,setError]=useState('');
  const chosen=selectedCardVariant(variants,selectedId);
@@ -26,22 +28,6 @@ export function ProductCard({product,demo}:{product:Product;demo:boolean}){
   multiple?'Escolha uma cor ou apresentação':
   product.availability==='out_of_stock'?'Esgotado':'Disponibilidade não confirmada';
 
- useEffect(()=>{
-  try{
-   const stored=JSON.parse(localStorage.getItem('pope-favorites')||'[]');
-   setFavorite(Array.isArray(stored)&&stored.includes(product.id));
-  }catch{setFavorite(false);}
- },[product.id]);
- function toggleFavorite(){
-  const next=!favorite;
-  setFavorite(next);
-  try{
-   const stored=JSON.parse(localStorage.getItem('pope-favorites')||'[]');
-   const ids=Array.isArray(stored)?stored.filter(x=>typeof x==='string'):[];
-   const updated=next?[...new Set([...ids,product.id])]:ids.filter(x=>x!==product.id);
-   localStorage.setItem('pope-favorites',JSON.stringify(updated));
-  }catch{/* Favorito local é opcional. */}
- }
  function chooseVariant(id:string){
   setSelectedId(id);
   setAdded(false);
@@ -51,7 +37,7 @@ export function ProductCard({product,demo}:{product:Product;demo:boolean}){
   if(!ready||!chosen)return;
   setError('');
   try{
-   const stored=normalizeCart(JSON.parse(localStorage.getItem('pope-cart')||'[]'));
+   const stored=cartStore.getSnapshot();
    const item={
     id:product.id,slug:product.slug,name:product.name,
     price_cents:product.price_cents,qty:1,variant_id:chosen.variant_id,
@@ -59,13 +45,16 @@ export function ProductCard({product,demo}:{product:Product;demo:boolean}){
     emoji:product.emoji,
     ...(image?{image_url:image}:{})
    };
+   if(!fitsCartQuantity(stored,item)){
+    setError('O limite é de 99 unidades por variação. Confira a quantidade no carrinho.');
+    return;
+   }
    const updated=putCartItem(stored,item);
    if(!updated.some(x=>x.id===item.id&&x.variant_id===item.variant_id)){
     setError('Carrinho cheio: limite de 30 variações diferentes.');
     return;
    }
-   localStorage.setItem('pope-cart',JSON.stringify(updated));
-   window.dispatchEvent(new Event('pope-cart-updated'));
+   cartStore.write(updated);
    setAdded(true);
    setTimeout(()=>setAdded(false),1800);
   }catch{
@@ -75,7 +64,7 @@ export function ProductCard({product,demo}:{product:Product;demo:boolean}){
  return <article className="product-card pope-swatch-card">
   <div className={'product-visual tone-'+(product.tone||'pink')}>
    <button type="button" className={'favorite '+(favorite?'is-favorite':'')}
-    onClick={toggleFavorite}
+    aria-pressed={favorite} onClick={()=>toggleFavorite(product.id)}
     aria-label={favorite?'Remover dos favoritos':'Adicionar aos favoritos'}>
     <Heart size={21} fill={favorite?'currentColor':'none'}/>
    </button>

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import {formatBRL} from '@/lib/products';
 import {type CartItem,normalizeCart,cartApiItems} from '@/lib/cart-core';
+import {cartStore} from '@/lib/storefront-lists';
 import {checkoutStatusLabel,type CheckoutPreview} from '@/lib/checkout-preview';
 import type {CustomerAddress} from '@/types/customer-address';
 import {SandboxShippingQuote} from '@/components/checkout/sandbox-shipping-quote';
@@ -57,7 +58,7 @@ export function CheckoutPreviewPage({
   const load=async()=>{
    if(live){setStage('loading');setError('');}
    let stored:unknown;
-   try{stored=JSON.parse(localStorage.getItem('pope-cart')||'[]');}
+   try{stored=JSON.parse(cartStore.readRaw()||'[]');}
    catch{if(live){setError('Não foi possível ler seu carrinho. Volte e revise os itens.');setStage('failed');}return;}
    if(!Array.isArray(stored)||stored.length===0){
     if(live){setStage('empty');setCartRows([]);}

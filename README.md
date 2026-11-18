@@ -1199,3 +1199,13 @@ Para disponibilizar o cadastro, aplique `supabase/promotion_coupons_admin_v1.sql
 A sidebar administrativa foi agrupada por **Vendas e clientes, Catálogo e campanhas, Estoque e compras, Logística e fiscal, Financeiro e relatórios, Equipe e sistema**. Os acessos a Visão geral, Pedidos e Notificações ficam fixos no topo. Os outros módulos ficam dentro de áreas expansíveis com identificação automática da seção atual. A busca de atalhos alcança todos os módulos e pode ser aberta pelo teclado com `Ctrl+K` (ou `⌘+K` no Mac). A interface conserva o modo compacto e funciona no celular. Nenhuma rota administrativa foi retirada.
 
 Veja o [manual de navegação administrativa](docs/navegacao-admin.md) para a lista completa de seções, atalhos e testes.
+
+## Atendimento e pós-venda
+
+A área **Minha conta → Atendimento** permite abrir solicitações de troca, devolução, problemas de entrega ou produtos e consultar respostas da equipe. Pelo detalhe do pedido, o cliente consegue solicitar atendimento com o pedido selecionado.
+
+A central administrativa **Vendas e clientes → Atendimento e pós-venda** permite filtrar as solicitações, registrar respostas e atualizar o status. A sidebar sinaliza as solicitações pendentes. O módulo agora faz parte dos **30 acessos administrativos**.
+
+Para utilizar, aplique `supabase/customer_service_requests_v1.sql` ao Supabase da Popê antes de publicar a alteração. RLS restringe leitura e inserção a clientes proprietários e alteração a administradores; cada usuário pode registrar até três solicitações por hora. Consulte o [manual de atendimento e pós-venda](docs/atendimento-pos-venda.md).
+
+**Atenção:** registrar ou concluir um atendimento não devolve dinheiro, não estorna pagamentos, não altera estoque, não cancela NF-e e não solicita logística reversa. Essas rotinas precisam de integração e homologação próprias.

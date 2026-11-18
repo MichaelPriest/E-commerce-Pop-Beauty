@@ -36,6 +36,10 @@ test('banco limita solicitações e permite somente ao titular vincular o própr
  assert.match(sql,/interval '1 hour'/);
  assert.match(sql,/>=3 then/);
  assert.match(sql,/resolved_service_requires_reply/);
+ const perf=read('supabase/customer_service_performance_v1.sql');
+ assert.match(perf,/customer_service_reviewer_idx/);
+ assert.match(perf,/\(select auth\.jwt\(\)\)/);
+ assert.match(perf,/alter policy service_request_owner_create/);
  assert.doesNotMatch(sql,/alter table public\.orders|grant .* to anon|set commercial_checkout_enabled/i);
 });
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
-import {ArrowRight,ChevronRight,Eye,Heart,LogOut,LockKeyhole,MapPin,Package,ShieldCheck,Truck,UserRound} from 'lucide-react';
+import {ArrowRight,ChevronRight,Eye,Heart,LogOut,LockKeyhole,MapPin,Package,ShieldCheck,Truck,UserRound,Headset} from 'lucide-react';
 import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
 import {getStorefrontCustomer} from '@/lib/storefront-customer';
@@ -45,6 +45,7 @@ export default async function AccountPage({searchParams}:{searchParams:Promise<{
    <Link href="#pedidos"><Package/><span><strong>Meus pedidos</strong><small>Compras e reservas</small></span><ChevronRight/></Link>
    <Link href="/conta/enderecos"><MapPin/><span><strong>Meus endereços</strong><small>Entregas e endereço principal</small></span><ChevronRight/></Link>
    <Link href="/favoritos"><Heart/><span><strong>Meus favoritos</strong><small>Produtos salvos neste navegador</small></span><ChevronRight/></Link>
+   <Link href="/conta/atendimento"><Headset/><span><strong>Atendimento</strong><small>Trocas, devoluções e suporte</small></span><ChevronRight/></Link>
   </nav>
   <section id="pedidos" className="customer-orders" aria-labelledby="orders-title">
    <h2 id="orders-title">Meus pedidos e reservas</h2>

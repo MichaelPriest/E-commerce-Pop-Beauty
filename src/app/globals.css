@@ -1350,3 +1350,30 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-catalog-sort label{width:100%}
  .pope-catalog-sort select{flex:1;min-width:0}
 }
+
+/* Popê Beauty — campanhas internas e simulação de cupons. */
+.pope-coupon-warning{display:flex;align-items:flex-start;gap:13px;padding:17px 20px;margin:16px 0 20px;
+ border-radius:14px;border:1px solid #e5c689;background:#fffaf0;color:#76521f}
+.pope-coupon-warning svg{flex:none;margin-top:2px}
+.pope-coupon-warning p{margin:5px 0 0;line-height:1.5}
+.pope-coupon-toolbar{gap:12px;align-items:center;margin-bottom:18px}
+.pope-coupon-toolbar .admin-search{flex:1;min-width:220px}
+.pope-coupon-toolbar select,.pope-coupon-simulator select,
+.pope-coupon-simulator input{min-height:42px;border:1px solid #d5c5d1;border-radius:10px;
+ background:#fff;padding:8px 12px;max-width:100%;color:var(--ink)}
+.pope-promotions-admin>.admin-panel{margin-bottom:18px}
+.pope-promotions-admin .ops-table td small{display:block;margin-top:4px;line-height:1.5;color:#70586c}
+.pope-coupon-fieldset{border:0;padding:0;margin:0;min-width:0}
+.pope-coupon-simulator-inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;max-width:740px}
+.pope-coupon-simulator-inputs label{display:grid;gap:6px;color:var(--ink);font-weight:700}
+.pope-coupon-preview-note{line-height:1.5;margin:16px 0}
+.pope-coupon-preview-result{display:grid;gap:10px;max-width:540px}
+.pope-coupon-preview-result>div{display:flex;justify-content:space-between;gap:12px}
+.pope-coupon-preview-result dt{color:#6b5268}
+.pope-coupon-preview-result dd{margin:0;font-weight:800}
+@media(max-width:680px){
+ .pope-coupon-warning{padding:14px}
+ .pope-coupon-toolbar{flex-wrap:wrap}
+ .pope-coupon-toolbar .admin-search,.pope-coupon-toolbar select{width:100%}
+ .pope-coupon-simulator-inputs{grid-template-columns:1fr}
+}

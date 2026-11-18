@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {Activity,Boxes,ArrowUpRight,ShoppingBag,Truck,Users,PackagePlus,
- PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards,Timer,CreditCard,ClipboardCheck} from 'lucide-react';
+ PackageSearch,Store,MailCheck,ShieldCheck,ArrowLeft,AlertCircle,Clock,UserCog,BarChart3,WalletCards,Timer,CreditCard,ClipboardCheck,Tags} from 'lucide-react';
 import {requireAdmin} from '@/lib/admin';
 import {formatBRL} from '@/lib/products';
 import {catalogIssues,brazilTodayISO,type QualityProduct} from '@/lib/catalog-quality';
@@ -53,7 +53,8 @@ export default async function AdminPage(){
   {href:'/admin/produtos',label:'Cadastrar produto',caption:'Novo item do catálogo',icon:PackagePlus},
   {href:'/admin/pedidos',label:'Novo pedido',caption:'Criar pedido interno',icon:ShoppingBag},
   {href:'/admin/estoque',label:'Ajustar estoque',caption:'Lotes e movimentações',icon:Boxes},
-  {href:'/admin/notificacoes',label:'E-mails de pedidos',caption:'Fila e reenvios',icon:MailCheck}
+  {href:'/admin/notificacoes',label:'E-mails de pedidos',caption:'Fila e reenvios',icon:MailCheck},
+  {href:'/admin/promocoes',label:'Cupons e promoções',caption:'Campanhas internas e simulação',icon:Tags}
  ];
  return <div className="dashboard container pope-admin-dashboard">
   <div className="admin-top">

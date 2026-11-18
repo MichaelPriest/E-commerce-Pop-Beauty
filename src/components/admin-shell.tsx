@@ -176,10 +176,11 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
        title={group.title} aria-expanded={visible}
        aria-controls={'pope-admin-group-'+group.id}
        onClick={()=>{
-        if(collapsed&&!mobileOpen){setCollapsed(false);
+        if(collapsed&&!mobileOpen){
+         setCollapsed(false);
          try{window.localStorage.setItem('pope-admin-collapsed','0');}catch{}
-        }
-        setOpenedGroup(value=>value===group.id?'':group.id);
+         setOpenedGroup(group.id);
+        }else setOpenedGroup(value=>value===group.id?'':group.id);
        }}>
        <GroupIcon size={19}/>
        <span className="pope-admin-nav-heading-label">{group.title}</span>

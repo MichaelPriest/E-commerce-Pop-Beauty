@@ -13,7 +13,9 @@ import {CustomerServiceForm} from './service-form';
 export const dynamic='force-dynamic';
 export const metadata={title:'Atendimento e pós-venda | Popê Beauty',robots:{index:false,follow:false}};
 
-export default async function CustomerSupportPage(){
+export default async function CustomerSupportPage({searchParams}:{
+ searchParams:Promise<{pedido?:string}>;
+}){
  if(!isSupabaseConfigured())return <div className="container customer-area">
   <h1>Atendimento</h1><p>O atendimento está temporariamente indisponível.</p>
  </div>;
@@ -29,6 +31,9 @@ export default async function CustomerSupportPage(){
    .order('created_at',{ascending:false}).limit(30)
  ]);
  const unavailable=!!requests.error;
+ const requested=(await searchParams).pedido;
+ const defaultOrderId=(orders.data??[]).some(order=>order.id===requested)?
+  requested??'':'';
  return <div className="container customer-area pope-support">
   <Link className="customer-back" href="/conta"><ArrowLeft size={16}/> Voltar à minha conta</Link>
   <header className="customer-heading">
@@ -42,7 +47,8 @@ export default async function CustomerSupportPage(){
    <p>Não foi possível carregar suas solicitações. Tente novamente mais tarde.</p>
    <Link className="customer-link-button" href="/conta">Minha conta</Link>
   </section>:<>
-   <CustomerServiceForm userId={customer.id} orders={orders.data??[]}/>
+   <CustomerServiceForm userId={customer.id} orders={orders.data??[]}
+    defaultOrderId={defaultOrderId}/>
    <section className="pope-support-history" aria-labelledby="support-history-heading">
     <h2 id="support-history-heading"><MessageCircle size={22}/> Minhas solicitações</h2>
     {(requests.data??[]).length===0?<div className="customer-empty">

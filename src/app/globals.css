@@ -1337,3 +1337,16 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-receipt-actions button{flex:1 1 auto;justify-content:center}
  .pope-receipt-barcode .admin-search{flex:1 1 100%}
 }
+
+/* Ordenação pública do catálogo: mantém busca e categoria atuais. */
+.pope-catalog-sort{display:flex;align-items:center;justify-content:flex-end;gap:10px;
+ flex-wrap:wrap;margin:14px 0 12px;font-size:.9rem}
+.pope-catalog-sort label{font-weight:700;color:var(--ink)}
+.pope-catalog-sort select{min-height:42px;padding:8px 12px;max-width:100%;
+ background:#fff;border:1px solid #d8bfd2;border-radius:11px;color:var(--ink)}
+.pope-catalog-sort button{min-height:42px}
+@media(max-width:560px){
+ .pope-catalog-sort{justify-content:flex-start;align-items:stretch}
+ .pope-catalog-sort label{width:100%}
+ .pope-catalog-sort select{flex:1;min-width:0}
+}

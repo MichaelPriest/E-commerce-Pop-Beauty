@@ -11,14 +11,14 @@ const categoryAppearance:Record<string,{emoji:string;tone:string}>={
  acessorios:{emoji:'🖌️',tone:'purple'},
  kits:{emoji:'🎁',tone:'yellow'}
 };
-export default async function Home({searchParams}:{searchParams:Promise<{q?:string;categoria?:string;pagina?:string}>}) {
+export default async function Home({searchParams}:{searchParams:Promise<{q?:string;categoria?:string;pagina?:string;ordem?:string}>}) {
  const filters=await searchParams;
  const [catalog,categoryRows]=await Promise.all([
   getProducts({q:filters.q,category:filters.categoria,
-   page:normalizeCatalogPage(filters.pagina)}),
+   page:normalizeCatalogPage(filters.pagina),sort:filters.ordem}),
   getCatalogCategories()
  ]);
- const {products:visible,demo,total,page,totalPages,q,category:cat,categoryLabel}=catalog;
+ const {products:visible,demo,total,page,totalPages,q,category:cat,categoryLabel,sort}=catalog;
  const categoryTree=sortedCategoryTree(categoryRows);
  const pages=Array.from({length:Math.min(5,totalPages)},(_,index)=>
   Math.max(1,Math.min(page-2,totalPages-4))+index);
@@ -55,6 +55,7 @@ export default async function Home({searchParams}:{searchParams:Promise<{q?:stri
   <section className="container section" id="destaques"><div className="section-heading"><div><div className="section-kicker">ESCOLHIDOS PARA VOCÊ</div><h2>{q?'Resultado da busca':cat?categoryLabel:'Nossos'} <em>{q?'':cat?'':'queridinhos'}</em> <Heart size={25} fill="#ff489d" color="#ff489d"/></h2></div><Link href="/" className="text-link">Ver todos <ArrowRight size={16}/></Link></div>
    <form className="pope-catalog-search" action="/" method="get" role="search" aria-label="Buscar produtos">
     {cat?<input type="hidden" name="categoria" value={cat}/>:null}
+    {sort!=='recentes'?<input type="hidden" name="ordem" value={sort}/>:null}
     <label htmlFor="pope-search-catalog">Buscar no catálogo</label>
     <div className="pope-catalog-search-line">
      <input id="pope-search-catalog" name="q" type="search" maxLength={60}
@@ -63,16 +64,28 @@ export default async function Home({searchParams}:{searchParams:Promise<{q?:stri
      {(q||cat)?<Link href="/#destaques" className="admin-outline">Limpar</Link>:null}
     </div>
    </form>
+   <form className="pope-catalog-sort" action="/" method="get" aria-label="Ordenar catálogo">
+    {cat?<input type="hidden" name="categoria" value={cat}/>:null}
+    {q?<input type="hidden" name="q" value={q}/>:null}
+    <label htmlFor="pope-order-catalog">Ordenar por</label>
+    <select id="pope-order-catalog" name="ordem" defaultValue={sort}>
+     <option value="recentes">Mais recentes</option>
+     <option value="menor-preco">Menor preço</option>
+     <option value="maior-preco">Maior preço</option>
+     <option value="nome">Nome (A–Z)</option>
+    </select>
+    <button type="submit" className="admin-outline">Aplicar</button>
+   </form>
    <p className="pope-catalog-count" aria-live="polite">
     {total} {total===1?'produto encontrado':'produtos encontrados'}
     {totalPages>0?' · Página '+page+' de '+totalPages:''}
    </p>
    <div className="product-grid">{visible.map(p=><ProductCard key={p.id} product={p} demo={demo}/>)}</div>
    {totalPages>1?<nav className="pope-catalog-pagination" aria-label="Páginas de produtos">
-    {page>1?<Link href={catalogPageHref({q,category:cat,page:page-1})}>Anterior</Link>:null}
-    {pages.map(n=><Link key={n} href={catalogPageHref({q,category:cat,page:n})}
+    {page>1?<Link href={catalogPageHref({q,category:cat,page:page-1,sort})}>Anterior</Link>:null}
+    {pages.map(n=><Link key={n} href={catalogPageHref({q,category:cat,page:n,sort})}
      aria-current={page===n?'page':undefined} className={page===n?'is-current':''}>{n}</Link>)}
-    {page<totalPages?<Link href={catalogPageHref({q,category:cat,page:page+1})}>Próxima</Link>:null}
+    {page<totalPages?<Link href={catalogPageHref({q,category:cat,page:page+1,sort})}>Próxima</Link>:null}
    </nav>:null}
    {visible.length===0?<div className="empty-state">Nenhum produto encontrado. {demo?'Tente outra busca.':'O catálogo será disponibilizado em breve.'}</div>:null}
   </section>

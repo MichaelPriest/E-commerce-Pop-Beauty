@@ -62,7 +62,7 @@ export default async function AccountPage({searchParams}:{searchParams:Promise<{
      return <li key={o.id} className="customer-order">
       <div className="customer-order-heading">
        <div><small>{test?'Reserva de homologação':o.storefront_order?'Compra online':'Pedido interno'}</small>
-        <h3>#{o.id.slice(0,8).toUpperCase()}</h3></div>
+        <h3><Link href={'/conta/pedidos/'+o.id}>#{o.id.slice(0,8).toUpperCase()}</Link></h3></div>
        <span className="order-status" data-status={o.status}>{test&&o.status==='pending'?'Reserva em aberto':ORDER_LABELS[o.status]??o.status}</span>
       </div>
       <dl className="customer-order-facts">
@@ -71,6 +71,7 @@ export default async function AccountPage({searchParams}:{searchParams:Promise<{
        {(test||o.storefront_order)&&o.checkout_delivery_snapshot&&<div><dt>{test?'Frete de teste':'Entrega'}</dt>
         <dd>{o.checkout_delivery_snapshot.name} · {formatBRL(o.checkout_delivery_fee_cents)}</dd></div>}
       </dl>
+      <Link className="customer-order-detail-link" href={'/conta/pedidos/'+o.id}>Ver detalhes e acompanhar pedido <ChevronRight size={16}/></Link>
       {test?<>{o.reservation_expires_at&&<p>Limite da reserva {dateTimeBR(o.reservation_expires_at)}</p>}
        {o.status==='pending'&&<CancelTestReservation orderId={o.id}/>}</>:o.storefront_order?<>
        {o.tracking_code&&<p className="customer-tracking"><Truck size={16}/> Rastreio <strong>{o.tracking_code}</strong></p>}

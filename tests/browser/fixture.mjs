@@ -8,9 +8,9 @@ const products=[
 ];
 const users={
  [userId]:{id:userId,email:'ana@loja.example',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{full_name:'Ana Costa'}},
- [otherId]:{id:otherId,email:'bia@loja.example',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{full_name:'Bia Dias'}}
+ [otherId]:{id:otherId,email:'bia@loja.example',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{}}
 };
-const names={[userId]:'Ana Costa',[otherId]:'Bia Dias'};
+const names={[userId]:'Ana Costa',[otherId]:''};
 const encode=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
 const order=(i)=>({
  id:(90000000+i).toString()+'-9999-4999-8999-999999999999',status:i===0?'shipped':i===1?'pending':'delivered',

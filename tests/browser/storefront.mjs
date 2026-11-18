@@ -24,10 +24,11 @@ function count(p,n){return expect(p.locator('.header-actions a[href="/carrinho"]
 const go=(p,path)=>p.goto(root+path,{waitUntil:'domcontentloaded'});
 async function layout(p){
  const dimensions=await p.evaluate(()=>({
-  width:window.innerWidth,scroll:document.documentElement.scrollWidth,
+  width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,
   actions:[...document.querySelectorAll('.header-actions a')].map(x=>{const r=x.getBoundingClientRect();return [r.left,r.right,r.width,r.height];}),
   name:getComputedStyle(document.querySelector('.header-account small')).display
  }));
+ assert.equal(dimensions.width,p.viewportSize().width);
  assert.ok(dimensions.scroll<=dimensions.width+1,JSON.stringify(dimensions));assert.notEqual(dimensions.name,'none');
  for(const [left,right,w,h] of dimensions.actions){assert.ok(left>=0&&right<=dimensions.width+1&&w>=40&&h>=40,JSON.stringify(dimensions));}
 }
@@ -76,6 +77,7 @@ try{
  await go(p,'/conta');await p.waitForURL('**/entrar');await login(p,'ana@loja.example');
  await expect(p.locator('.header-account')).toHaveText('Olá, Ana');
  await expect(p.getByText('Olá, Ana Costa!')).toBeVisible();
+ await expect(sibling.locator('.header-account')).toHaveText('Olá, Ana');
  await expect(p.getByText('ana@loja.example')).toBeVisible();
  await expect(p.locator('.customer-order')).toHaveCount(10);
  await expect(p.getByText('BR1234TEST')).toBeVisible();
@@ -97,6 +99,8 @@ try{
  await expect(p.getByRole('button',{name:'Novo endereço'})).toBeEnabled();await p.locator('.header-account').click();
  await p.getByRole('button',{name:'Sair da conta'}).click();await p.waitForURL('**/entrar');
  await expect(p.locator('.header-account')).toHaveText('Entrar');
+ await sibling.bringToFront();await sibling.evaluate(()=>window.dispatchEvent(new Event('focus')));
+ await expect(sibling.locator('.header-account')).toHaveText('Entrar');
  await go(p,'/conta');await p.waitForURL('**/entrar');
  console.log('Authenticated navigation, 22 orders, tracking, address, profile edit and sign out passed.');
  await c.close();
@@ -106,7 +110,7 @@ try{
  await mobile.getByRole('button',{name:'Fechar menu'}).click();
  await mobile.locator('article.product-card').first().getByRole('button',{name:'Adicionar ao carrinho'}).click();
  await count(mobile,1);await mobile.locator('.header-account').click();await login(mobile,'bia@loja.example');
- await expect(mobile.locator('.header-account')).toHaveText('Olá, Bia');
+ await expect(mobile.locator('.header-account')).toHaveText('Olá, bia');
  await expect(mobile.getByRole('heading',{name:'Você ainda não tem pedidos'})).toBeVisible();
  await expect(mobile.getByText('BR1234TEST')).toHaveCount(0);
  await layout(mobile);await count(mobile,1);

@@ -2,19 +2,20 @@ import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
 import {type Product,demoProducts} from './products';
 import {
- CATALOG_PAGE_SIZE,normalizeCatalogCategory,normalizeCatalogPage,normalizeCatalogSearch
+ CATALOG_PAGE_SIZE,normalizeCatalogCategory,normalizeCatalogPage,normalizeCatalogSearch,
+ normalizeCatalogSort,type CatalogSort
 } from './catalog-query-core';
 import {matchingCategoryIds,type CatalogCategory} from './catalog-category-core';
 import {cardVariantCover,type CatalogCardVariant} from './catalog-card-preview';
 export {formatBRL} from './products';
 
-type Filters={q?:string;category?:string;page?:number};
+type Filters={q?:string;category?:string;page?:number;sort?:string};
 type Availability={
  product_id:string;active_variant_count:number;
  can_add_to_cart:boolean;status:Product['availability']
 };
 export type CatalogResult={
- products:Product[];demo:boolean;total:number;page:number;
+ products:Product[];demo:boolean;total:number;page:number;sort:CatalogSort;
  totalPages:number;pageSize:number;q:string;category:string;categoryLabel:string;
 };
 
@@ -104,12 +105,13 @@ async function attachAvailability(
 }
 
 export async function getProducts(filters:Filters={}):Promise<CatalogResult>{
- const q=normalizeCatalogSearch(filters.q),category=normalizeCatalogCategory(filters.category);
+ const q=normalizeCatalogSearch(filters.q),category=normalizeCatalogCategory(filters.category),
+  sort=normalizeCatalogSort(filters.sort);
  const requestedPage=filters.page;
  const page=typeof requestedPage==='number'&&Number.isSafeInteger(requestedPage)
   &&requestedPage>0&&requestedPage<=10000?requestedPage:1;
  const empty=(demo:boolean):CatalogResult=>({
-  products:[],demo,total:0,page,totalPages:0,pageSize:CATALOG_PAGE_SIZE,q,category,categoryLabel:category
+  products:[],demo,total:0,page,sort,totalPages:0,pageSize:CATALOG_PAGE_SIZE,q,category,categoryLabel:category
  });
  if(!isSupabaseConfigured()){
   const selected=demoCategories.find(x=>x.slug===category||
@@ -118,7 +120,10 @@ export async function getProducts(filters:Filters={}):Promise<CatalogResult>{
    (!category||(selected?.name===p.category))&&
    (!q||[p.name,p.brand,p.category,p.description].join(' ')
      .toLocaleLowerCase('pt-BR').includes(q.toLocaleLowerCase('pt-BR')))
-  );
+  ).sort((a,b)=>sort==='menor-preco'?a.price_cents-b.price_cents:
+   sort==='maior-preco'?b.price_cents-a.price_cents:
+   sort==='nome'?a.name.localeCompare(b.name,'pt-BR'):
+   demoProducts.indexOf(a)-demoProducts.indexOf(b));
   return {...empty(true),products:matching.slice((page-1)*CATALOG_PAGE_SIZE,page*CATALOG_PAGE_SIZE),
    total:matching.length,totalPages:Math.ceil(matching.length/CATALOG_PAGE_SIZE),
    categoryLabel:selected?.name??category};
@@ -145,8 +150,13 @@ export async function getProducts(filters:Filters={}):Promise<CatalogResult>{
   query=query.or('name.ilike.'+part+',brand.ilike.'+part+',description.ilike.'+part);
  }
  const offset=(page-1)*CATALOG_PAGE_SIZE;
- const {data,error,count}=await query.order('created_at',{ascending:false})
-  .order('id',{ascending:false}).range(offset,offset+CATALOG_PAGE_SIZE-1);
+ let ordered=query;
+ if(sort==='menor-preco')ordered=ordered.order('price_cents',{ascending:true});
+ else if(sort==='maior-preco')ordered=ordered.order('price_cents',{ascending:false});
+ else if(sort==='nome')ordered=ordered.order('name',{ascending:true});
+ else ordered=ordered.order('created_at',{ascending:false});
+ const {data,error,count}=await ordered.order('id',{ascending:false})
+  .range(offset,offset+CATALOG_PAGE_SIZE-1);
  if(error){
   console.error('Falha ao carregar catálogo:',error.code);
   return empty(false);
@@ -154,7 +164,7 @@ export async function getProducts(filters:Filters={}):Promise<CatalogResult>{
  const products=(data??[]).map(row=>mapRow(row as unknown as Record<string,unknown>));
  const available=await attachAvailability(sb,products);
  const total=count??0;
- return {products:available,demo:false,total,page,
+ return {products:available,demo:false,total,page,sort,
   totalPages:Math.ceil(total/CATALOG_PAGE_SIZE),pageSize:CATALOG_PAGE_SIZE,
   q,category,categoryLabel};
 }

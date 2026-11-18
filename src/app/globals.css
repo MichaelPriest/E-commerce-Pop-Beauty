@@ -1377,3 +1377,53 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-coupon-toolbar .admin-search,.pope-coupon-toolbar select{width:100%}
  .pope-coupon-simulator-inputs{grid-template-columns:1fr}
 }
+
+/* Sidebar admin 2.0: acesso prioritário + grupos de trabalho recolhíveis. */
+.pope-admin-sidebar-nav{gap:7px}
+.pope-admin-nav-priority{padding-bottom:10px;border-bottom:1px solid #ffffff19}
+.pope-admin-nav-sections-caption{padding-top:13px}
+.pope-admin-nav-accordion{gap:2px}
+.pope-admin-nav-heading{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;
+ padding:10px 12px;border:1px solid transparent;border-radius:11px;background:transparent;
+ text-align:left;color:#dbc6e1;font-size:12px;font-weight:800;cursor:pointer}
+.pope-admin-nav-heading>svg:first-child{flex:none;color:#ca9ccc}
+.pope-admin-nav-heading:hover,.pope-admin-nav-heading:focus-visible{
+ background:#ffffff19;color:#fff}
+.pope-admin-nav-accordion.is-current>.pope-admin-nav-heading{
+ color:#fff;background:#ffffff14;border-color:#ffffff19}
+.pope-admin-nav-accordion.is-current>.pope-admin-nav-heading>svg:first-child{
+ color:#ffadd9}
+.pope-admin-nav-heading-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap}
+.pope-admin-nav-heading .pope-admin-nav-count{margin-left:auto}
+.pope-admin-nav-chevron{flex:none;color:#b790c2;transition:transform .17s ease}
+.pope-admin-nav-chevron.is-open{transform:rotate(180deg)}
+.pope-admin-nav-children{display:flex;flex-direction:column;gap:2px;
+ padding:3px 0 7px 9px;margin-left:19px;border-left:1px solid #ffffff26}
+.pope-admin-nav-children[hidden]{display:none!important}
+.pope-admin-nav-children>.pope-admin-nav-link{min-height:39px;padding:9px 10px;
+ font-size:11.5px}
+.pope-admin-nav-children>.pope-admin-nav-link svg{height:17px;width:17px}
+.pope-admin-sidebar-nav :is(button,a):focus-visible{outline:2px solid #ffafd9;
+ outline-offset:2px}
+.pope-admin-shortcut-trigger kbd{border-radius:5px;padding:3px 5px;
+ color:#926280;background:#f9e4f3;border:1px solid #efd1e5;
+ font-size:10px;font-family:inherit}
+.pope-admin-shell.is-collapsed .pope-admin-nav-heading{justify-content:center;padding:12px 8px}
+.pope-admin-shell.is-collapsed .pope-admin-nav-heading-label,
+.pope-admin-shell.is-collapsed .pope-admin-nav-chevron,
+.pope-admin-shell.is-collapsed .pope-admin-nav-sections-caption{display:none}
+.pope-admin-shell.is-collapsed .pope-admin-nav-children{display:none!important}
+@media(max-width:1300px){.pope-admin-shortcut-trigger kbd{display:none}}
+@media(max-width:1050px){
+ .pope-admin-shell.is-collapsed .pope-admin-nav-heading{justify-content:flex-start;padding:10px 12px}
+ .pope-admin-shell.is-collapsed .pope-admin-nav-heading-label,
+ .pope-admin-shell.is-collapsed .pope-admin-nav-chevron,
+ .pope-admin-shell.is-collapsed .pope-admin-nav-sections-caption{display:initial}
+ .pope-admin-shell.is-collapsed .pope-admin-nav-children:not([hidden]){display:flex!important}
+ .pope-admin-shell.is-collapsed .pope-admin-nav-children[hidden]{display:none!important}
+ .pope-admin-nav-children{margin-left:16px;padding-left:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .pope-admin-nav-chevron{transition:none}
+}

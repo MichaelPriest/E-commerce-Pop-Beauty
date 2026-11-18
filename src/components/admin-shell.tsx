@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 
@@ -44,6 +44,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/produtos',label:'Produtos',icon:PackageSearch},
    {href:'/admin/produtos/importar',label:'Importar produtos CSV',icon:FileSpreadsheet},
    {href:'/admin/categorias',label:'Categorias e subcategorias',icon:FolderTree},
+   {href:'/admin/promocoes',label:'Cupons e promoções',icon:Tags},
    {href:'/admin/estoque',label:'Estoque e lotes',icon:Boxes},
    {href:'/admin/estoque/reposicao',label:'Reposição de estoque',icon:ReplenishmentIcon},
    {href:'/admin/estoque/compras',label:'Pedidos de compra',icon:ClipboardList},
@@ -84,6 +85,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/estoque/recebimento',label:'Conferir mercadorias',icon:ScanBarcode},
   {href:'/admin/fornecedores',label:'Cadastrar fornecedor',icon:Building2},
   {href:'/admin/categorias',label:'Cadastrar categorias',icon:FolderTree},
+  {href:'/admin/promocoes',label:'Gerenciar cupons e campanhas',icon:Tags},
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},
   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity},

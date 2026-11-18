@@ -1206,6 +1206,6 @@ A área **Minha conta → Atendimento** permite abrir solicitações de troca, d
 
 A central administrativa **Vendas e clientes → Atendimento e pós-venda** permite filtrar as solicitações, registrar respostas e atualizar o status. A sidebar sinaliza as solicitações pendentes. O módulo agora faz parte dos **30 acessos administrativos**.
 
-Para utilizar, aplique `supabase/customer_service_requests_v1.sql` ao Supabase da Popê antes de publicar a alteração. RLS restringe leitura e inserção a clientes proprietários e alteração a administradores; cada usuário pode registrar até três solicitações por hora. Consulte o [manual de atendimento e pós-venda](docs/atendimento-pos-venda.md).
+Para utilizar, aplique `supabase/customer_service_requests_v1.sql` e depois `supabase/customer_service_performance_v1.sql` ao Supabase da Popê antes de publicar a alteração. RLS restringe leitura e inserção a clientes proprietários e alteração a administradores; cada usuário pode registrar até três solicitações por hora. Consulte o [manual de atendimento e pós-venda](docs/atendimento-pos-venda.md).
 
 **Atenção:** registrar ou concluir um atendimento não devolve dinheiro, não estorna pagamentos, não altera estoque, não cancela NF-e e não solicita logística reversa. Essas rotinas precisam de integração e homologação próprias.

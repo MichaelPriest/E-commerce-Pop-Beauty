@@ -93,7 +93,8 @@ try{
  await expect(p.getByText('Olá, Anabela Costa!')).toBeVisible();
  await p.getByRole('link',{name:/Meus endereços Entregas/}).click();
  await expect(p.getByRole('heading',{name:'Meus endereços'})).toBeVisible();
- await expect(p.getByRole('alert')).toHaveCount(0);await p.locator('.header-account').click();
+ await expect(p.getByRole('heading',{name:'Você ainda não tem endereços'})).toBeVisible();
+ await expect(p.getByRole('button',{name:'Novo endereço'})).toBeEnabled();await p.locator('.header-account').click();
  await p.getByRole('button',{name:'Sair da conta'}).click();await p.waitForURL('**/entrar');
  await expect(p.locator('.header-account')).toHaveText('Entrar');
  await go(p,'/conta');await p.waitForURL('**/entrar');

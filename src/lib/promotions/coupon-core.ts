@@ -27,7 +27,7 @@ export function validCouponConfig(coupon:PromotionCoupon):boolean{
    ?Number.isInteger(coupon.discount_value)&&coupon.discount_value>=1
     &&coupon.discount_value<=90
    :coupon.discount_type==='fixed'
-    &&Number.isInteger(coupon.discount_value)&&coupon.discount_value>=100
+    ?Number.isInteger(coupon.discount_value)&&coupon.discount_value>=100
     &&coupon.discount_value<=100000000&&cap===null
     :false);
 }

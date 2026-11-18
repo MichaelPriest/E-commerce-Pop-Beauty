@@ -38,8 +38,9 @@ create policy service_request_owner_admin_read on public.customer_service_reques
 create policy service_request_owner_create on public.customer_service_requests
  for insert to authenticated
  with check (
-  user_id=(select auth.uid()) and
-  (order_id is null or exists (
+  user_id=(select auth.uid())
+  and coalesce((auth.jwt()->>'is_anonymous')::boolean,false)=false
+  and (order_id is null or exists (
    select 1 from public.orders o
    where o.id=order_id and o.customer_id=(select auth.uid())
   ))

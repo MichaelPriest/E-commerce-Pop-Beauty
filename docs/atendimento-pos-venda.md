@@ -60,3 +60,47 @@ prazos operacionais e integração de logística reversa.
 Executar `npm run test`, `npm run typecheck` e `npm run build`.
 O teste `tests/after-sales-service.test.mjs` confere políticas e isolamento
 do fluxo; o teste de sidebar passa a esperar 30 destinos.
+
+
+## Conversas bidirecionais — evolução
+
+A central agora possui um histórico de mensagens por solicitação.
+
+- No cliente, abra `/conta/atendimento`, escolha um chamado e clique em
+  **Abrir conversa e responder**.
+- Na administração, abra **Vendas e clientes → Atendimento e pós-venda**,
+  escolha a solicitação e clique em **Abrir conversa**.
+- As mensagens mostram autoria (cliente/equipe), conteúdo e data da criação.
+- Mensagens de clientes em chamados **respondidos** reabrem o status para
+  **Recebida**, trazendo o chamado de volta para a fila.
+- A equipe registra respostas de 10 a 1.200 caracteres; o chamado passa a
+  **Respondida**. O cliente pode escrever mensagens de 5 a 2.000 caracteres.
+- Chamados **encerrados** não recebem mensagens. O administrador pode revisar
+  ou reabrir a situação pelo controle de status existente.
+- A interface mostra até as 100 mensagens mais recentes em cada chamado,
+  sinalizando quando mensagens antigas ficaram fora da visualização.
+
+### Requisitos de banco e segurança
+
+Aplique `supabase/customer_service_conversations_v1.sql` **depois** de
+`customer_service_requests_v1.sql` e
+`customer_service_performance_v1.sql`.
+
+A tabela `public.customer_service_messages` tem RLS para leitura somente
+do cliente titular ou da equipe administrativa. O envio é realizado pela RPC
+`public.post_service_message`, que determina a identidade do remetente a
+partir da sessão autenticada, bloqueia usuários anônimos e valida titularidade,
+estado do chamado e mensagem. A RPC serializa os envios de cada conta e limita
+a **12 mensagens por hora por remetente**. O navegador não tem permissão SQL
+para inserir, editar ou excluir diretamente mensagens. Nenhuma RPC de
+mensagens gera pagamentos, devoluções ou operações fiscais.
+
+O campo `admin_note` legado é preservado para compatibilidade: a resposta da
+equipe também atualiza a última nota do atendimento. O componente evita
+exibir a resposta duplicada no histórico.
+
+### Validação
+
+`tests/customer-service-conversations.test.mjs` testa regras de tamanho,
+estados permitidos, isolamento da camada SQL e páginas protegidas. Executar
+`npm run check:ci` antes da publicação.

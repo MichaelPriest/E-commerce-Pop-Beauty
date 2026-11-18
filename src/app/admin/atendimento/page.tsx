@@ -11,7 +11,7 @@ export default async function AdminServicePage(){
  const sb=await requireAdmin();
  const {data,error}=await sb.from('customer_service_requests')
   .select('id,user_id,order_id,category,subject,description,status,admin_note,reviewed_by,created_at,updated_at')
-  .order('created_at',{ascending:false}).limit(200);
+  .order('updated_at',{ascending:false}).limit(200);
  if(error)return <div className="container admin-workspace">
   <h1>Atendimento e pós-venda</h1>
   <p className="form-error" role="alert">

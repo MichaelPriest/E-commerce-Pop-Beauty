@@ -92,8 +92,14 @@ export function AdminServiceManager({requests,customerNames}:{
     <p className="pope-admin-service-description">{r.description}</p>
     {r.admin_note?<p className="pope-support-reply">
      <strong>Resposta registrada</strong><span>{r.admin_note}</span></p>:null}
-    <button className="admin-outline" type="button" onClick={()=>edit(r)}>
-     {r.status==='closed'?'Revisar atendimento':'Responder / atualizar'}</button>
+    <div className="pope-support-ticket-actions">
+     <Link className="admin-primary" href={'/admin/atendimento/'+r.id}>
+      Abrir conversa
+     </Link>
+     <button className="admin-outline" type="button" onClick={()=>edit(r)}>
+      {r.status==='closed'?'Reabrir ou revisar':'Atualizar status'}
+     </button>
+    </div>
    </article>)}
   </div>:<div className="admin-empty"><Headset size={31}/>
    <h3>Nenhuma solicitação para este filtro</h3>

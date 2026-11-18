@@ -1467,3 +1467,49 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
  .pope-admin-service-ticket{padding:15px}
  .pope-admin-service .admin-filterbar select{width:100%}
 }
+
+
+/* Conversas do pós-venda: histórico por chamado no cliente e na administração. */
+.pope-support-conversation{width:100%;background:#fff;border:1px solid #edd7e6;
+ border-radius:18px;padding:clamp(16px,3vw,28px);margin:18px 0 30px;min-width:0}
+.pope-support-conversation-intro{display:flex;align-items:flex-start;
+ justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:1px solid #f0deea;
+ padding-bottom:17px;margin-bottom:19px}
+.pope-support-conversation-intro h2{font-size:clamp(20px,3vw,26px);margin:8px 0;
+ color:#59295f;overflow-wrap:anywhere}
+.pope-support-conversation-intro small{font-size:12px;color:#735a70}
+.pope-support-thread{display:grid;gap:14px;list-style:none;padding:0;margin:0 0 20px}
+.pope-support-thread-message{max-width:90%;min-width:0;padding:13px 16px;
+ border-radius:15px;overflow-wrap:anywhere}
+.pope-support-thread-message.from-customer{
+ background:#fff3fa;border:1px solid #f0d0e1;justify-self:start}
+.pope-support-thread-message.from-staff{
+ background:#f1f1ff;border:1px solid #dcd6f2;justify-self:end}
+.pope-support-thread-message>div{display:flex;align-items:center;justify-content:space-between;
+ gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:12px;color:#6b3971}
+.pope-support-thread-message time{font-size:11px;color:#715d72}
+.pope-support-thread-message p{white-space:pre-wrap;line-height:1.6;
+ font-size:13px;color:#4c3950;margin:0;overflow-wrap:anywhere}
+.pope-support-conversation-form{display:grid;gap:11px;padding-top:17px;
+ border-top:1px solid #eed9e8}
+.pope-support-conversation-form h3{display:flex;align-items:center;gap:9px;
+ font-size:17px;color:#602464;margin:0 0 4px}
+.pope-support-conversation-form label{font-weight:800;color:#5e345f;font-size:13px}
+.pope-support-conversation-form textarea{width:100%;resize:vertical;
+ border:1px solid #d9c1d3;border-radius:11px;padding:13px;
+ min-height:130px;background:#fff;color:#403144;font:inherit}
+.pope-support-conversation-form textarea:focus{outline:2px solid #df91c0;
+ outline-offset:2px}
+.pope-support-conversation-form .admin-primary{justify-self:start}
+.pope-support-conversation-notice,.pope-support-conversation-closed{
+ display:flex;align-items:center;gap:10px;padding:13px;
+ border:1px solid #ead3de;background:#fff9ee;border-radius:10px;
+ color:#705370;line-height:1.5;margin:0 0 17px}
+.pope-support-conversation-closed p{margin:0}
+.pope-support-ticket-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:13px}
+.pope-support-open-conversation{margin:13px 0}
+@media(max-width:650px){
+ .pope-support-conversation{padding:16px}
+ .pope-support-thread-message{max-width:100%}
+ .pope-support-thread-message>div{align-items:flex-start}
+}

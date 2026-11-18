@@ -25,7 +25,7 @@ export default async function CustomerSupportPage({searchParams}:{
  const [requests,orders]=await Promise.all([
   sb.from('customer_service_requests')
    .select('id,user_id,order_id,category,subject,description,status,admin_note,reviewed_by,created_at,updated_at')
-   .eq('user_id',customer.id).order('created_at',{ascending:false}).limit(30),
+   .eq('user_id',customer.id).order('updated_at',{ascending:false}).limit(30),
   sb.from('orders').select('id,created_at,status')
    .eq('customer_id',customer.id).neq('origin','store_api')
    .order('created_at',{ascending:false}).limit(30)
@@ -68,6 +68,10 @@ export default async function CustomerSupportPage({searchParams}:{
       </p>:null}
       <details className="pope-support-message"><summary>Ver descrição enviada</summary>
        <p>{item.description}</p></details>
+      <Link href={'/conta/atendimento/'+item.id}
+       className="customer-link-button pope-support-open-conversation">
+       <MessageCircle size={17}/> Abrir conversa e responder
+      </Link>
       {item.admin_note?<div className="pope-support-reply">
        <strong>Resposta da Popê Beauty</strong><p>{item.admin_note}</p>
       </div>:<small>Aguardando uma atualização da equipe.</small>}

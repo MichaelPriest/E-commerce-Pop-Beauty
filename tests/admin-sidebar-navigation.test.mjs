@@ -56,14 +56,14 @@ test('busca rápida encontra funções ignorando acentos, capitalização e espa
  assert.equal(searchAdminNavigation(targets,'',2).length,2);
 });
 
-test('a nova sidebar preserva todos os 29 acessos e apresenta grupos acessíveis',()=>{
+test('a nova sidebar preserva todos os 30 acessos e apresenta grupos acessíveis',()=>{
  const shell=read('src/components/admin-shell.tsx');
  const nav=shell.slice(shell.indexOf(' const primaryItems:'),shell.indexOf(' const shortcuts:'));
  const hrefs=[...nav.matchAll(/href:'(\/admin(?:\/[^']*)?)'/g)].map(m=>m[1]);
- assert.equal(hrefs.length,29,'Todos os módulos administrativos devem permanecer acessíveis');
+ assert.equal(hrefs.length,30,'Todos os módulos administrativos devem permanecer acessíveis');
  assert.equal(new Set(hrefs).size,hrefs.length,'Não duplicar rotas na sidebar');
  for(const required of [
-  '/admin','/admin/pedidos','/admin/notificacoes','/admin/produtos',
+  '/admin','/admin/pedidos','/admin/notificacoes','/admin/atendimento','/admin/produtos',
   '/admin/promocoes','/admin/estoque/recebimento','/admin/frete',
   '/admin/fiscal','/admin/financeiro','/admin/gateways',
   '/admin/marketplaces','/admin/prontidao','/admin/configuracoes'

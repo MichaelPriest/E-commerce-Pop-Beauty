@@ -9,10 +9,13 @@ import {
  CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
+import {
+ activeAdminRoute,activeAdminSection,searchAdminNavigation
+} from '@/lib/admin-navigation-core';
 
 type IconType=ComponentType<{size?:number;strokeWidth?:number;className?:string}>;
 type NavItem={href:string;label:string;icon:IconType;count?:number};
-type NavGroup={title:string;items:NavItem[]};
+type NavGroup={id:string;title:string;icon:IconType;items:NavItem[]};
 type Props={
  children:ReactNode;
  currentUser:{name:string;email:string;role:string};
@@ -29,53 +32,70 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
  },[]);
  useEffect(()=>{setMobileOpen(false);setQuickOpen(false);setProfileOpen(false);},[pathname]);
  useEffect(()=>{
-  if(!mobileOpen)return;
-  const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')setMobileOpen(false);};
+  const onKey=(event:KeyboardEvent)=>{
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){
+    event.preventDefault();setQuickOpen(true);setProfileOpen(false);
+   }else if(event.key==='Escape'){
+    setMobileOpen(false);setQuickOpen(false);setProfileOpen(false);
+   }
+  };
   window.addEventListener('keydown',onKey);
   return ()=>window.removeEventListener('keydown',onKey);
- },[mobileOpen]);
+ },[]);
+ const primaryItems:NavItem[]=useMemo(()=>[
+  {href:'/admin',label:'Visão geral',icon:LayoutDashboard},
+  {href:'/admin/pedidos',label:'Pedidos',icon:ShoppingBag,count:pendingOrders},
+  {href:'/admin/notificacoes',label:'Notificações',icon:MailCheck,count:pendingNotifications}
+ ],[pendingOrders,pendingNotifications]);
+ // Organização por processo de trabalho. Nenhuma rota foi removida.
  const groups:NavGroup[]=useMemo(()=>[
-  {title:'Visão geral',items:[
-   {href:'/admin',label:'Dashboard',icon:LayoutDashboard},
-   {href:'/admin/pedidos',label:'Pedidos',icon:ShoppingBag,count:pendingOrders},
-   {href:'/admin/notificacoes',label:'Notificações',icon:MailCheck,count:pendingNotifications}
+  {id:'vendas',title:'Vendas e clientes',icon:ShoppingBag,items:[
+   {href:'/admin/clientes',label:'Clientes',icon:Users},
+   {href:'/admin/marketplaces',label:'Marketplaces',icon:Store},
+   {href:'/admin/reservas',label:'Reservas de teste',icon:Timer}
   ]},
-  {title:'Catálogo',items:[
+  {id:'catalogo',title:'Catálogo e campanhas',icon:PackageSearch,items:[
    {href:'/admin/produtos',label:'Produtos',icon:PackageSearch},
    {href:'/admin/produtos/importar',label:'Importar produtos CSV',icon:FileSpreadsheet},
    {href:'/admin/categorias',label:'Categorias e subcategorias',icon:FolderTree},
    {href:'/admin/promocoes',label:'Cupons e promoções',icon:Tags},
+   {href:'/admin/adulto',label:'Prévia reservada +18',icon:Eye}
+  ]},
+  {id:'estoque',title:'Estoque e compras',icon:Boxes,items:[
    {href:'/admin/estoque',label:'Estoque e lotes',icon:Boxes},
    {href:'/admin/estoque/reposicao',label:'Reposição de estoque',icon:ReplenishmentIcon},
    {href:'/admin/estoque/compras',label:'Pedidos de compra',icon:ClipboardList},
    {href:'/admin/estoque/recebimento',label:'Recebimento de mercadorias',icon:ScanBarcode},
-   {href:'/admin/fornecedores',label:'Fornecedores',icon:Building2},
-   {href:'/admin/adulto',label:'Prévia reservada +18',icon:Eye}
+   {href:'/admin/fornecedores',label:'Fornecedores',icon:Building2}
   ]},
-  {title:'Operação',items:[
-   {href:'/admin/clientes',label:'Clientes',icon:Users},
-   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity,count:onlineCount},
+  {id:'logistica',title:'Logística e fiscal',icon:Truck,items:[
    {href:'/admin/logistica',label:'Logística',icon:Truck},
    {href:'/admin/remessas',label:'Central de remessas',icon:ClipboardList},
    {href:'/admin/frete',label:'Frete e embalagem',icon:PackagePlus},
-   {href:'/admin/fiscal',label:'Fiscal e documentos',icon:FileText},
+   {href:'/admin/fiscal',label:'Fiscal e documentos',icon:FileText}
+  ]},
+  {id:'financeiro',title:'Financeiro e relatórios',icon:WalletCards,items:[
    {href:'/admin/financeiro',label:'Financeiro',icon:CreditCard},
    {href:'/admin/gateways',label:'Gateways de pagamento',icon:WalletCards},
    {href:'/admin/pagamentos',label:'Pagamentos (sandbox)',icon:CreditCard},
-   {href:'/admin/reservas',label:'Reservas de teste',icon:Timer},
-   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},
-   {href:'/admin/marketplaces',label:'Marketplaces',icon:Store}
+   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3}
   ]},
-  {title:'Sistema',items:[
+  {id:'sistema',title:'Equipe e sistema',icon:Settings,items:[
+   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity,count:onlineCount},
    {href:'/admin/usuarios',label:'Usuários e permissões',icon:UserCog},
    {href:'/admin/auditoria',label:'Auditoria',icon:History},
    {href:'/admin/prontidao',label:'Prontidão para produção',icon:ClipboardCheck},
    {href:'/admin/configuracoes',label:'Configurações',icon:Settings}
   ]}
- ],[onlineCount,pendingOrders,pendingNotifications]);
- const current=groups.flatMap(g=>g.items).find(item=>item.href===pathname)
-  ??groups.flatMap(g=>g.items).find(item=>item.href!=='/admin'&&pathname.startsWith(item.href+'/'))
-  ??groups[0].items[0];
+ ],[onlineCount]);
+ const allItems=useMemo(()=>[...primaryItems,...groups.flatMap(group=>group.items)],
+  [primaryItems,groups]);
+ // Prioriza a rota mais específica para não marcar "Produtos" junto com "Importar".
+ const currentHref=activeAdminRoute(pathname,allItems);
+ const current=allItems.find(item=>item.href===currentHref)??primaryItems[0];
+ const activeGroup=activeAdminSection(pathname,groups);
+ const [openedGroup,setOpenedGroup]=useState(activeGroup||'vendas');
+ useEffect(()=>{setOpenedGroup(activeGroup||'vendas');},[activeGroup]);
  const shortcuts:NavItem[]=[
   {href:'/admin/pedidos',label:'Novo pedido',icon:ShoppingBag},
   {href:'/admin/produtos',label:'Cadastrar produto',icon:PackagePlus},
@@ -99,8 +119,10 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/fiscal',label:'Preparar documentos fiscais e etiquetas',icon:FileText},
   {href:'/admin/prontidao',label:'Ver prontidão de lançamento',icon:ClipboardCheck}
  ];
- const quickResults=shortcuts.filter(item=>item.label.toLocaleLowerCase('pt-BR')
-  .includes(quickFilter.toLocaleLowerCase('pt-BR')));
+ const quickCandidates=quickFilter.trim()?
+  searchAdminNavigation([...shortcuts,...allItems],quickFilter,40):shortcuts.slice(0,9);
+ const quickResults=quickCandidates.filter((item,index,all)=>
+  all.findIndex(other=>other.href===item.href)===index);
  const initials=currentUser.name.split(/\s+/).filter(Boolean).slice(0,2)
   .map(s=>s[0]?.toUpperCase()).join('')||'PB';
  function toggleCollapsed(){
@@ -127,20 +149,59 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
     <ShieldCheck className="pope-admin-merchant-check" size={17}/>
    </div>
    <nav className="pope-admin-sidebar-nav" aria-label="Módulos do sistema">
-    {groups.map(group=><section key={group.title} className="pope-admin-nav-group">
-     <span className="pope-admin-nav-caption">{group.title}</span>
-     {group.items.map(item=>{
-      const active=pathname===item.href||(item.href!=='/admin'&&pathname.startsWith(item.href+'/'));
-      const Icon=item.icon;
-      return <Link href={item.href} className={'pope-admin-nav-link'+(active?' active':'')}
-       title={item.label} aria-current={active?'page':undefined} key={item.href}
+    <section className="pope-admin-nav-group pope-admin-nav-priority" aria-label="Acesso rápido">
+     <span className="pope-admin-nav-caption">Acesso rápido</span>
+     {primaryItems.map(item=>{
+      const Icon=item.icon,active=currentHref===item.href;
+      return <Link href={item.href} key={item.href}
+       className={'pope-admin-nav-link'+(active?' active':'')}
+       title={item.label} aria-current={active?'page':undefined}
        onClick={()=>setMobileOpen(false)}>
-       <Icon size={19}/>
-       <span className="pope-admin-nav-label">{item.label}</span>
-       {typeof item.count==='number'&&item.count>0?<span className="pope-admin-nav-count">{item.count>99?'99+':item.count}</span>:null}
+       <Icon size={19}/><span className="pope-admin-nav-label">{item.label}</span>
+       {typeof item.count==='number'&&item.count>0?
+        <span className="pope-admin-nav-count">{item.count>99?'99+':item.count}</span>:null}
       </Link>;
      })}
-    </section>)}
+    </section>
+    <span className="pope-admin-nav-caption pope-admin-nav-sections-caption">Áreas de trabalho</span>
+    {groups.map(group=>{
+     const GroupIcon=group.icon;
+     const groupActive=activeGroup===group.id;
+     const opened=openedGroup===group.id;
+     const visible=opened&&(!collapsed||mobileOpen);
+     const groupCount=group.items.reduce((sum,item)=>sum+(item.count??0),0);
+     return <section key={group.id}
+      className={'pope-admin-nav-group pope-admin-nav-accordion'+(groupActive?' is-current':'')}>
+      <button type="button" className="pope-admin-nav-heading"
+       title={group.title} aria-expanded={visible}
+       aria-controls={'pope-admin-group-'+group.id}
+       onClick={()=>{
+        if(collapsed&&!mobileOpen){setCollapsed(false);
+         try{window.localStorage.setItem('pope-admin-collapsed','0');}catch{}
+        }
+        setOpenedGroup(value=>value===group.id?'':group.id);
+       }}>
+       <GroupIcon size={19}/>
+       <span className="pope-admin-nav-heading-label">{group.title}</span>
+       {groupCount>0?<span className="pope-admin-nav-count">{groupCount>99?'99+':groupCount}</span>:null}
+       <ChevronDown className={'pope-admin-nav-chevron'+(visible?' is-open':'')} size={15}/>
+      </button>
+      <div className="pope-admin-nav-children" id={'pope-admin-group-'+group.id}
+       hidden={!visible}>
+       {group.items.map(item=>{
+        const Icon=item.icon,active=currentHref===item.href;
+        return <Link href={item.href} key={item.href}
+         className={'pope-admin-nav-link'+(active?' active':'')}
+         title={item.label} aria-current={active?'page':undefined}
+         onClick={()=>setMobileOpen(false)}>
+         <Icon size={17}/><span className="pope-admin-nav-label">{item.label}</span>
+         {typeof item.count==='number'&&item.count>0?
+          <span className="pope-admin-nav-count">{item.count>99?'99+':item.count}</span>:null}
+        </Link>;
+       })}
+      </div>
+     </section>;
+    })}
    </nav>
    <div className="pope-admin-sidebar-footer">
     <div className="pope-admin-session-card">
@@ -169,7 +230,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
       <button type="button" className="pope-admin-shortcut-trigger"
        aria-label="Abrir atalhos rápidos" aria-expanded={quickOpen}
        onClick={()=>{setQuickOpen(v=>!v);setProfileOpen(false);}}>
-       <Search size={17}/><span>Atalhos rápidos</span><ChevronDown size={14}/>
+       <Search size={17}/><span>Atalhos rápidos</span><kbd>Ctrl K</kbd><ChevronDown size={14}/>
       </button>
       {quickOpen?<div className="pope-admin-menu pope-admin-quick-menu">
        <div className="pope-admin-quick-search"><Search size={17}/>

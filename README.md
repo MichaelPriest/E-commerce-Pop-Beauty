@@ -1185,3 +1185,11 @@ Ao carregar uma NF-e, a conferência guarda as quantidades comerciais declaradas
 Em **Financeiro → Custos de mercadorias**, consulte as entradas por mês da contabilização no horário de São Paulo. O relatório soma quantidade física × custo unitário informado, apresenta as unidades sem custo e exporta o resumo por fornecedor em CSV. O custo previsto em um pedido e o valor pago a um fornecedor são apurações diferentes do custo de entrada exibido.
 
 Aplique `supabase/purchase_orders_receipt_conference_v1.sql` após `supabase/goods_receipts_supplier_register_atomic_v1.sql` e antes de publicar as novas telas. A migração preserva a assinatura de chamada das RPCs existentes para rascunhos legados e acrescenta o controle de versão para as novas conferências. As tabelas e funções de compras e custos usam RLS ou autorização administrativa explícita.
+
+## Cupons e promoções — preparação
+
+O menu **Catálogo → Cupons e promoções** (`/admin/promocoes`) permite criar e editar campanhas com código, desconto percentual ou fixo, valor mínimo, teto opcional, vigência e status. Um simulador administrativo calcula o valor potencial após desconto e informa a razão de inelegibilidade.
+
+**Importante:** cupons ainda **não são aplicáveis ao checkout comercial**, não geram descontos de verdade, não modificam estoque, pedidos, NF-e ou o valor cobrado. O sinalizador de campanha ativa afeta somente a simulação interna. Esta separação impede divergências financeiras enquanto a integração transacional, os limites de uso e a homologação fiscal não forem concluídos.
+
+Para disponibilizar o cadastro, aplique `supabase/promotion_coupons_admin_v1.sql` no Supabase do Popê e use o manual [Cupons e promoções](docs/cupons-promocoes.md). O SQL exige RLS e permite gravação apenas a administradores autenticados. Não cadastrar tokens ou credenciais nas descrições das campanhas.

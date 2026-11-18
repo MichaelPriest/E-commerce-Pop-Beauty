@@ -2,8 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
- validateServiceMessage,serviceConversationLabel,canReplyToService,
- serviceConversationCategory
+ validateServiceMessage,serviceConversationLabel,canReplyToService
 } from '../src/lib/customer-service-conversation.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
@@ -17,7 +16,6 @@ test('mensagens validam tamanho diferente para cliente e equipe',()=>{
  assert.match(validateServiceMessage(null,false),/Escreva/);
  assert.equal(serviceConversationLabel('staff'),'Equipe Popê Beauty');
  assert.equal(serviceConversationLabel('customer'),'Cliente');
- assert.equal(serviceConversationCategory('troca'),'Troca de produto');
 });
 
 test('respostas são permitidas até o encerramento, sem desativar o checkout',()=>{

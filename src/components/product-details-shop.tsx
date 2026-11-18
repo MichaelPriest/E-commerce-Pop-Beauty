@@ -3,7 +3,8 @@ import {useState} from 'react';
 import Link from 'next/link';
 import {Check,ChevronLeft,ChevronRight,ShoppingBag,ShieldCheck} from 'lucide-react';
 import {formatBRL,productImageSrc,type Product} from '@/lib/products';
-import {normalizeCart,putCartItem} from '@/lib/cart-core';
+import {cartStore} from '@/lib/storefront-lists';
+import {fitsCartQuantity,putCartItem} from '@/lib/cart-core';
 import type {CatalogVariant,ProductGalleryPhoto} from '@/lib/catalog';
 import {visibleProductGallery} from '@/lib/product-gallery-core';
 
@@ -29,19 +30,22 @@ export function ProductDetailsShop({
   if(!canAdd||!variant)return;
   setError('');setMessage('');
   try{
-   const stored=normalizeCart(JSON.parse(localStorage.getItem('pope-cart')||'[]'));
+   const stored=cartStore.getSnapshot();
    const item={
     id:product.id,slug:product.slug,name:product.name,price_cents:product.price_cents,
     qty:quantity,variant_id:variant.variant_id,variant_name:variant.shade||variant.name,
     sku:variant.sku,emoji:product.emoji,
     ...(images[0]?.url?{image_url:images[0].url}:{})
    };
+   if(!fitsCartQuantity(stored,item)){
+    setError('O limite é de 99 unidades por variação. Confira a quantidade no carrinho.');
+    return;
+   }
    const updated=putCartItem(stored,item);
    if(!updated.some(x=>x.id===item.id&&x.variant_id===item.variant_id)){
     setError('O carrinho atingiu o limite de 30 itens.');return;
    }
-   localStorage.setItem('pope-cart',JSON.stringify(updated));
-   window.dispatchEvent(new Event('pope-cart-updated'));
+   cartStore.write(updated);
    setMessage('Adicionado ao carrinho. Os valores e o estoque serão conferidos no checkout.');
   }catch{
    setError('Não foi possível atualizar o carrinho neste navegador.');

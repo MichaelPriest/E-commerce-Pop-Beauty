@@ -1,8 +1,10 @@
 import 'server-only';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
-import nodemailer from 'nodemailer';
+import {createOrderSmtpTransport,smtpConfigured} from '@/lib/order-smtp';
 import type {createClient} from '@/lib/supabase/server';
+
+export {smtpConfigured};
 
 type DbClient=Awaited<ReturnType<typeof createClient>>;
 type DeliveryClaim={
@@ -22,10 +24,6 @@ const definitions:Record<string,{file:string;subject:string;label:string}>={
 };
 const escapeHTML=(input:string)=>input.replace(/[&<>"']/g,char=>
  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]||char));
-export function smtpConfigured(){
- const keys=['SMTP_HOST','SMTP_PORT','SMTP_USER','SMTP_PASSWORD','SMTP_FROM_EMAIL'];
- return keys.every(key=>Boolean(process.env[key]?.trim()));
-}
 const brl=(cents:number)=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(cents/100);
 
 async function makeContent(claim:DeliveryClaim){
@@ -78,19 +76,10 @@ export async function processOrderNotificationQueue(sb:DbClient,{notificationId,
   processed+=1;
   try{
    const {html,text,subject}=await makeContent(job);
-   const port=Number(process.env.SMTP_PORT);
-   if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid SMTP port');
-   const secure=port===465;
-   const transporter=nodemailer.createTransport({
-    host:process.env.SMTP_HOST!,
-    port,secure,requireTLS:!secure,
-    auth:{user:process.env.SMTP_USER!,pass:process.env.SMTP_PASSWORD!},
-    connectionTimeout:9000,greetingTimeout:9000,socketTimeout:12000,
-    tls:{minVersion:'TLSv1.2'}
-   });
+   const transporter=createOrderSmtpTransport();
    try{
     const info=await transporter.sendMail({
-     from:{name:'Popê Beauty',address:process.env.SMTP_FROM_EMAIL!},
+     from:{name:'Popê Beauty',address:process.env.SMTP_FROM_EMAIL!.trim()},
      to:[{address:job.recipient_email}],
      replyTo:{address:'popebeauty.e@gmail.com',name:'Popê Beauty'},
      subject,html,text,

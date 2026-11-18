@@ -2,9 +2,9 @@
 export const PAYMENT_GATEWAYS=[
  {
   id:'mercado_pago',name:'Mercado Pago',category:'Carteira e intermediador',
-  integration:'Checkout Pro / Orders API',methods:['Pix','Cartão','Boleto'],
-  envKeys:['MP_TEST_ACCESS_TOKEN'],
-  docs:'https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/overview',
+  integration:'Checkout Pro / Preferences API',methods:['Pix','Cartão','Boleto'],
+  envKeys:['MP_TEST_ACCESS_TOKEN','MP_TEST_SELLER_ID'],
+  docs:'https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-preferences/overview',
   summary:'Checkout hospedado; contas de teste para vendedor e comprador.',
   sandbox:'available',check:'remote'
  },

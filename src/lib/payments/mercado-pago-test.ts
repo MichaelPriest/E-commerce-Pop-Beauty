@@ -4,6 +4,7 @@ const mpApi='https://api.mercadopago.com';
 const testSellerNick=/^TEST[A-Z0-9_-]{4,50}$/i;
 export type TestSeller={id:number;nickname:string;site_id:string};
 export type MpTestPreference={id:string;init_point:string;collector_id:number};
+export class TestSellerCredentialError extends Error {}
 
 export function sandboxPreferenceEnabled(){
  return process.env.MP_TEST_PREFERENCE_CREATION_ENABLED==='verified-test-account-only'
@@ -17,22 +18,23 @@ export async function verifyMercadoPagoTestSeller():Promise<{token:string;seller
 /** Validação de identidade da conta TEST independente da chave de habilitação de preferências. */
 export async function verifyMercadoPagoTestSellerCredentials():Promise<{token:string;seller:TestSeller}>{
  const token=process.env.MP_TEST_ACCESS_TOKEN?.trim();
- if(!token||!process.env.MP_TEST_SELLER_ID?.trim())throw new Error('Credenciais de vendedor TEST não configuradas.');
+ if(!token||!process.env.MP_TEST_SELLER_ID?.trim())throw new TestSellerCredentialError('Confira MP_TEST_ACCESS_TOKEN e MP_TEST_SELLER_ID.');
  const expectedId=process.env.MP_TEST_SELLER_ID!.trim();
  // O prefixo APP_USR aparece em credenciais de teste E produção; não comprova sandbox.
- if(!token.startsWith('APP_USR-'))throw new Error('Access Token inválido para Checkout Pro de testes.');
+ if(!token.startsWith('APP_USR-'))throw new TestSellerCredentialError('Access Token inválido para Checkout Pro de testes.');
  const response=await fetch(mpApi+'/users/me',{
   method:'GET',headers:{Authorization:'Bearer '+token,Accept:'application/json'},
   cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)
  });
- if(!response.ok)throw new Error('Credencial recusada na autenticação Mercado Pago.');
+ if(response.status===401||response.status===403)throw new TestSellerCredentialError('O Mercado Pago recusou a credencial de teste.');
+ if(!response.ok)throw new Error('Consulta ao vendedor de teste indisponível.');
  const seller=await response.json() as Record<string,unknown>;
  const id=Number(seller.id);
  const nickname=typeof seller.nickname==='string'?seller.nickname:'';
  const site_id=typeof seller.site_id==='string'?seller.site_id:'';
  if(!Number.isSafeInteger(id)||String(id)!==expectedId||
   !testSellerNick.test(nickname)||site_id!=='MLB'){
-  throw new Error('O token não pertence à conta vendedora TEST declarada para o Brasil. Nenhuma preferência será criada.');
+  throw new TestSellerCredentialError('Confira se o token e o User ID pertencem ao mesmo vendedor de teste do Brasil.');
  }
  return {token,seller:{id,nickname,site_id}};
 }

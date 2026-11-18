@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {Link2,RefreshCw,ShieldCheck,PackageSearch,ShoppingBag,
  Unplug,ExternalLink,AlertTriangle} from 'lucide-react';
 import {classifyMarketplaceSku,type SkuCandidate} from '@/lib/marketplaces/sku-match-core';
+import {CREDENTIALS_MANUAL_URL} from '@/lib/integration-preflight';
 
 export type MarketplaceAccountRow={
  id:string;channel:'shopee'|'mercadolivre';external_account_id:string;
@@ -76,6 +77,7 @@ export function MarketplaceConnections({
   <h2><Link2 size={21}/> Integrações com as contas vendedoras</h2>
   <p>Conecte a Shopee e o Mercado Livre por autorização oficial. Os tokens são cifrados no servidor,
    e as consultas registram apenas anúncios e números de pedidos, sem dados pessoais dos compradores.</p>
+  <a className="admin-outline" href={CREDENTIALS_MANUAL_URL+'#shopee-e-mercado-livre'} target="_blank" rel="noopener noreferrer">Credenciais e URLs de retorno <ExternalLink size={15}/></a>
   <div className="pope-marketplace-provider-grid">
    {(['shopee','mercadolivre'] as const).map(channel=><div key={channel}
     className="pope-marketplace-provider">

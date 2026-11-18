@@ -1,5 +1,6 @@
 import 'server-only';
 import {PAYMENT_GATEWAYS,isPaymentGatewayId,type PaymentGatewayId} from '@/lib/payment-gateways';
+import {TestSellerCredentialError,verifyMercadoPagoTestSellerCredentials} from '@/lib/payments/mercado-pago-test';
 
 export type GatewayEnvironment={
  provider:PaymentGatewayId;configured:boolean;presentKeys:string[];
@@ -42,11 +43,8 @@ export async function testGatewaySandboxReadOnly(provider:PaymentGatewayId):Prom
   let status:number;
   switch(provider){
    case 'mercado_pago':
-    status=await sandboxGet('https://api.mercadopago.com/users/me',{
-     Authorization:'Bearer '+process.env.MP_TEST_ACCESS_TOKEN!,
-     Accept:'application/json'
-    });
-    break;
+    await verifyMercadoPagoTestSellerCredentials();
+    return {provider,result:'connected',message:'O Mercado Pago confirmou o vendedor de teste do Brasil.'};
    case 'pagarme':{
     const secret=process.env.PAGARME_TEST_SECRET_KEY!;
     if(!secret.startsWith('sk_test_'))return {provider,result:'rejected',
@@ -97,7 +95,8 @@ export async function testGatewaySandboxReadOnly(provider:PaymentGatewayId):Prom
    message:'API recusou as credenciais do teste (HTTP '+status+'). Revise as chaves e o ambiente.'};
   return {provider,result:'rejected',
    message:'A API retornou HTTP '+status+' na consulta de teste. Revise a documentação e a conta de sandbox.'};
- }catch{
+ }catch(error){
+  if(error instanceof TestSellerCredentialError)return {provider,result:'rejected',message:error.message};
   return {provider,result:'network_error',
    message:'Não foi possível consultar a API de testes. Verifique conectividade e credenciais no painel Vercel.'};
  }

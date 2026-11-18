@@ -1209,3 +1209,24 @@ A central administrativa **Vendas e clientes → Atendimento e pós-venda** perm
 Para utilizar, aplique `supabase/customer_service_requests_v1.sql` e depois `supabase/customer_service_performance_v1.sql` ao Supabase da Popê antes de publicar a alteração. RLS restringe leitura e inserção a clientes proprietários e alteração a administradores; cada usuário pode registrar até três solicitações por hora. Consulte o [manual de atendimento e pós-venda](docs/atendimento-pos-venda.md).
 
 **Atenção:** registrar ou concluir um atendimento não devolve dinheiro, não estorna pagamentos, não altera estoque, não cancela NF-e e não solicita logística reversa. Essas rotinas precisam de integração e homologação próprias.
+
+
+## Conversas de pós-venda
+
+A central de atendimento agora oferece **mensagens bidirecionais** em cada
+solicitação. O cliente acompanha o histórico em
+`/conta/atendimento/[id]` e responde à equipe; o administrador utiliza
+`/admin/atendimento/[id]` para enviar orientações e registrar o retorno.
+Uma resposta do cliente reabre o chamado respondido para nova análise,
+enquanto a equipe pode responder e concluir o chamado. Solicitações
+encerradas não recebem novas mensagens.
+
+Para instalar, aplique `supabase/customer_service_conversations_v1.sql`
+**depois** das duas migrações anteriores do pós-venda. RLS protege a
+leitura de cada conversa; a RPC `post_service_message` valida o
+remetente, exige uma sessão autenticada e restringe o número de envios.
+Não há permissão para inserir mensagens diretamente no navegador.
+
+Veja [Atendimento e pós-venda](docs/atendimento-pos-venda.md) para as
+regras de operação e segurança. As mensagens não executam estornos,
+reembolsos, alterações fiscais nem movimentos de estoque.

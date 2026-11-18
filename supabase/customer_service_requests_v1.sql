@@ -10,6 +10,10 @@ create table if not exists public.customer_service_requests (
  description text not null check (length(btrim(description)) between 20 and 2000),
  status text not null default 'open' check (status in ('open','in_review','resolved','closed')),
  admin_note text check (admin_note is null or length(admin_note)<=1200),
+ constraint resolved_service_requires_reply check (
+  status not in ('resolved','closed')
+  or (admin_note is not null and length(btrim(admin_note)) between 10 and 1200)
+ ),
  reviewed_by uuid references auth.users(id) on delete set null,
  created_at timestamptz not null default clock_timestamp(),
  updated_at timestamptz not null default clock_timestamp()

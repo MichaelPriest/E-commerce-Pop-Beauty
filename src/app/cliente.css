@@ -127,3 +127,45 @@
  .customer-order-detail-top{padding:18px;flex-wrap:wrap}
  .customer-order-detail-panel{padding:18px}
 }
+
+/* Atendimento e pós-venda da Popê Beauty. */
+.customer-shortcuts{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pope-support .customer-heading{margin-bottom:22px}
+.pope-support-form-panel{padding:24px;border:1px solid var(--line);
+ border-radius:18px;background:#fff;margin-bottom:28px}
+.pope-support-form-panel h2{margin:0 0 8px}
+.pope-support-form-panel>p{margin:0 0 18px;color:#70586c;line-height:1.55}
+.pope-support-form-panel .admin-form{padding:0;gap:16px}
+.pope-support-form-panel label{display:grid;gap:6px;color:var(--ink);font-weight:700}
+.pope-support-form-panel :is(input,select,textarea){width:100%;min-height:42px;border:1px solid #ddc9d8;
+ border-radius:10px;padding:9px 12px;background:#fff;color:var(--ink);font:inherit;max-width:100%}
+.pope-support-privacy{display:flex;gap:9px;align-items:flex-start;color:#70586c;
+ font-size:.86rem;line-height:1.5}
+.pope-support-privacy svg{flex:none;color:var(--purple)}
+.pope-support-history h2{display:flex;align-items:center;gap:9px}
+.pope-support-list{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.pope-support-ticket{padding:20px;border:1px solid var(--line);border-radius:16px;background:#fff}
+.pope-support-ticket-top{display:flex;justify-content:space-between;align-items:flex-start;
+ gap:12px;flex-wrap:wrap}
+.pope-support-ticket-top>div{min-width:0;max-width:100%}
+.pope-support-ticket-top h3{margin:7px 0;font-size:1.04rem;overflow-wrap:anywhere}
+.pope-support-ticket-top small{display:flex;align-items:center;gap:5px;font-size:.82rem;color:#70586c}
+.pope-support-linked-order{display:flex;align-items:center;gap:7px;margin:14px 0;color:var(--purple)}
+.pope-support-linked-order a{text-decoration:underline;font-weight:700}
+.pope-support-message{margin:14px 0}
+.pope-support-message summary{cursor:pointer;color:var(--purple);font-size:.9rem;font-weight:700}
+.pope-support-message p,.pope-support-reply p{overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.55}
+.pope-support-reply{padding:14px;background:#faf0f7;border-left:3px solid var(--purple);
+ border-radius:9px;margin:15px 0}
+.pope-support-reply strong{color:var(--ink)}
+.pope-support-reply p{margin:8px 0 0}
+.pope-support-ticket .order-status[data-status=open]{background:#fff0ce;color:#795518}
+.pope-support-ticket .order-status[data-status=in_review]{background:#eaf1ff;color:#2b527d}
+.pope-support-ticket .order-status[data-status=resolved]{background:#e6f6ec;color:#266447}
+.pope-support-ticket .order-status[data-status=closed]{background:#f0eaf1;color:#6b5475}
+@media(max-width:1050px){.customer-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+ .customer-shortcuts{grid-template-columns:1fr}
+ .pope-support-form-panel{padding:17px}
+ .pope-support-ticket{padding:16px}
+}

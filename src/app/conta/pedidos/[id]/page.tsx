@@ -104,6 +104,8 @@ export default async function CustomerOrderDetails({params}:{params:Promise<{id:
      <h2><MapPin size={19}/> Endereço de entrega</h2>
      <address>{address.map((line,i)=><span key={i}>{line}</span>)}</address>
     </section>}
+    <Link href={'/conta/atendimento?pedido='+o.id} className="customer-link-button">
+     Preciso de ajuda com este pedido</Link>
     <Link href="/conta/enderecos" className="customer-link-button">Gerenciar meus endereços</Link>
    </aside>
   </div>

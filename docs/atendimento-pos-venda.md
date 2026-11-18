@@ -28,7 +28,8 @@ dez caracteres. A resposta fica visível para o titular da solicitação.
 
 ## Segurança
 
-Aplicar a migração `supabase/customer_service_requests_v1.sql` antes de
+Aplicar as migrações `supabase/customer_service_requests_v1.sql` e depois
+`supabase/customer_service_performance_v1.sql` antes de
 publicar os componentes. A tabela `customer_service_requests` usa RLS:
 
 - O cliente lê apenas solicitações próprias e só pode inserir com

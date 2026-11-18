@@ -31,6 +31,7 @@ test('banco limita solicitações e permite somente ao titular vincular o própr
  assert.match(sql,/service_request_admin_update/);
  assert.match(sql,/grant update\(status,admin_note\) on public\.customer_service_requests to authenticated/);
  assert.match(sql,/grant insert\(user_id,order_id,category,subject,description\)/);
+ assert.match(sql,/is_anonymous/);
  assert.match(sql,/pg_advisory_xact_lock/);
  assert.match(sql,/interval '1 hour'/);
  assert.match(sql,/>=3 then/);

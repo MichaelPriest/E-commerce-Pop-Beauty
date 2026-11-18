@@ -1193,3 +1193,9 @@ O menu **Catálogo → Cupons e promoções** (`/admin/promocoes`) permite criar
 **Importante:** cupons ainda **não são aplicáveis ao checkout comercial**, não geram descontos de verdade, não modificam estoque, pedidos, NF-e ou o valor cobrado. O sinalizador de campanha ativa afeta somente a simulação interna. Esta separação impede divergências financeiras enquanto a integração transacional, os limites de uso e a homologação fiscal não forem concluídos.
 
 Para disponibilizar o cadastro, aplique `supabase/promotion_coupons_admin_v1.sql` no Supabase do Popê e use o manual [Cupons e promoções](docs/cupons-promocoes.md). O SQL exige RLS e permite gravação apenas a administradores autenticados. Não cadastrar tokens ou credenciais nas descrições das campanhas.
+
+## Navegação administrativa reorganizada
+
+A sidebar administrativa foi agrupada por **Vendas e clientes, Catálogo e campanhas, Estoque e compras, Logística e fiscal, Financeiro e relatórios, Equipe e sistema**. Os acessos a Visão geral, Pedidos e Notificações ficam fixos no topo. Os outros módulos ficam dentro de áreas expansíveis com identificação automática da seção atual. A busca de atalhos alcança todos os módulos e pode ser aberta pelo teclado com `Ctrl+K` (ou `⌘+K` no Mac). A interface conserva o modo compacto e funciona no celular. Nenhuma rota administrativa foi retirada.
+
+Veja o [manual de navegação administrativa](docs/navegacao-admin.md) para a lista completa de seções, atalhos e testes.

@@ -11,12 +11,14 @@ export default async function AdminLayout({children}:{children:ReactNode}){
  // Registra a atividade do administrador antes de calcular o indicador.
  await supabase.rpc('touch_user_session_presence');
  const cutoff=new Date(Date.now()-3*60*1000).toISOString();
- const [profile,activity,orders,notifications]=await Promise.all([
+ const [profile,activity,orders,notifications,support]=await Promise.all([
   supabase.from('profiles').select('display_name,role').eq('id',id).maybeSingle(),
   supabase.from('user_session_presence').select('user_id')
    .is('signed_out_at',null).gte('last_seen_at',cutoff).limit(1000),
   supabase.from('orders').select('id',{count:'exact',head:true}).eq('status','pending').neq('origin','store_api'),
-  supabase.from('order_notifications').select('id',{count:'exact',head:true}).in('status',['pending','failed'])
+  supabase.from('order_notifications').select('id',{count:'exact',head:true}).in('status',['pending','failed']),
+  supabase.from('customer_service_requests').select('id',{count:'exact',head:true})
+   .in('status',['open','in_review'])
  ]);
  const name=profile.data?.display_name?.trim()||email.split('@')[0]||'Administrador';
  const onlineCount=new Set((activity.data??[]).map(x=>x.user_id)).size;
@@ -25,5 +27,6 @@ export default async function AdminLayout({children}:{children:ReactNode}){
   onlineCount={onlineCount}
   pendingOrders={orders.count??0}
   pendingNotifications={notifications.count??0}
+  pendingSupport={support.count??0}
  >{children}</AdminShell>;
 }

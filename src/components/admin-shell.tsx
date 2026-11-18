@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags,Headset
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 import {
@@ -19,10 +19,10 @@ type NavGroup={id:string;title:string;icon:IconType;items:NavItem[]};
 type Props={
  children:ReactNode;
  currentUser:{name:string;email:string;role:string};
- onlineCount:number;pendingOrders:number;pendingNotifications:number;
+ onlineCount:number;pendingOrders:number;pendingNotifications:number;pendingSupport:number;
 };
 
-export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendingNotifications}:Props){
+export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendingNotifications,pendingSupport}:Props){
  const pathname=usePathname();
  const [collapsed,setCollapsed]=useState(false),[mobileOpen,setMobileOpen]=useState(false);
  const [quickOpen,setQuickOpen]=useState(false),[profileOpen,setProfileOpen]=useState(false);
@@ -51,6 +51,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
  const groups:NavGroup[]=useMemo(()=>[
   {id:'vendas',title:'Vendas e clientes',icon:ShoppingBag,items:[
    {href:'/admin/clientes',label:'Clientes',icon:Users},
+   {href:'/admin/atendimento',label:'Atendimento e pós-venda',icon:Headset,count:pendingSupport},
    {href:'/admin/marketplaces',label:'Marketplaces',icon:Store},
    {href:'/admin/reservas',label:'Reservas de teste',icon:Timer}
   ]},
@@ -87,7 +88,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/prontidao',label:'Prontidão para produção',icon:ClipboardCheck},
    {href:'/admin/configuracoes',label:'Configurações',icon:Settings}
   ]}
- ],[onlineCount]);
+ ],[onlineCount,pendingSupport]);
  const allItems=useMemo(()=>[...primaryItems,...groups.flatMap(group=>group.items)],
   [primaryItems,groups]);
  // Prioriza a rota mais específica para não marcar "Produtos" junto com "Importar".
@@ -108,6 +109,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/promocoes',label:'Gerenciar cupons e campanhas',icon:Tags},
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},
+  {href:'/admin/atendimento',label:'Atender solicitações de clientes',icon:Headset},
   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity},
   {href:'/admin/usuarios',label:'Permissões',icon:UserCog},
   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},

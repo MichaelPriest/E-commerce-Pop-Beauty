@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags,Headset,Clapperboard,Star
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags,Headset,Clapperboard,Star,ShoppingCart
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 import {
@@ -52,6 +52,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {id:'vendas',title:'Vendas e clientes',icon:ShoppingBag,items:[
    {href:'/admin/clientes',label:'Clientes',icon:Users},
    {href:'/admin/atendimento',label:'Atendimento e pós-venda',icon:Headset,count:pendingSupport},
+   {href:'/admin/carrinhos-abandonados',label:'Carrinhos abandonados',icon:ShoppingCart},
    {href:'/admin/marketplaces',label:'Marketplaces',icon:Store},
    {href:'/admin/reservas',label:'Reservas de teste',icon:Timer}
   ]},
@@ -114,6 +115,7 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},
   {href:'/admin/atendimento',label:'Atender solicitações de clientes',icon:Headset},
+  {href:'/admin/carrinhos-abandonados',label:'Revisar carrinhos abandonados',icon:ShoppingCart},
   {href:'/admin/usuarios-online',label:'Usuários ativos',icon:Activity},
   {href:'/admin/usuarios',label:'Permissões',icon:UserCog},
   {href:'/admin/relatorios',label:'Relatórios',icon:BarChart3},

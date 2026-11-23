@@ -10,7 +10,7 @@ revoke all on function private.is_feed_editor() from public,anon,authenticated;
 create table if not exists public.feed_posts (
  id uuid primary key default gen_random_uuid(),
  author_id uuid not null references auth.users(id) on delete cascade,
- author_name text not null default 'Comunidade Popê',
+ author_name text not null default 'Equipe Popê Beauty',
  body text not null default '' check (length(body)<=2000),
  media_path text unique,
  media_kind text check (media_kind in ('image','video')),
@@ -61,7 +61,7 @@ create policy feed_posts_admin_status on public.feed_posts for update to authent
 create or replace function private.guard_feed_post()
 returns trigger language plpgsql security definer set search_path=''
 as $$
-declare v_parent uuid;v_category uuid;v_label text;
+declare v_parent uuid;v_category uuid;
 begin
  if TG_OP='UPDATE' then
   if new.author_id is distinct from old.author_id
@@ -121,9 +121,7 @@ begin
    raise exception 'Produto não pertence à categoria selecionada';
   end if;
  end if;
- select nullif(btrim(p.display_name),'') into v_label
-  from public.profiles p where p.id=new.author_id;
- new.author_name=left(coalesce(v_label,'Comunidade Popê'),60);
+ new.author_name='Equipe Popê Beauty';
  if private.is_feed_editor() and new.status='published' then
   new.published_at=clock_timestamp();
  end if;

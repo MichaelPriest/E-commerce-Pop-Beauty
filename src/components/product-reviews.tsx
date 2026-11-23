@@ -6,10 +6,10 @@ import {Star,Send,ShieldCheck} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {starsOf,validateProductReview,type ProductReview} from '@/lib/product-reviews-core';
 
-export function ProductReviews({productId,customerId,reviews,summary,mine,demo=false}:{
+export function ProductReviews({productId,customerId,reviews,summary,mine,demo=false,staffViewer=false}:{
  productId:string;customerId:string|null;reviews:ProductReview[];
  summary:{average_rating:number;rating_count:number};
- mine:ProductReview|null;demo?:boolean;
+ mine:ProductReview|null;demo?:boolean;staffViewer?:boolean;
 }){
  const router=useRouter();
  const [rating,setRating]=useState(0),[comment,setComment]=useState('');
@@ -73,6 +73,7 @@ export function ProductReviews({productId,customerId,reviews,summary,mine,demo=f
       <p>{mine.comment}</p>
      </div>
     </div>:
+    staffViewer?<p>O cadastro de avaliações é reservado aos clientes. A equipe Popê pode moderar as opiniões enviadas.</p>:
     !customerId?<p>Entre na sua conta para avaliar com estrelas e escrever um comentário.
      {' '}<Link href="/entrar">Entrar na minha conta</Link></p>:
     <form onSubmit={submit}>

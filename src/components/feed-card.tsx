@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import {ImageIcon,Play,CalendarDays,ShoppingBag,Tags,ShieldCheck} from 'lucide-react';
-import {FeedLike} from './feed-like';
 import {formatBRL,productImageSrc} from '@/lib/products';
 import type {FeedPostView} from '@/lib/feed-core';
 
-export function FeedCard({post,userId,liked=false,moderation=false}:{
- post:FeedPostView;userId:string|null;liked?:boolean;moderation?:boolean;
+export function FeedCard({post,moderation=false}:{
+ post:FeedPostView;moderation?:boolean;
 }){
  const date=post.published_at??post.created_at;
  const price=post.product?.price_cents??0;
@@ -50,11 +49,11 @@ export function FeedCard({post,userId,liked=false,moderation=false}:{
     <Tags size={15}/>{post.category.name}
    </Link>:null}
   <footer className="pope-feed-card-footer">
-   {post.status==='published'?<FeedLike postId={post.id} userId={userId}
-    count={post.like_count} liked={liked}/>:
-    <span className="pope-feed-review-note"><ShieldCheck size={15}/>
-     {post.status==='pending'?'Aguardando moderação':post.status==='rejected'?
-      'Postagem não aprovada':'Postagem não visível no feed'}</span>}
+   <span className="pope-feed-review-note"><ShieldCheck size={15}/>
+    {post.status==='published'?'Publicação oficial Popê Beauty':
+     post.status==='pending'?'Aguardando revisão':
+     post.status==='rejected'?'Não aprovado':'Oculto do feed'}
+   </span>
   </footer>
  </article>;
 }

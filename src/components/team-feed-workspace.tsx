@@ -36,7 +36,7 @@ export async function TeamFeedWorkspace(){
   </p>:<>
    <FeedComposer userId={userId} categories={targets.categories}
     products={targets.products}/>
-   <FeedManager posts={posts} userId={userId}/>
+   <FeedManager posts={posts}/>
   </>}
  </div>;
 }

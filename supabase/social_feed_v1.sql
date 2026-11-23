@@ -4,8 +4,8 @@ begin;
 -- Apenas administradores e funcionários podem criar postagens.
 create or replace function private.is_feed_editor() returns boolean
  language sql stable security definer set search_path=''
- as $select exists(select 1 from public.profiles p
- where p.id=(select auth.uid()) and p.role in ('admin','staff'))$;
+ as $$select exists(select 1 from public.profiles p
+ where p.id=(select auth.uid()) and p.role in ('admin','staff'))$$;
 revoke all on function private.is_feed_editor() from public,anon,authenticated;
 create table if not exists public.feed_posts (
  id uuid primary key default gen_random_uuid(),

@@ -3,7 +3,7 @@ import {ArrowLeft,Clapperboard,Play} from 'lucide-react';
 import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
 import {FEED_POST_COLUMNS,feedPostViews,feedRows,feedTargets} from '@/lib/feed-server';
-import {feedCategoryIds,feedPage} from '@/lib/feed-core';
+import {feedCategoryIds,feedPage,type FeedPostView} from '@/lib/feed-core';
 import {FeedReels} from '@/components/feed-reels';
 
 export const dynamic='force-dynamic';
@@ -31,6 +31,35 @@ export default async function PopêReelsPage({searchParams}:{
  const {data,error}=await query.range(start,start+size);
  const hasMore=(data??[]).length>size;
  const posts=await feedPostViews(db,feedRows((data??[]).slice(0,size)));
+ // A amostra pública é carregada somente quando não existem vídeos oficiais.
+ // O clipe CC0 mostra flores, nunca um produto Popê; o conteúdo real não se mistura.
+ const demoResult=posts.length===0&&page===1&&!error?
+  await db.from('demo_feed_reels')
+   .select('id,body,video_url,product_id,category_id,created_at')
+   .eq('active',true).limit(3):null;
+ const demoVideos:FeedPostView[]=(demoResult?.data??[])
+  .filter(d=>(!args.produto||d.product_id===product?.id)&&
+   (!args.categoria||!!category&&feedCategoryIds(category.id,targets.categories)
+    .includes(d.category_id??'')))
+  .map(d=>{
+   const selectedProduct=targets.products.find(p=>p.id===d.product_id)??null;
+   const selectedCategory=targets.categories.find(cat=>cat.id===d.category_id)??null;
+   return {
+    id:d.id,author_id:'00000000-0000-4000-8000-000000000000',
+    author_name:'Amostra de vídeo (CC0)',body:d.body,
+    media_path:null,media_kind:'video' as const,
+    media_url:d.video_url,product_id:d.product_id,category_id:d.category_id,
+    product:selectedProduct,
+    category:selectedCategory?{
+     id:selectedCategory.id,name:selectedCategory.name,slug:selectedCategory.slug,
+     parent_id:selectedCategory.parent_id
+    }:null,
+    status:'published' as const,
+    created_at:d.created_at,updated_at:d.created_at,published_at:d.created_at
+   };
+  });
+ const isDemo=posts.length===0&&demoVideos.length>0;
+ const displayVideos=isDemo?demoVideos:posts;
  function href(n:number){
   const params=new URLSearchParams();
   if(args.produto&&product)params.set('produto',product.slug);
@@ -47,7 +76,14 @@ export default async function PopêReelsPage({searchParams}:{
   </header>
   {error?<div className="container pope-feed-empty" role="alert">
    Não foi possível carregar os vídeos.</div>:
-   posts.length?<div className="pope-reels-wrap"><FeedReels posts={posts}/></div>:
+   displayVideos.length?<div className="pope-reels-wrap">
+    {isDemo?<div className="pope-demo-label"><strong>VÍDEO DE TESTE — NÃO É CONTEÚDO EDITORIAL DA POPÊ</strong>
+     <p>Clipe de flores usado apenas para testar os Reels (fonte MDN, CC0).
+      O produto exibido é ilustrativo e não aparece no vídeo.
+      Assim que a equipe publicar um vídeo real, ele substituirá esta amostra.</p>
+    </div>:null}
+    <FeedReels posts={displayVideos}/>
+   </div>:
     <div className="container pope-feed-empty">
      <Play size={34}/><h2>Sem vídeos publicados nesta seleção.</h2>
      <p>A equipe Popê pode publicar vídeos na central de conteúdo.</p>

@@ -1274,3 +1274,21 @@ Aplique `supabase/customer_saved_carts_v1.sql` no Supabase Popê.
 Consulte o [manual de carrinhos abandonados](docs/carrinhos-abandonados.md)
 e [Feed e avaliações](docs/feed-e-avaliacoes.md).
 O checkout não é ativado por esses recursos.
+
+
+## Dados fictícios para homologação (novembro de 2026)
+
+A loja dispõe de exemplos explicitamente identificados como **[DEMO POPÊ]**.
+Além dos posts de demonstração no feed, a tabela
+`demo_cart_scenarios` contém sete carrinhos fictícios e
+`demo_product_review_scenarios` contém cinco avaliações
+fictícias, ambos visíveis apenas para usuários autorizados no
+administrativo. Não representam clientes ou faturamento real.
+O vídeo CC0 demonstrativo só aparece em `/feed/videos` quando
+não há vídeo oficial publicado pela equipe.
+
+Migração: `supabase/demo_scenarios_v1.sql`.
+Para a remoção direcionada: `supabase/demo_scenarios_cleanup.sql`.
+
+Leia o [manual de dados fictícios](docs/dados-teste-pope.md) para
+detalhes sobre privacidade, filtros e retirada segura dos exemplos.

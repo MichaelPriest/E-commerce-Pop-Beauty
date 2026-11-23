@@ -1,0 +1,33 @@
+-- Limpeza EXCLUSIVA dos exemplos com UUIDs fixos desta bateria de homologação.
+-- Não excluir clientes, pedidos, pagamentos ou publicações reais.
+begin;
+delete from public.feed_posts
+where body like '[DEMO POPÊ]%'
+  and id in (
+   'de000001-0000-4000-8000-000000000001',
+   'de000001-0000-4000-8000-000000000002',
+   'de000001-0000-4000-8000-000000000003',
+   'de000001-0000-4000-8000-000000000004',
+   'de000001-0000-4000-8000-000000000005',
+   'de000001-0000-4000-8000-000000000006',
+   'de000001-0000-4000-8000-000000000007'
+  );
+delete from public.demo_cart_scenarios where id in (
+ 'deca0001-0000-4000-8000-000000000001',
+ 'deca0001-0000-4000-8000-000000000002',
+ 'deca0001-0000-4000-8000-000000000003',
+ 'deca0001-0000-4000-8000-000000000004',
+ 'deca0001-0000-4000-8000-000000000005',
+ 'deca0001-0000-4000-8000-000000000006',
+ 'deca0001-0000-4000-8000-000000000007'
+);
+delete from public.demo_product_review_scenarios where id in (
+ 'dede0001-0000-4000-8000-000000000001',
+ 'dede0001-0000-4000-8000-000000000002',
+ 'dede0001-0000-4000-8000-000000000003',
+ 'dede0001-0000-4000-8000-000000000004',
+ 'dede0001-0000-4000-8000-000000000005'
+);
+delete from public.demo_feed_reels
+ where id='defe0001-0000-4000-8000-000000000001';
+commit;

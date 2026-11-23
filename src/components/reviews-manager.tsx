@@ -7,7 +7,7 @@ import {createClient} from '@/lib/supabase/browser';
 import {starsOf,type ProductReview} from '@/lib/product-reviews-core';
 
 type ReviewEntry=ProductReview&{products:{name:string;slug:string}|null};
-export function ReviewsManager({reviews}:{reviews:ReviewEntry[]}){
+export function ReviewsManager({reviews,demo=false}:{reviews:ReviewEntry[];demo?:boolean}){
  const router=useRouter();
  const [filter,setFilter]=useState('pending'),[busy,setBusy]=useState<string|null>(null);
  const [error,setError]=useState('');
@@ -15,13 +15,17 @@ export function ReviewsManager({reviews}:{reviews:ReviewEntry[]}){
  async function moderate(id:string,status:'pending'|'published'|'hidden'){
   if(busy)return;
   setBusy(id);setError('');
-  const {data,error:dbError}=await createClient().from('product_reviews')
+  const {data,error:dbError}=await createClient().from(
+   demo?'demo_product_review_scenarios':'product_reviews')
    .update({status}).eq('id',id).select('id').maybeSingle();
   if(dbError||!data)setError('Não foi possível atualizar esta avaliação.');
   else router.refresh();
   setBusy(null);
  }
- return <section className="pope-review-admin">
+ return <section className={'pope-review-admin'+(demo?' is-demo':'')}>
+  {demo?<div className="pope-demo-label"><strong>AVALIAÇÕES FICTÍCIAS</strong>
+   <p>Use Aprovar, Ocultar e Voltar para análise. Estas opiniões NÃO aparecem
+    nas páginas dos produtos nem entram na média real de estrelas.</p></div>:null}
   <div className="pope-review-admin-stats">
    <div><strong>{reviews.filter(x=>x.status==='pending').length}</strong><span>Para aprovar</span></div>
    <div><strong>{reviews.filter(x=>x.status==='published').length}</strong><span>Publicadas</span></div>
@@ -46,7 +50,7 @@ export function ReviewsManager({reviews}:{reviews:ReviewEntry[]}){
     </div>
     <h3>{review.products?<Link href={'/produto/'+review.products.slug}>
      {review.products.name}</Link>:'Produto excluído'}</h3>
-    <p><strong>{review.author_name}</strong> · {review.status==='pending'?
+    <p><strong>{review.author_name}</strong> {demo?'· SIMULAÇÃO ':''} · {review.status==='pending'?
      'Aguardando aprovação':review.status==='published'?'Publicado':'Oculto'}</p>
     <blockquote>{review.comment}</blockquote>
     <div className="pope-feed-moderation-actions">

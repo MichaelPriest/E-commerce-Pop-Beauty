@@ -1769,3 +1769,16 @@ h1,h2,h3{font-family:'Nunito',sans-serif}
 @media(max-width:1030px){.pope-cart-recovery-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.pope-cart-recovery-list{grid-template-columns:1fr}}
 @media(max-width:430px){.pope-cart-recovery-stats{grid-template-columns:1fr}}
+
+/* Amostras de homologação, sempre separadas de dados de clientes reais. */
+.pope-demo-section-title{margin:28px 0 15px;color:#673355;font-size:21px;
+ font-weight:850;line-height:1.35}
+.pope-demo-divider{border:0;border-top:1px dashed #d8aecb;margin:35px 0}
+.pope-demo-label{border:1px dashed #b5769c;border-radius:12px;
+ background:#fff8e9;padding:13px 15px;margin:0 0 20px;color:#633959}
+.pope-demo-label strong{display:block;letter-spacing:.025em;font-size:13px;
+ color:#93435a}
+.pope-demo-label p{font-size:12px;line-height:1.65;margin:7px 0 0;color:#735567}
+.pope-cart-abandonment.is-demo .pope-cart-recovery-item,
+.pope-review-admin.is-demo .pope-review-admin-card{border-style:dashed}
+.pope-cart-abandonment.is-demo .pope-cart-recovery-status{font-weight:900}

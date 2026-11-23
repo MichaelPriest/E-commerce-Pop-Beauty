@@ -9,7 +9,7 @@ type FeedRow=FeedPost&{
  categories:(FeedCategory)|null;
 };
 export const FEED_POST_COLUMNS=
- 'id,author_id,author_name,body,media_path,media_kind,product_id,category_id,status,like_count,created_at,updated_at,published_at,products(id,name,slug,category_id,price_cents,image_url,active,is_adult),categories(id,name,slug,parent_id,active,is_adult)';
+ 'id,author_id,author_name,body,media_path,media_kind,product_id,category_id,status,created_at,updated_at,published_at,products(id,name,slug,category_id,price_cents,image_url,active,is_adult),categories(id,name,slug,parent_id,active,is_adult)';
 
 export async function feedTargets(db:FeedDatabase){
  const [categoryResult,productResult]=await Promise.all([

@@ -6,7 +6,7 @@ import {
  LayoutDashboard,ShoppingBag,MailCheck,PackageSearch,Boxes,Truck,Users,
  CreditCard,Store,Eye,Settings,ShieldCheck,LogOut,UserRound,PanelLeftClose,
  PanelLeftOpen,Menu,X,ChevronDown,ChevronRight,Search,ExternalLink,
- CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags,Headset
+ CircleHelp,Activity,Plus,PackagePlus,ArrowLeft,UserCog,History,BarChart3,WalletCards,Timer,ClipboardCheck,FileText,ClipboardList,FolderTree,FileSpreadsheet,ClipboardList as ReplenishmentIcon,Building2,ScanBarcode,Tags,Headset,Clapperboard,Star
 } from 'lucide-react';
 import {signOutAction} from '@/app/actions';
 import {
@@ -60,6 +60,8 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
    {href:'/admin/produtos/importar',label:'Importar produtos CSV',icon:FileSpreadsheet},
    {href:'/admin/categorias',label:'Categorias e subcategorias',icon:FolderTree},
    {href:'/admin/promocoes',label:'Cupons e promoções',icon:Tags},
+   {href:'/admin/feed',label:'Feed e publicações',icon:Clapperboard},
+   {href:'/admin/avaliacoes',label:'Avaliações dos produtos',icon:Star},
    {href:'/admin/adulto',label:'Prévia reservada +18',icon:Eye}
   ]},
   {id:'estoque',title:'Estoque e compras',icon:Boxes,items:[
@@ -107,6 +109,8 @@ export function AdminShell({children,currentUser,onlineCount,pendingOrders,pendi
   {href:'/admin/fornecedores',label:'Cadastrar fornecedor',icon:Building2},
   {href:'/admin/categorias',label:'Cadastrar categorias',icon:FolderTree},
   {href:'/admin/promocoes',label:'Gerenciar cupons e campanhas',icon:Tags},
+  {href:'/admin/feed',label:'Criar publicações no feed',icon:Clapperboard},
+  {href:'/admin/avaliacoes',label:'Moderar avaliações',icon:Star},
   {href:'/admin/estoque',label:'Ajustar estoque',icon:Boxes},
   {href:'/admin/notificacoes',label:'Consultar e-mails',icon:MailCheck},
   {href:'/admin/atendimento',label:'Atender solicitações de clientes',icon:Headset},

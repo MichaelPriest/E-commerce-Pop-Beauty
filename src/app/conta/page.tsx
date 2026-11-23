@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {redirect} from 'next/navigation';
-import {ArrowRight,ChevronRight,Eye,Heart,LogOut,LockKeyhole,MapPin,Package,ShieldCheck,Truck,UserRound,Headset} from 'lucide-react';
+import {ArrowRight,ChevronRight,Eye,Heart,LogOut,LockKeyhole,MapPin,Package,ShieldCheck,Truck,UserRound,Headset,Clapperboard,Star} from 'lucide-react';
 import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
 import {getStorefrontCustomer} from '@/lib/storefront-customer';
@@ -89,6 +89,10 @@ export default async function AccountPage({searchParams}:{searchParams:Promise<{
   </section>
   {(adult.enabled||customer.role==='admin'||customer.role==='staff')&&<aside className="customer-access">
    {adult.enabled&&<Link href="/adulto"><LockKeyhole size={17}/>{adult.verified?'Abrir área restrita +18':'Acompanhar verificação de maioridade'}</Link>}
+   {(customer.role==='admin'||customer.role==='staff')&&<>
+    <Link href="/equipe/feed"><Clapperboard size={17}/> Gerenciar feed Popê</Link>
+    <Link href="/equipe/avaliacoes"><Star size={17}/> Moderar avaliações</Link>
+   </>}
    {customer.role==='admin'&&<><Link href="/admin"><ShieldCheck size={17}/> Abrir administração</Link>
     <Link href="/admin/adulto"><Eye size={17}/> Prévia administrativa +18</Link></>}
    {customer.role==='staff'&&<span><UserRound size={17}/> Perfil de equipe</span>}

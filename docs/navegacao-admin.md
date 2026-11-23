@@ -9,7 +9,7 @@ grupos expansíveis, organizados conforme o processo operacional:
 | Área | Módulos |
 |---|---|
 | Vendas e clientes | Clientes, atendimento e pós-venda, marketplaces e reservas de teste |
-| Catálogo e campanhas | Produtos, importação CSV, categorias, cupons e prévia +18 |
+| Catálogo e campanhas | Produtos, importação CSV, categorias, cupons, feed, avaliações e prévia +18 |
 | Estoque e compras | Estoque, reposição, compras, recebimento e fornecedores |
 | Logística e fiscal | Logística, remessas, frete, cadastro e documentos fiscais |
 | Financeiro e relatórios | Financeiro, gateways, pagamentos de teste e relatórios |
@@ -45,5 +45,5 @@ As funções de comparação de rotas e busca estão em
 
 Execute `npm run test`, `npm run typecheck` e `npm run build`.
 O teste `tests/admin-sidebar-navigation.test.mjs` verifica a preservação
-de todos os 30 endereços, o destaque de rotas específicas, a busca e os
+de todos os 32 endereços, o destaque de rotas específicas, a busca e os
 atributos básicos de acessibilidade.

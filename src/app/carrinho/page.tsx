@@ -7,6 +7,7 @@ import {
  type CartItem,cartIdentity,cartQuantity
 } from '@/lib/cart-core';
 import {cartStore} from '@/lib/storefront-lists';
+import {SavedCartPanel} from '@/components/saved-cart-panel';
 
 export default function CartPage(){
  const items=useSyncExternalStore<CartItem[]|null>(cartStore.subscribe,cartStore.getSnapshot,()=>null);
@@ -80,7 +81,9 @@ export default function CartPage(){
      <Link href="/"><ArrowLeft size={16}/> Continuar explorando</Link>
     </aside>
    </div>}
-  <p className="admin-help"><ShoppingBag size={14}/> Suas escolhas são salvas
-   somente neste navegador. Nenhum pedido é criado ao adicionar itens.</p>
+  <SavedCartPanel/>
+  <p className="admin-help"><ShoppingBag size={14}/> Sem login, suas escolhas permanecem neste navegador.
+   Quando você entra na conta, elas também podem ser salvas para recuperação.
+   Adicionar itens não cria pedidos nem reserva estoque.</p>
  </div>;
 }

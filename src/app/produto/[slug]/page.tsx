@@ -47,9 +47,10 @@ export default async function ProductPage({params,searchParams}:{
    'Demonstração: não é possível realizar uma compra real.':
    'A loja está em implantação; pedidos e pagamentos comerciais continuam desativados.'}</p>
   <ProductDetailsShop product={product} demo={demo}
-   variants={extras.variants} gallery={extras.gallery}
+   variants={extras.variants} gallery={extras.gallery} ratingSummary={summary}
    initialVariantId={typeof variacao==='string'?variacao:''}/>
-  {!product.is_adult?<ProductReviews productId={product.id} customerId={customer?.id??null}
-   reviews={reviews} summary={summary} mine={mine} demo={demo}/>:null}
+  {!product.is_adult?<div id="avaliacoes" className="pope-product-reviews-anchor"><ProductReviews productId={product.id} customerId={customer?.id??null}
+   reviews={reviews} summary={summary} mine={mine} demo={demo}/>
+   <p className="pope-feed-product-discover">Quer ver vídeos e dicas sobre este produto? <Link href={"/feed?produto="+encodeURIComponent(product.slug)}>Ver publicações no Feed Popê</Link></p></div>:null}
  </div>;
 }

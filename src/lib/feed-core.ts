@@ -16,7 +16,7 @@ export type FeedPost={
  id:string;author_id:string;author_name:string;body:string;
  media_path:string|null;media_kind:FeedMediaKind|null;
  product_id:string|null;category_id:string|null;
- status:FeedStatus;like_count:number;
+ status:FeedStatus;
  created_at:string;updated_at:string;published_at:string|null;
 };
 export type FeedPostView=FeedPost&{

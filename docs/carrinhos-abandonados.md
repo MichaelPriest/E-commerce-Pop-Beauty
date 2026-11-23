@@ -41,7 +41,8 @@ preferências de canal e descadastro. Nunca interpretar a marcação
 ## Recuperação pelo cliente
 
 Ao acessar a conta em outro dispositivo, o navegador **não substitui**
-seu carrinho automaticamente. Em `/carrinho`, o cliente pode restaurar
+seu carrinho automaticamente. Quando existem dois carrinhos diferentes,
+o conteúdo remoto é preservado até haver uma alteração local ou uma restauração explícita. Em `/carrinho`, o cliente pode restaurar
 voluntariamente os itens salvos. Quando já existe um carrinho local, o
 sistema pede confirmação para substituí-lo.
 

@@ -47,3 +47,12 @@ Execute `npm run test`, `npm run typecheck` e `npm run build`.
 O teste `tests/admin-sidebar-navigation.test.mjs` verifica a preservação
 de todos os 32 endereços, o destaque de rotas específicas, a busca e os
 atributos básicos de acessibilidade.
+
+
+### Nova área — carrinhos abandonados
+
+O grupo **Vendas e clientes** inclui
+`/admin/carrinhos-abandonados`. A central usa apenas snapshots de
+clientes autenticados e separa abandono de pedidos iniciados.
+Não existe envio automático de mensagens sem autorização e configuração
+de um provedor. Consulte [Carrinhos abandonados](carrinhos-abandonados.md).

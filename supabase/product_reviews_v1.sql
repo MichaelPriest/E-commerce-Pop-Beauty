@@ -38,6 +38,7 @@ create policy product_reviews_customer_create on public.product_reviews
  for insert to authenticated
  with check (
   user_id=(select auth.uid())
+  and not (select private.is_feed_editor())
   and coalesce(((select auth.jwt())->>'is_anonymous')::boolean,false)=false
   and status='pending'
   and exists(select 1 from public.products p where p.id=product_id
@@ -68,7 +69,7 @@ begin
   new.updated_at=clock_timestamp();
   return new;
  end if;
- if new.user_id is distinct from auth.uid() then
+ if new.user_id is distinct from auth.uid() or private.is_feed_editor() then
   raise exception 'A avaliação deve pertencer ao cliente autenticado'
    using errcode='42501';
  end if;

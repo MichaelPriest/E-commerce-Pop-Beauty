@@ -3,7 +3,7 @@ import {useEffect,useRef} from 'react';
 import Link from 'next/link';
 import {ArrowUpRight,Clapperboard,Volume2} from 'lucide-react';
 import type {FeedPostView} from '@/lib/feed-core';
-import {formatBRL} from '@/lib/products';
+import {formatBRL,productImageSrc} from '@/lib/products';
 
 /** Videos autoplay muted only while visible; native controls enable sound by user choice. */
 export function FeedReels({posts}:{posts:FeedPostView[]}){
@@ -27,7 +27,7 @@ export function FeedReels({posts}:{posts:FeedPostView[]}){
   {posts.map(post=><article className="pope-reel" key={post.id}>
    {post.media_url?<video src={post.media_url} playsInline muted loop controls
     preload="metadata" aria-label={'Vídeo da Popê: '+(post.body.slice(0,100)||'Tutorial de beleza')}
-    poster={post.product?.image_url??undefined}/>:
+    poster={post.product?.image_url?productImageSrc(post.product.image_url)??undefined:undefined}/>:
     <div className="pope-reel-missing">Vídeo indisponível. Atualize a página.</div>}
    <div className="pope-reel-overlay">
     <span className="pope-reel-official"><Clapperboard size={17}/> POPÊ BEAUTY</span>

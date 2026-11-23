@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import {Heart,ImagePlus,MessageCircle,Filter,ArrowRight,Users,ShieldCheck} from 'lucide-react';
+import {Heart,ImagePlus,MessageCircle,Filter,ArrowRight,ShieldCheck} from 'lucide-react';
 import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
-import {getStorefrontCustomer} from '@/lib/storefront-customer';
 import {FEED_POST_COLUMNS,feedPostViews,feedRows,feedTargets} from '@/lib/feed-server';
 import {feedCategoryIds,feedPage} from '@/lib/feed-core';
 import {FeedCard} from '@/components/feed-card';
@@ -20,7 +19,7 @@ export default async function FeedPage({searchParams}:{
   <h1>Comunidade Popê</h1><p>O feed está temporariamente indisponível.</p>
  </div>;
  const db=await createClient();
- const [customer,targets]=await Promise.all([getStorefrontCustomer(),feedTargets(db)]);
+ const targets=await feedTargets(db);
  const category=targets.categories.find(c=>c.slug===params.categoria);
  const product=targets.products.find(p=>p.slug===params.produto);
  const categoryFilter=typeof params.categoria==='string'&&params.categoria.length>0;
@@ -37,10 +36,6 @@ export default async function FeedPage({searchParams}:{
  const {data,error}=await query.range(start,start+pageSize);
  const hasMore=(data??[]).length>pageSize;
  const posts=await feedPostViews(db,feedRows((data??[]).slice(0,pageSize)));
- const {data:liked}=customer&&posts.length?await db.from('feed_post_likes')
-  .select('post_id').eq('user_id',customer.id)
-  .in('post_id',posts.map(p=>p.id)):{data:[] as {post_id:string}[]};
- const likedIds=new Set((liked??[]).map(x=>x.post_id));
  function href(n:number){
   const q=new URLSearchParams();
   if(categoryFilter&&category)q.set('categoria',category.slug);
@@ -53,16 +48,12 @@ export default async function FeedPage({searchParams}:{
    <div className="container pope-feed-hero-inner">
     <div><span className="section-kicker">BELEZA, CRIATIVIDADE & COMUNIDADE</span>
      <h1>Feed <em>Popê</em> <Heart size={34} fill="currentColor"/></h1>
-     <p>Compartilhe seus achadinhos, experiências, dicas de beleza e tutoriais.
-      Descubra postagens relacionadas aos produtos da loja.</p>
+     <p>Novidades, vídeos, inspirações e tutoriais publicados pela equipe Popê.
+      Explore conteúdos associados aos produtos e categorias da loja.</p>
      <div className="pope-feed-hero-actions">
-      {customer?<Link className="admin-primary" href="/feed/criar">
-       <ImagePlus size={18}/> Criar postagem</Link>:
-       <Link className="admin-primary" href="/entrar">
-        <Users size={18}/> Entre para participar</Link>}
-      {customer?<Link className="admin-outline" href="/feed/minhas">Minhas postagens</Link>:null}
-     </div>
-    </div><div className="pope-feed-hero-art" aria-hidden="true">💄 <span>📷</span> ✨</div>
+      <Link className="admin-primary" href="/#destaques">
+       <ArrowRight size={18}/> Explorar produtos</Link>
+     </div>    </div><div className="pope-feed-hero-art" aria-hidden="true">💄 <span>📷</span> ✨</div>
    </div>
   </header>
   <div className="container pope-feed-layout">
@@ -71,7 +62,6 @@ export default async function FeedPage({searchParams}:{
      <div><span className="section-kicker">INSPIRE-SE COM A COMUNIDADE</span>
       <h2 id="pope-feed-heading"><MessageCircle size={24}/> Publicações</h2>
      </div>
-     <Link href="/feed/criar" className="admin-outline"><ImagePlus size={17}/> Postar</Link>
     </div>
     <form className="pope-feed-filters" action="/feed" method="get">
      <Filter size={18}/>
@@ -95,8 +85,7 @@ export default async function FeedPage({searchParams}:{
     {error?<div className="pope-feed-empty" role="alert">
      Não foi possível carregar o feed. Verifique a configuração do módulo.</div>:
      posts.length?<div className="pope-feed-list">
-      {posts.map(post=><FeedCard key={post.id} post={post}
-       userId={customer?.id??null} liked={likedIds.has(post.id)}/>)}
+      {posts.map(post=><FeedCard key={post.id} post={post}/>)}
      </div>:<div className="pope-feed-empty">
       <ImagePlus size={36}/><h3>Nenhuma publicação encontrada</h3>
       <p>{page>1?'Não há mais publicações nesta página.':
@@ -111,12 +100,11 @@ export default async function FeedPage({searchParams}:{
    </section>
    <aside className="pope-feed-side" aria-label="Sobre o feed">
     <div><Heart size={24}/><h2>Faça parte da Popê</h2>
-     <p>Mostre suas ideias e relacione cada dica a uma categoria, subcategoria ou produto.</p>
-     <Link href={customer?'/feed/criar':'/entrar'}>Começar <ArrowRight size={16}/></Link>
+     <p>Confira conteúdos oficiais da equipe e descubra os produtos usados em cada publicação.</p>
+     <Link href="/#destaques">Ver catálogo <ArrowRight size={16}/></Link>
     </div>
     <div><ShieldCheck size={23}/><h2>Comunidade com moderação</h2>
-     <p>Publicações de clientes só aparecem depois da aprovação da equipe.
-      Nenhum conteúdo altera preços, pedidos ou estoque.</p>
+     <p>As postagens são criadas somente pela equipe Popê. Para deixar comentários e avaliações com estrelas, abra a página de um produto.</p>
     </div>
    </aside>
   </div>

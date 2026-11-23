@@ -1,22 +1,22 @@
 'use client';
 import {useEffect,useState,type FormEvent} from 'react';
 import {useRouter} from 'next/navigation';
-import {ImagePlus,Video,Send,ShieldCheck,Tags,PackageSearch,X} from 'lucide-react';
+import {ImagePlus,Video,Send,Tags,PackageSearch,X} from 'lucide-react';
 import {createClient} from '@/lib/supabase/browser';
 import {
  feedMediaInfo,validateFeedPost,FEED_BODY_MAX,
  type FeedCategory,type FeedProduct
 } from '@/lib/feed-core';
 
-export function FeedComposer({userId,admin=false,categories,products}:{
- userId:string;admin?:boolean;
+export function FeedComposer({userId,categories,products}:{
+ userId:string;
  categories:FeedCategory[];products:FeedProduct[];
 }){
  const router=useRouter();
  const [body,setBody]=useState(''),[file,setFile]=useState<File|null>(null);
  const [preview,setPreview]=useState('');
  const [categoryId,setCategoryId]=useState(''),[productId,setProductId]=useState('');
- const [publish,setPublish]=useState(admin),[saving,setSaving]=useState(false);
+ const [publish,setPublish]=useState(true),[saving,setSaving]=useState(false);
  const [error,setError]=useState(''),[message,setMessage]=useState('');
  useEffect(()=>{
   if(!file){setPreview('');return;}
@@ -51,16 +51,15 @@ export function FeedComposer({userId,admin=false,categories,products}:{
     author_id:userId,body:body.trim(),media_path:uploadedPath,
     media_kind:media&&'kind' in media?media.kind:null,
     category_id:categoryId||null,product_id:productId||null,
-    status:admin&&publish?'published':'pending'
+    status:publish?'published':'pending'
    });
    if(postError){
-    if(postError.message.includes('três postagens'))throw new Error(
-     'Você já publicou três vezes nas últimas 24 horas. Tente novamente amanhã.');
+    if(postError.message.includes('trinta postagens'))throw new Error(
+     'Limite de 30 postagens nas últimas 24 horas.');
     throw new Error('Não foi possível salvar a postagem. Verifique os vínculos e tente novamente.');
    }
    setBody('');setFile(null);setCategoryId('');setProductId('');
-   setMessage(admin&&publish?'Postagem publicada no feed.':
-    'Postagem enviada! A equipe vai analisar antes de aparecer no feed.');
+   setMessage(publish?'Postagem publicada no feed.':'Rascunho enviado à fila de revisão.');
    router.refresh();
   }catch(e){
    if(uploadedPath)await db.storage.from('pope-feed-media').remove([uploadedPath]);
@@ -69,7 +68,7 @@ export function FeedComposer({userId,admin=false,categories,products}:{
  }
  return <section className="pope-feed-compose" aria-label="Criar postagem">
   <div className="pope-feed-compose-head">
-   <div><h2>{admin?'Publicar no feed da Popê':'Compartilhe com a comunidade'}</h2>
+   <div><h2>Publicar no feed da Popê</h2>
     <p>Texto, foto ou vídeo. Relacione uma publicação a produtos ou seções da loja.</p></div>
    <ImagePlus size={29} aria-hidden="true"/>
   </div>
@@ -119,13 +118,11 @@ export function FeedComposer({userId,admin=false,categories,products}:{
      </select>
     </label>
    </div>
-   {admin?<label className="pope-feed-publish-check">
+   {<label className="pope-feed-publish-check">
     <input type="checkbox" checked={publish} disabled={saving}
      onChange={e=>setPublish(e.target.checked)}/>
     Publicar imediatamente (desmarque para revisão)
-   </label>:<p className="pope-feed-notice"><ShieldCheck size={17}/>
-    Sua publicação ficará em análise antes de ficar visível. Seu nome de exibição será público após aprovação.
-   </p>}
+   </label>}
    {error?<p className="form-error" role="alert">{error}</p>:null}
    {message?<p className="form-success" role="status">{message}</p>:null}
    <button type="submit" className="admin-primary" disabled={saving}>

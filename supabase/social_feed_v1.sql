@@ -1,6 +1,12 @@
 -- Popê Beauty — feed social com moderação, mídia privada e produtos do catálogo.
 -- Somente conteúdo publicado é visível no feed público.
 begin;
+-- Apenas administradores e funcionários podem criar postagens.
+create or replace function private.is_feed_editor() returns boolean
+ language sql stable security definer set search_path=''
+ as $select exists(select 1 from public.profiles p
+ where p.id=(select auth.uid()) and p.role in ('admin','staff'))$;
+revoke all on function private.is_feed_editor() from public,anon,authenticated;
 create table if not exists public.feed_posts (
  id uuid primary key default gen_random_uuid(),
  author_id uuid not null references auth.users(id) on delete cascade,
@@ -37,18 +43,21 @@ grant insert(author_id,body,media_path,media_kind,product_id,category_id,status)
 grant update(status) on public.feed_posts to authenticated;
 
 create policy feed_posts_public_read on public.feed_posts for select to anon,authenticated
- using (status='published');
+ using (status='published'
+ and (product_id is null or exists (select 1 from public.products p where p.id=product_id and p.active and not p.is_adult))
+ and (category_id is null or exists (select 1 from public.categories c where c.id=category_id and c.active and not c.is_adult))
+);
 create policy feed_posts_owner_admin_read on public.feed_posts for select to authenticated
- using (author_id=(select auth.uid()) or (select private.is_admin()));
+ using (author_id=(select auth.uid()) or (select private.is_feed_editor()));
 create policy feed_posts_create on public.feed_posts for insert to authenticated
  with check (
-  author_id=(select auth.uid()) and
+  author_id=(select auth.uid()) and (select private.is_feed_editor()) and
   coalesce(((select auth.jwt())->>'is_anonymous')::boolean,false)=false
-  and (status='pending' or (select private.is_admin()))
+  and status in ('pending','published')
  );
 create policy feed_posts_admin_status on public.feed_posts for update to authenticated
- using ((select private.is_admin()))
- with check ((select private.is_admin()));
+ using ((select private.is_feed_editor()))
+ with check ((select private.is_feed_editor()));
 
 create or replace function private.guard_feed_post()
 returns trigger language plpgsql security definer set search_path=''
@@ -66,7 +75,7 @@ begin
    or new.created_at is distinct from old.created_at then
    raise exception 'Não é permitido alterar o conteúdo ou a autoria de uma postagem';
   end if;
-  if new.status is distinct from old.status and not private.is_admin() then
+  if new.status is distinct from old.status and not private.is_feed_editor() then
    raise exception 'Somente a moderação altera o status' using errcode='42501';
   end if;
   if old.status is distinct from 'published' and new.status='published' then
@@ -78,7 +87,7 @@ begin
   return new;
  end if;
 
- if new.author_id is distinct from auth.uid() then
+ if new.author_id is distinct from auth.uid() or not private.is_feed_editor() then
   raise exception 'Autor inválido' using errcode='42501';
  end if;
  new.body=btrim(new.body);
@@ -116,14 +125,14 @@ begin
  select nullif(btrim(p.display_name),'') into v_label
   from public.profiles p where p.id=new.author_id;
  new.author_name=left(coalesce(v_label,'Comunidade Popê'),60);
- if private.is_admin() and new.status='published' then
+ if private.is_feed_editor() and new.status='published' then
   new.published_at=clock_timestamp();
  end if;
- if not private.is_admin() then
+ if private.is_feed_editor() then
   perform pg_advisory_xact_lock(hashtextextended('feed-post:'||new.author_id::text,0));
   if (select count(*) from public.feed_posts p where p.author_id=new.author_id
-   and p.created_at>clock_timestamp()-interval '24 hours')>=3 then
-   raise exception 'Limite de três postagens por dia atingido';
+   and p.created_at>clock_timestamp()-interval '24 hours')>=30 then
+   raise exception 'Limite de trinta postagens por dia atingido';
   end if;
  end if;
  return new;
@@ -182,6 +191,7 @@ on conflict (id) do update set
 create policy pope_feed_upload_owner on storage.objects for insert to authenticated
  with check (
   bucket_id='pope-feed-media' and
+  (select private.is_feed_editor()) and
   coalesce(((select auth.jwt())->>'is_anonymous')::boolean,false)=false and
   (storage.foldername(name))[1]=(select auth.uid())::text and
   name ~ ('^'||(select auth.uid())::text||'/[0-9a-f-]{36}\.(jpg|jpeg|png|webp|mp4|webm)$')
@@ -192,7 +202,7 @@ create policy pope_feed_media_read on storage.objects for select to anon,authent
   (exists(select 1 from public.feed_posts p where p.media_path=name
    and p.status='published')
    or ((select auth.uid()) is not null and (storage.foldername(name))[1]=(select auth.uid())::text)
-   or (select private.is_admin()))
+   or (select private.is_feed_editor()))
  );
 create policy pope_feed_media_cleanup on storage.objects for delete to authenticated
  using (

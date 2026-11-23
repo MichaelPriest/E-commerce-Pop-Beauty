@@ -18,7 +18,6 @@ create table if not exists public.feed_posts (
  category_id uuid references public.categories(id) on delete set null,
  status text not null default 'pending'
   check (status in ('pending','published','rejected','hidden')),
- like_count integer not null default 0 check(like_count>=0),
  created_at timestamptz not null default clock_timestamp(),
  updated_at timestamptz not null default clock_timestamp(),
  published_at timestamptz,
@@ -142,43 +141,6 @@ revoke all on function private.guard_feed_post() from public,anon,authenticated;
 drop trigger if exists guard_feed_post on public.feed_posts;
 create trigger guard_feed_post before insert or update on public.feed_posts
 for each row execute function private.guard_feed_post();
-
-create table if not exists public.feed_post_likes (
- post_id uuid not null references public.feed_posts(id) on delete cascade,
- user_id uuid not null references auth.users(id) on delete cascade,
- created_at timestamptz not null default clock_timestamp(),
- primary key(post_id,user_id)
-);
-create index if not exists feed_post_likes_owner_idx on public.feed_post_likes(user_id);
-alter table public.feed_post_likes enable row level security;
-revoke all on public.feed_post_likes from public,anon,authenticated;
-grant select,insert,delete on public.feed_post_likes to authenticated;
-create policy feed_likes_owner_read on public.feed_post_likes for select to authenticated
- using(user_id=(select auth.uid()));
-create policy feed_likes_owner_insert on public.feed_post_likes for insert to authenticated
- with check(
-  user_id=(select auth.uid())
-  and coalesce(((select auth.jwt())->>'is_anonymous')::boolean,false)=false
-  and exists(select 1 from public.feed_posts p where p.id=post_id and p.status='published')
- );
-create policy feed_likes_owner_delete on public.feed_post_likes for delete to authenticated
- using(user_id=(select auth.uid()));
-create or replace function private.refresh_feed_post_like_count()
-returns trigger language plpgsql security definer set search_path=''
-as $$
-begin
- update public.feed_posts set like_count=(
-  select count(*) from public.feed_post_likes l
-  where l.post_id=coalesce(new.post_id,old.post_id)
- ) where id=coalesce(new.post_id,old.post_id);
- return null;
-end;
-$$;
-revoke all on function private.refresh_feed_post_like_count() from public,anon,authenticated;
-drop trigger if exists refresh_feed_post_like_count on public.feed_post_likes;
-create trigger refresh_feed_post_like_count
-after insert or delete on public.feed_post_likes
-for each row execute function private.refresh_feed_post_like_count();
 
 -- Arquivos são privados até a moderação publicar o post.
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)

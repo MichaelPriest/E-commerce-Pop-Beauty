@@ -23,9 +23,12 @@ export function CartCloudSync({userId}:{userId:string|null}){
    const initial=cartSnapshot(cartStore.getSnapshot());
    previousKey=cartSnapshotKey(initial);
    // O carrinho de outro dispositivo só pode ser restaurado por ação explícita.
-   if(initial.length&&previousKey!==cartSnapshotKey(saved)){
+   if(initial.length&&saved.length===0&&previousKey!==cartSnapshotKey(saved)){
     await sb.rpc('save_customer_cart',{p_items:initial});
    }
+   // Quando há carrinhos diferentes nos dois dispositivos, preservar o remoto.
+   // A próxima alteração local é uma escolha explícita do visitante e pode
+   // sincronizar o conteúdo atual; a restauração remota fica em /carrinho.
    if(!live)return;
    const changed=()=>{
     const next=cartSnapshot(cartStore.getSnapshot());

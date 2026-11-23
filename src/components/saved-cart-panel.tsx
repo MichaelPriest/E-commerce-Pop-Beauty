@@ -75,12 +75,13 @@ export function SavedCartPanel(){
   finally{setBusy(false);}
  }
  async function clearSaved(){
-  if(busy||!window.confirm('Apagar os itens salvos na conta? O carrinho deste navegador continuará igual.'))return;
+  if(busy||!window.confirm('Esvaziar o carrinho deste navegador e apagar os itens salvos na conta?'))return;
   setBusy(true);setError('');
   const {error:dbError}=await createClient().rpc('save_customer_cart',{p_items:[]});
   if(dbError)setError('Não foi possível limpar o carrinho salvo.');
-  else{setSaved(old=>old?{...old,items:[],last_activity_at:new Date().toISOString()}:old);
-   setInfo('Carrinho salvo apagado.');}
+  else{cartStore.write([]);
+   setSaved(old=>old?{...old,items:[],last_activity_at:new Date().toISOString()}:old);
+   setInfo('Carrinho e itens salvos apagados.');}
   setBusy(false);
  }
  if(!signed)return null;
@@ -96,7 +97,7 @@ export function SavedCartPanel(){
    {count>0?<button className="admin-primary" type="button" disabled={busy}
     onClick={restore}><RefreshCw size={16}/> Restaurar carrinho salvo</button>:null}
    {count>0?<button className="admin-outline" type="button" disabled={busy}
-    onClick={clearSaved}><Trash2 size={16}/> Apagar itens salvos</button>:null}
+    onClick={clearSaved}><Trash2 size={16}/> Esvaziar carrinho e conta</button>:null}
   </div>
   <label className="pope-saved-cart-consent">
    <input type="checkbox" checked={saved?.reminders_opt_in??false}

@@ -35,8 +35,9 @@ export default async function ProductPage({params,searchParams}:{
   reviews=(comments.data??[]) as ProductReview[];
   mine=(myReview.data??null) as ProductReview|null;
   if(!stats.error&&stats.data){
-   summary={average_rating:Number(stats.data.average_rating)||0,
-    rating_count:Number(stats.data.rating_count)||0};
+   const result=stats.data as {average_rating?:number|string;rating_count?:number|string};
+   summary={average_rating:Number(result.average_rating)||0,
+    rating_count:Number(result.rating_count)||0};
   }
  }
  return <div className="container product-page">

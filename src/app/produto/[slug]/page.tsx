@@ -51,7 +51,8 @@ export default async function ProductPage({params,searchParams}:{
    variants={extras.variants} gallery={extras.gallery} ratingSummary={summary}
    initialVariantId={typeof variacao==='string'?variacao:''}/>
   {!product.is_adult?<div id="avaliacoes" className="pope-product-reviews-anchor"><ProductReviews productId={product.id} customerId={customer?.id??null}
-   reviews={reviews} summary={summary} mine={mine} demo={demo}/>
+   reviews={reviews} summary={summary} mine={mine} demo={demo}
+   staffViewer={customer?.role==='admin'||customer?.role==='staff'}/>
    <p className="pope-feed-product-discover">Quer ver vídeos e dicas sobre este produto? <Link href={"/feed?produto="+encodeURIComponent(product.slug)}>Ver publicações no Feed Popê</Link></p></div>:null}
  </div>;
 }

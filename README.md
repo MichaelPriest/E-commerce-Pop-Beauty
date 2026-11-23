@@ -1252,3 +1252,25 @@ bucket privado para as mídias e mantém os itens +18 fora do feed.
 
 Leia [Feed e avaliações](docs/feed-e-avaliacoes.md) para instruções completas.
 A funcionalidade não altera o checkout comercial nem habilita pagamentos.
+
+
+## Popê Vídeos e Central de Carrinhos Abandonados
+
+- **Vídeos verticais:** o Feed Popê oferece `/feed/videos`, com rolagem
+  estilo Reels, áudio inicialmente silenciado, pausa de vídeos fora da
+  tela e acesso direto ao produto apresentado. A equipe continua sendo
+  a única autorizada a publicar.
+- **Carrinhos abandonados:** o administrador acessa
+  `/admin/carrinhos-abandonados`, onde identifica carrinhos inativos
+  por pelo menos 60 minutos, filtra autorizações de lembretes e marca
+  o acompanhamento. Carrinhos com pedidos posteriores não contam como
+  abandono.
+- **Carrinho salvo:** clientes autenticados salvam o conteúdo da conta
+  com IDs e quantidades, podem recuperar itens em outro dispositivo,
+  apagar o carrinho e escolher se autorizam lembretes. Nenhum
+  lembrete é enviado automaticamente.
+
+Aplique `supabase/customer_saved_carts_v1.sql` no Supabase Popê.
+Consulte o [manual de carrinhos abandonados](docs/carrinhos-abandonados.md)
+e [Feed e avaliações](docs/feed-e-avaliacoes.md).
+O checkout não é ativado por esses recursos.

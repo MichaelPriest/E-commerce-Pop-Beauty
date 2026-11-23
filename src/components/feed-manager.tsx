@@ -6,9 +6,7 @@ import {createClient} from '@/lib/supabase/browser';
 import {FEED_POST_STATUSES,type FeedPostView,type FeedStatus} from '@/lib/feed-core';
 import {FeedCard} from '@/components/feed-card';
 
-export function FeedManager({posts,userId}:{
- posts:FeedPostView[];userId:string;
-}){
+export function FeedManager({posts}:{posts:FeedPostView[];}){
  const router=useRouter();
  const [filter,setFilter]=useState('all'),[query,setQuery]=useState('');
  const [saving,setSaving]=useState<string|null>(null),[error,setError]=useState('');
@@ -45,7 +43,7 @@ export function FeedManager({posts,userId}:{
   {error?<p role="alert" className="form-error">{error}</p>:null}
   {visible.length?<div className="pope-feed-list">
    {visible.map(post=><div key={post.id} className="pope-feed-management-item">
-    <FeedCard post={post} userId={userId} moderation/>
+    <FeedCard post={post} moderation/>
     <div className="pope-feed-moderation-actions">
      {post.status!=='published'?<button className="admin-primary" type="button"
       disabled={!!saving} onClick={()=>change(post.id,'published')}>

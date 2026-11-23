@@ -118,15 +118,15 @@ export function FeedComposer({userId,categories,products}:{
      </select>
     </label>
    </div>
-   {<label className="pope-feed-publish-check">
+   <label className="pope-feed-publish-check">
     <input type="checkbox" checked={publish} disabled={saving}
      onChange={e=>setPublish(e.target.checked)}/>
     Publicar imediatamente (desmarque para revisão)
-   </label>}
+   </label>
    {error?<p className="form-error" role="alert">{error}</p>:null}
    {message?<p className="form-success" role="status">{message}</p>:null}
    <button type="submit" className="admin-primary" disabled={saving}>
-    <Send size={18}/>{saving?'Enviando...':admin?'Salvar publicação':'Enviar para aprovação'}
+    <Send size={18}/>{saving?'Enviando...':'Salvar publicação'}
    </button>
   </form>
  </section>;

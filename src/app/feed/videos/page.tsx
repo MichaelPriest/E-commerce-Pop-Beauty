@@ -38,7 +38,7 @@ export default async function PopêReelsPage({searchParams}:{
   if(n>1)params.set('pagina',String(n));
   return '/feed/videos'+(params.size?'?'+params:'');
  }
- return <main className="pope-reels-page">
+ return <div className="pope-reels-page">
   <header className="pope-reels-heading container">
    <div><span className="section-kicker">VÍDEOS OFICIAIS POPÊ</span>
     <h1><Clapperboard size={31}/> Popê Vídeos</h1>
@@ -59,5 +59,5 @@ export default async function PopêReelsPage({searchParams}:{
    <span>Página {page}</span>
    {hasMore?<Link href={href(page+1)}>Mais vídeos</Link>:null}
   </nav>:null}
- </main>;
+ </div>;
 }

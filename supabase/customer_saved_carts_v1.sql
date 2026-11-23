@@ -57,10 +57,12 @@ declare
  v_key text;
 begin
  if v_user is null
-  or coalesce((auth.jwt()->>'is_anonymous')::boolean,false) then
+  or coalesce((auth.jwt()->>'is_anonymous')::boolean,false)
+  or not exists(select 1 from public.profiles p where p.id=v_user and p.role='customer') then
   raise exception 'Entre na conta para salvar o carrinho' using errcode='42501';
  end if;
- if jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items)>30 then
+ if p_items is null or octet_length(p_items::text)>8192 or
+  jsonb_typeof(p_items) is distinct from 'array' or jsonb_array_length(p_items)>30 then
   raise exception 'Carrinho inválido: máximo de 30 itens' using errcode='22023';
  end if;
  perform pg_advisory_xact_lock(hashtextextended('cart:'||v_user::text,0));
@@ -115,6 +117,7 @@ as $$
 declare v_user uuid:=auth.uid();
 begin
  if v_user is null or coalesce((auth.jwt()->>'is_anonymous')::boolean,false)
+  or not exists(select 1 from public.profiles p where p.id=v_user and p.role='customer')
   or p_enabled is null then
   raise exception 'Sessão ou opção inválida' using errcode='42501';
  end if;

@@ -1230,3 +1230,25 @@ Não há permissão para inserir mensagens diretamente no navegador.
 Veja [Atendimento e pós-venda](docs/atendimento-pos-venda.md) para as
 regras de operação e segurança. As mensagens não executam estornos,
 reembolsos, alterações fiscais nem movimentos de estoque.
+
+
+## Feed oficial e avaliações dos produtos
+
+O Popê Beauty possui uma nova área editorial `/feed` para postagens de texto,
+fotos e vídeos, com vínculos a produtos, categorias e subcategorias.
+**Apenas a equipe (`admin` ou `staff`) pode publicar**, usando
+`/admin/feed` ou `/equipe/feed`. Clientes podem visualizar as postagens,
+mas não criar conteúdo no feed.
+
+As páginas dos produtos têm avaliações de **1 a 5 estrelas** e comentários
+moderados: clientes autenticados podem escrever uma avaliação por produto.
+A equipe aprova ou oculta os comentários em `/admin/avaliacoes` ou
+`/equipe/avaliacoes`. As notas médias incluem somente avaliações aprovadas.
+
+Para disponibilizar esses recursos, execute no Supabase Popê
+`supabase/social_feed_v1.sql` e depois `supabase/product_reviews_v1.sql`.
+A migração habilita RLS para limitar a criação de posts e avaliações, usa um
+bucket privado para as mídias e mantém os itens +18 fora do feed.
+
+Leia [Feed e avaliações](docs/feed-e-avaliacoes.md) para instruções completas.
+A funcionalidade não altera o checkout comercial nem habilita pagamentos.

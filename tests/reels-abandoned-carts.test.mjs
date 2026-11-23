@@ -66,7 +66,7 @@ test('só salva o carrinho da conta e não troca dados locais automaticamente',(
  const sync=read('src/components/cart-cloud-sync.tsx');
  assert.match(sync,/if\(!userId\)return/);
  assert.match(sync,/\.eq\('user_id',userId\)/);
- assert.match(sync,/if\(initial\.length&&previousKey!==cartSnapshotKey\(saved\)\)/);
+ assert.match(sync,/initial\.length&&saved\.length===0&&previousKey!==cartSnapshotKey\(saved\)/);
  assert.match(sync,/cartStore\.subscribe\(changed\)/);
  assert.doesNotMatch(sync,/cartStore\.write\(/);
  const cart=read('src/app/carrinho/page.tsx');

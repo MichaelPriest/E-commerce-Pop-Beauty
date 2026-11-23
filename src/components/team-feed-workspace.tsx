@@ -22,6 +22,7 @@ export async function TeamFeedWorkspace(){
    </div>
    <div className="pope-feed-team-actions">
     <Link className="admin-outline" href="/feed">Visualizar feed</Link>
+    <Link className="admin-outline" href="/feed/videos">Ver vídeos verticais</Link>
     <Link className="admin-outline" href={role==='admin'?'/admin':'/conta'}>
      <ArrowLeft size={16}/> Voltar
     </Link>
@@ -29,7 +30,7 @@ export async function TeamFeedWorkspace(){
   </div>
   <div className="pope-feed-team-note">
    <ShieldCheck size={19}/> As postagens são oficiais da equipe.
-   O cliente pode curtir posts e avaliar produtos em suas páginas.
+   Os clientes podem assistir aos vídeos e avaliar produtos diretamente nas páginas de produto.
   </div>
   {targets.error||postsResult.error?<p className="form-error" role="alert">
    Falha ao carregar o módulo. Confira a migração social_feed_v1.sql.

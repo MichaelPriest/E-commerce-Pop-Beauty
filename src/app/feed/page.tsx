@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {Heart,ImagePlus,MessageCircle,Filter,ArrowRight,ShieldCheck} from 'lucide-react';
+import {Heart,ImagePlus,MessageCircle,Filter,ArrowRight,ShieldCheck,Clapperboard} from 'lucide-react';
 import {createClient} from '@/lib/supabase/server';
 import {isSupabaseConfigured} from '@/lib/supabase/config';
 import {FEED_POST_COLUMNS,feedPostViews,feedRows,feedTargets} from '@/lib/feed-server';
@@ -51,7 +51,8 @@ export default async function FeedPage({searchParams}:{
      <p>Novidades, vídeos, inspirações e tutoriais publicados pela equipe Popê.
       Explore conteúdos associados aos produtos e categorias da loja.</p>
      <div className="pope-feed-hero-actions">
-      <Link className="admin-primary" href="/#destaques">
+      <Link className="admin-primary" href="/feed/videos"><Clapperboard size={18}/> Assistir vídeos</Link>
+      <Link className="admin-outline" href="/#destaques">
        <ArrowRight size={18}/> Explorar produtos</Link>
      </div>    </div><div className="pope-feed-hero-art" aria-hidden="true">💄 <span>📷</span> ✨</div>
    </div>

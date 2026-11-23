@@ -91,3 +91,20 @@ comentários em publicações do feed, algoritmos de recomendação, reels
 infinito, notificações, edição de avaliações antigas nem selo automático
 de compra verificada. Esses recursos podem ser adicionados de maneira
 independente sem habilitar o checkout.
+
+
+## Popê Vídeos — feed vertical
+
+A página pública `/feed/videos` transforma as postagens de vídeo da
+equipe em uma sequência vertical com rolagem e pausa automática de vídeos
+fora da área visível. O vídeo inicia sem som para respeitar as
+preferências do visitante; o próprio controle nativo permite ativar o
+áudio. Cada publicação pode direcionar ao **produto relacionado**
+ou à **categoria vinculada**. A página aceita filtros por produto e
+categoria e usa o mesmo controle de publicação oficial e mídia privada
+do feed. Não existe envio de vídeos pelo cliente.
+
+Nesta etapa, **capas específicas, postagens agendadas e editor avançado
+de cortes** ainda não foram implementados. A duração dos links
+temporários de mídia limita o uso em sessões muito longas, que podem
+exigir atualizar a página.

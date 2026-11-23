@@ -72,7 +72,7 @@ test('avaliações públicas dependem de moderação e não há compras verifica
  const productPage=read('src/app/produto/[slug]/page.tsx');
  assert.match(productPage,/<ProductReviews/);
  assert.match(productPage,/product\.is_adult/);
- assert.match(productPage,/feed\?produto=/);
+ assert.match(productPage,/feed\/videos\?produto=/);
  const reviewForm=read('src/components/product-reviews.tsx');
  assert.match(reviewForm,/\.from\('product_reviews'\)\.insert\(/);
  assert.match(reviewForm,/status:'pending'/);

@@ -12,7 +12,7 @@ type CartItemProduct={id:string;name:string;slug:string;price_cents:number};
 export type AbandonedCartRow=SavedCartRow&{customer_name:string;
  status:'active'|'abandoned'|'ordered'|'closed';
  products:CartItemProduct[]};
-export function AbandonedCartsManager({rows}:{rows:AbandonedCartRow[]}){
+export function AbandonedCartsManager({rows,demo=false}:{rows:AbandonedCartRow[];demo?:boolean}){
  const router=useRouter();
  const [filter,setFilter]=useState('abandoned'),[query,setQuery]=useState('');
  const [busy,setBusy]=useState<string|null>(null),[error,setError]=useState('');
@@ -34,14 +34,19 @@ export function AbandonedCartsManager({rows}:{rows:AbandonedCartRow[]}){
  );
  async function setState(userId:string,state:'new'|'reviewing'|'closed'){
   if(busy)return;setBusy(userId);setError('');
-  const {data,error:dbError}=await createClient().from('customer_saved_carts')
-   .update({review_state:state}).eq('user_id',userId)
-   .select('user_id').maybeSingle();
+  const table=demo?'demo_cart_scenarios':'customer_saved_carts';
+  const key=demo?'id':'user_id';
+  const {data,error:dbError}=await createClient().from(table)
+   .update({review_state:state}).eq(key,userId)
+   .select(key).maybeSingle();
   if(dbError||!data)setError('Falha ao atualizar o acompanhamento. Verifique sua sessão.');
   else router.refresh();
   setBusy(null);
  }
- return <section className="pope-cart-abandonment">
+ return <section className={'pope-cart-abandonment'+(demo?' is-demo':'')}>
+  {demo?<div className="pope-demo-label"><strong>CENÁRIOS DE TESTE — DADOS FICTÍCIOS</strong>
+   <p>Não são clientes reais, não geraram pedidos nem autorizaram mensagens.
+    Use os filtros e os botões de acompanhamento para testar esta demonstração.</p></div>:null}
   <div className="pope-cart-recovery-stats">
    <div><ShoppingCart/><small>Carrinhos inativos há 60 minutos ou mais</small>
     <strong>{totals.abandoned}</strong></div>
@@ -73,7 +78,7 @@ export function AbandonedCartsManager({rows}:{rows:AbandonedCartRow[]}){
     return <article key={row.user_id} className="pope-cart-recovery-item">
      <div className="pope-cart-recovery-item-head">
       <div><strong>{row.customer_name||'Cliente sem nome configurado'}</strong>
-       <small>Conta #{row.user_id.slice(0,8).toUpperCase()}</small>
+       <small>{demo?'SIMULAÇÃO #':'Conta #'}{row.user_id.slice(0,8).toUpperCase()}</small>
       </div>
       <span className={'pope-cart-recovery-status status-'+row.status}>
        {row.status==='abandoned'?'Inativo':row.status==='active'?'Ativo':
@@ -96,8 +101,8 @@ export function AbandonedCartsManager({rows}:{rows:AbandonedCartRow[]}){
      </ul>
      <p className="pope-cart-recovery-permission">
       {row.reminders_opt_in?
-       <><ShieldCheck size={16}/> Cliente autorizou lembretes (nenhum envio automático está ativo).</>:
-       <><AlertCircle size={16}/> Sem autorização para lembretes de recuperação.</>}
+       <><ShieldCheck size={16}/>{demo?'Autorização simulada — não enviar mensagens.':'Cliente autorizou lembretes (nenhum envio automático está ativo).'}</>:
+       <><AlertCircle size={16}/>{demo?'Cenário sem autorização simulada.':'Sem autorização para lembretes de recuperação.'}</>}
      </p>
      <div className="pope-cart-recovery-actions">
       {row.review_state!=='reviewing'?
@@ -116,8 +121,8 @@ export function AbandonedCartsManager({rows}:{rows:AbandonedCartRow[]}){
    })}
   </div>:<div className="pope-feed-empty">
    <ShoppingCart size={36}/><h2>Sem carrinhos neste filtro</h2>
-   <p>A central acompanha apenas carrinhos de clientes autenticados,
-    salvos na conta e sem pedido posterior correspondente.</p>
+   <p>{demo?'Nenhum cenário fictício corresponde a este filtro.':
+    'A central acompanha apenas carrinhos de clientes autenticados, salvos na conta e sem pedido posterior correspondente.'}</p>
   </div>}
   <p className="pope-cart-recovery-help">
    O subtotal é calculado usando os preços atuais dos produtos cadastrados,

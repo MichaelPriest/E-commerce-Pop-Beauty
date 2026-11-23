@@ -7,6 +7,7 @@ create or replace function private.is_feed_editor() returns boolean
  as $$select exists(select 1 from public.profiles p
  where p.id=(select auth.uid()) and p.role in ('admin','staff'))$$;
 revoke all on function private.is_feed_editor() from public,anon,authenticated;
+grant execute on function private.is_feed_editor() to authenticated;
 create table if not exists public.feed_posts (
  id uuid primary key default gen_random_uuid(),
  author_id uuid not null references auth.users(id) on delete cascade,
@@ -158,10 +159,14 @@ create policy pope_feed_upload_owner on storage.objects for insert to authentica
  );
 create policy pope_feed_media_read on storage.objects for select to anon,authenticated
  using (
-  bucket_id='pope-feed-media' and
-  (exists(select 1 from public.feed_posts p where p.media_path=name
+  bucket_id='pope-feed-media'
+  and exists(select 1 from public.feed_posts p where p.media_path=name
    and p.status='published')
-   or ((select auth.uid()) is not null and (storage.foldername(name))[1]=(select auth.uid())::text)
+ );
+create policy pope_feed_media_team_read on storage.objects for select to authenticated
+ using (
+  bucket_id='pope-feed-media'
+  and ((storage.foldername(name))[1]=(select auth.uid())::text
    or (select private.is_feed_editor()))
  );
 create policy pope_feed_media_cleanup on storage.objects for delete to authenticated

@@ -9,9 +9,10 @@ import type {CatalogVariant,ProductGalleryPhoto} from '@/lib/catalog';
 import {visibleProductGallery} from '@/lib/product-gallery-core';
 
 export function ProductDetailsShop({
- product,demo,variants,gallery,initialVariantId=''
+ product,demo,variants,gallery,initialVariantId='',ratingSummary
 }:{product:Product;demo:boolean;variants:CatalogVariant[];
- gallery:ProductGalleryPhoto[];initialVariantId?:string}){
+ gallery:ProductGalleryPhoto[];initialVariantId?:string;
+ ratingSummary?:{average_rating:number;rating_count:number}}){
  const cover=productImageSrc(product.image_url);
  const [imageIndex,setImageIndex]=useState(0);
  const [variantId,setVariantId]=useState(
@@ -87,7 +88,10 @@ export function ProductDetailsShop({
    <span className="section-kicker">{product.category} • {product.brand}</span>
    <h1>{product.name}</h1>
    <p>{product.description}</p>
-   <div className="stars">✦ Novidade na Popê</div>
+   <a className="stars" href="#avaliacoes">{ratingSummary?.rating_count?
+    '★ '+ratingSummary.average_rating.toLocaleString('pt-BR',{maximumFractionDigits:1})+
+    ' ('+ratingSummary.rating_count+' avaliações)':
+    '☆ Seja o primeiro a avaliar'}</a>
    {product.compare_at_cents?<del>{formatBRL(product.compare_at_cents)}</del>:null}
    <strong className="detail-price">{formatBRL(product.price_cents)}</strong>
    <div className="pope-detail-purchase">
